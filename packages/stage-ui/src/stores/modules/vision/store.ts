@@ -50,6 +50,13 @@ export const useVisionStore = defineStore('vision', () => {
    */
   const manualLookRequest = ref(0)
 
+  /**
+   * Counter incremented when the user says "读单词" / "读英语". The screen-watch
+   * composable watches this and fires a capture with the English OCR workload,
+   * then speaks the result directly via TTS (no character reaction).
+   */
+  const englishReadRequest = ref(0)
+
   // Minimum spacing between two spoken screen comments. This is separate from the
   // capture cadence (`captureIntervalMs` in the processing store): frames may be grabbed
   // often for change detection, but the pet only speaks at most once per this window.
@@ -152,6 +159,7 @@ export const useVisionStore = defineStore('vision', () => {
     screenCommentIntervalMs,
     visionMode,
     manualLookRequest,
+    englishReadRequest,
 
     supportsModelListing,
     providerModels,

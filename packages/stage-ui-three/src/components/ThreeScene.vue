@@ -814,7 +814,10 @@ defineExpose({
         cast-shadow
       />
       <Suspense>
-        <EffectComposerPmndrs :multisampling="multisampling">
+        <EffectComposerPmndrs
+          v-if="tresContextRef?.renderer?.instance"
+          :multisampling="multisampling"
+        >
           <HueSaturationPmndrs v-bind="effectProps" />
         </EffectComposerPmndrs>
       </Suspense>

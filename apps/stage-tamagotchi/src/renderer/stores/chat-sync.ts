@@ -368,21 +368,84 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     if (!names.length)
       return
     const lower = text.toLowerCase()
-    // Match against both the raw registered name and the prefix-stripped name, so
-    // "跳美少女无罪" matches even if the file is still named with TikTok_Motion_ prefix.
-    const named = names.find((name) => {
+    // Fuzzy matching: find the dance name that best matches the user's input.
+    // Strategy:
+    // 1. Direct containment (user says "进化论" → matches "进化论")
+    // 2. Shared substrings (user says "进化轮" → shares "进化" with "进化论")
+    // 3. Prefix match (user says "进化" → matches "进化论")
+    //
+    // Score each candidate by longest shared substring length, pick the best.
+    let bestMatch: string | undefined
+    let bestScore = 0
+
+    for (const name of names) {
       const stripped = normalizeDanceName(name)
-      return lower.includes(stripped) || text.includes(stripped)
-        || lower.includes(name) || text.includes(name)
-    })
+      const candidates = [stripped, name]
+
+      for (const candidate of candidates) {
+        // Direct containment
+        if (lower.includes(candidate) || candidate.includes(lower)) {
+          const score = candidate.length
+          if (score > bestScore) { bestScore = score; bestMatch = name }
+          continue
+        }
+
+        // Shared substring: find longest common substring >= 2 chars
+        for (let ci = 0; ci < candidate.length - 1; ci++) {
+          for (let cj = ci + 2; cj <= candidate.length; cj++) {
+            const sub = candidate.slice(ci, cj)
+            if (lower.includes(sub) && sub.length > bestScore) {
+              bestScore = sub.length
+              bestMatch = name
+            }
+          }
+        }
+
+        // Prefix match (e.g. "进化" → "进化论")
+        for (let plen = 2; plen <= candidate.length; plen++) {
+          const prefix = candidate.slice(0, plen)
+          if (lower.endsWith(prefix) || lower.includes(prefix)) {
+            if (plen > bestScore) { bestScore = plen; bestMatch = name }
+          }
+        }
+      }
+    }
+
+    const named = bestScore >= 2 ? bestMatch : undefined
     // "跳" + generic dance keyword triggers a random dance
     const wantsDance = text.includes('跳') && /舞|dance/i.test(text)
     if (!named && !wantsDance)
       return
-    const pick = named ?? names[Math.floor(Math.random() * names.length)]
-    const url = vrmGestureAnimations[pick]
-    if (url)
-      store.requestGesturePlay(url, {})
+
+    if (named) {
+      // Check for numbered variants: if user says "质问恋爱", find all
+      // "质问恋爱1", "质问恋爱2", "质问恋爱3" and play them in sequence.
+      const base = named.replace(/\d+$/, '') // strip trailing number
+      const variants = names
+        .filter(n => n !== named && n.startsWith(base) && /\d+$/.test(n))
+        .sort((a, b) => (parseInt(a.match(/(\d+)$/)?.[1] || '0')) - (parseInt(b.match(/(\d+)$/)?.[1] || '0')))
+
+      const queue = [vrmGestureAnimations[named]]
+      for (const v of variants) {
+        const u = vrmGestureAnimations[v]
+        if (u) queue.push(u)
+      }
+
+      // Play first, chain the rest with delays
+      store.requestGesturePlay(queue[0], {})
+      for (let i = 1; i < queue.length; i++) {
+        setTimeout(() => {
+          if (store.vrmModelLoaded)
+            store.requestGesturePlay(queue[i], {})
+        }, i * 12000) // ~12s per dance (typical vrma duration + cross-fade)
+      }
+    }
+    else {
+      const pick = names[Math.floor(Math.random() * names.length)]
+      const url = vrmGestureAnimations[pick]
+      if (url)
+        store.requestGesturePlay(url, {})
+    }
   }
 
   /**
@@ -414,6 +477,18 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     }
   }
 
+  /**
+   * "读单词" / "读英语" — capture screen, OCR English text via Gemini Vision,
+   * and read it aloud via TTS. Increments the vision store's englishReadRequest
+   * counter; the screen-watch composable watches it and fires a capture+OCR+speak.
+   */
+  function maybeTriggerReadWords(text: string): void {
+    if (!/读单词|读英语|念单词|read\s*words/i.test(text))
+      return
+    const visionStore = useVisionStore()
+    visionStore.englishReadRequest += 1
+  }
+
   async function executeIngest(payload: IngestCommandPayload): Promise<void> {
     // Fire a dance directly on intent, independent of whether the LLM calls the tool.
     maybeTriggerDance(payload.text)
@@ -423,6 +498,9 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
 
     // Vision mode switch — "切换耗能模式" / "切换节能模式".
     maybeSwitchVisionMode(payload.text)
+
+    // "读单词" — read recent English words from vocab DB via TTS.
+    void maybeTriggerReadWords(payload.text)
 
     const providerId = activeProvider.value
     const modelId = activeModel.value

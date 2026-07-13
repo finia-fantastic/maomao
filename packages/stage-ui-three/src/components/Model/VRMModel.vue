@@ -189,6 +189,16 @@ const vrmIdleClip = shallowRef<AnimationClip>()
 // The currently playing one-off gesture action, if any. undefined means the
 // model is resting on the idle loop.
 const vrmGestureAction = shallowRef<AnimationAction>()
+
+// A-pose fix: gesture recovery state (GPT/VRMAnimationController pattern).
+// - finished event only sets a flag (never manipulates actions inside mixer.update)
+// - idle is restarted BEFORE the next mixer.update()
+// - gesture is cleaned up AFTER the return-to-idle cross-fade completes
+// - fallback detection catches cases where finished event never fires
+const returnToIdleQueued = shallowRef(false)
+const returningToIdle = shallowRef(false)
+const gestureCleanupTime = ref<number | null>(null)
+
 const { onBeforeRender, stop, start } = useLoop()
 
 const vrmHooks: readonly VrmHook[] = resolveInternalVrmHooks()
@@ -311,6 +321,10 @@ function clearActiveManagedVrmRefs() {
   // load never fades from an action owned by a disposed mixer.
   vrmIdleClip.value = undefined
   vrmGestureAction.value = undefined
+  // Clear A-pose fix pending state
+  returnToIdleQueued.value = false
+  returningToIdle.value = false
+  gestureCleanupTime.value = null
 }
 
 function applyManagedVrmInstance(instance: ManagedVrmInstance) {
@@ -429,18 +443,59 @@ function bindManagedVrmInstanceRenderLoop() {
   disposeBeforeRenderLoop?.()
 
   disposeBeforeRenderLoop = onBeforeRender(({ delta }) => {
-    // Manually update VRM components in the render loop because we manage the render loop on our own.
-    // See:
-    // 1. https://github.com/pixiv/three-vrm/blob/2c4aac612467216e0c8e7dc4500c2fa309208cc7/packages/three-vrm-core/src/VRMCore.ts#L72-L82
-    // 2. https://github.com/pixiv/three-vrm/blob/2c4aac612467216e0c8e7dc4500c2fa309208cc7/packages/three-vrm/src/VRM.ts#L49-L67
     const traceStart = isStageThreeRuntimeTraceEnabled() ? performance.now() : 0
     const tracingEnabled = traceStart > 0
 
-    const animationMixerMs = measureFrameStep(tracingEnabled, () => {
-      vrmAnimationMixer.value?.update(delta)
-    })
+    const currentMixer = vrmAnimationMixer.value
     const activeVrm = vrm.value
     const activeVrmGroup = vrmGroup.value
+
+    // Clamp delta to prevent huge spikes after window pauses
+    const safeDelta = Math.min(Math.max(delta, 0), 0.1)
+
+    // --- A-pose fix: cleanup & return-to-idle BEFORE mixer.update() ---
+
+    // 1. Cleanup: gesture whose cross-fade back to idle has completed
+    if (vrmGestureAction.value && gestureCleanupTime.value !== null && currentMixer && currentMixer.time >= gestureCleanupTime.value) {
+      const oldGesture = vrmGestureAction.value
+      vrmGestureAction.value = undefined
+      gestureCleanupTime.value = null
+      returningToIdle.value = false
+      // idle now has full weight — safe to stop the old gesture
+      oldGesture.stop()
+    }
+
+    // 2. Begin return to idle (before mixer.update — critical for correct bone drive)
+    if (returnToIdleQueued.value && !returningToIdle.value && currentMixer) {
+      returnToIdleQueued.value = false
+      returningToIdle.value = true
+
+      const idle = vrmIdleClip.value ? currentMixer.clipAction(vrmIdleClip.value) : undefined
+      const gestureAction = vrmGestureAction.value
+
+      if (idle && gestureAction) {
+        // reset() clears the old fadeOut, re-enables, and sets time=0
+        idle.reset()
+        idle.setLoop(LoopRepeat, Infinity)
+        idle.setEffectiveTimeScale(1)
+        idle.setEffectiveWeight(1)
+        idle.play()
+
+        // gesture is paused at last frame (clampWhenFinished=true).
+        // Keep it paused, only fade its weight out.
+        gestureAction.enabled = true
+        gestureAction.stopFading()
+
+        // gesture → idle
+        gestureAction.crossFadeTo(idle, 0.4, false)
+
+        gestureCleanupTime.value = currentMixer.time + 0.4
+      }
+    }
+
+    const animationMixerMs = measureFrameStep(tracingEnabled, () => {
+      currentMixer?.update(safeDelta)
+    })
     updateManagedVrmMaterials(activeVrm, delta)
     const vrmFrameHookMs = measureFrameStep(tracingEnabled, () => {
       if (activeVrm && activeVrmGroup) {
@@ -456,6 +511,20 @@ function bindManagedVrmInstanceRenderLoop() {
       if (activeVrm)
         runVrmFrameRuntimeHook(activeVrm, delta)
     })
+
+    // --- A-pose fix: fallback detection after mixer.update() ---
+    // If the finished event listener didn't fire (due to any edge case),
+    // detect that the gesture has reached its end and queue recovery.
+    const gestureAction = vrmGestureAction.value
+    if (gestureAction && !returningToIdle.value && !returnToIdleQueued.value && currentMixer) {
+      const clip = gestureAction.getClip()
+      const reachedEnd = gestureAction.paused
+        || (clip?.duration > 0 && gestureAction.time >= clip.duration - 0.001)
+      if (reachedEnd) {
+        returnToIdleQueued.value = true
+      }
+    }
+
     const humanoidMs = measureFrameStep(tracingEnabled, () => {
       activeVrm?.humanoid.update()
     })
@@ -1052,8 +1121,12 @@ const DEFAULT_GESTURE_CROSSFADE_SECONDS = 0.4
 async function playAnimation(url: string, options: VrmPlayAnimationOptions = {}) {
   const mixer = vrmAnimationMixer.value
   const activeVrm = vrm.value
+
+  console.log('[playAnimation] REQUESTED url:', url)
+  console.log('[playAnimation] mixer ready:', !!mixer, 'vrm ready:', !!activeVrm)
+
   if (!mixer || !activeVrm) {
-    console.warn('[VRMModel] playAnimation called before a VRM model is ready.')
+    console.warn('[playAnimation] FAIL: mixer or vrm not ready')
     return
   }
 
@@ -1061,53 +1134,61 @@ async function playAnimation(url: string, options: VrmPlayAnimationOptions = {})
   const crossFadeDuration = options.crossFadeDuration ?? DEFAULT_GESTURE_CROSSFADE_SECONDS
 
   try {
+    console.log('[playAnimation] loading VRMA...')
     const animation = await loadVRMAnimation(url)
+    console.log('[playAnimation] VRMA loaded, creating clip...')
     const clip = await clipFromVRMAnimation(activeVrm, animation)
     if (!clip) {
-      console.warn('[VRMModel] No VRM animation clip produced for', url)
+      console.warn('[playAnimation] FAIL: clipFromVRMAnimation returned null')
       return
     }
-    // Re-anchor so the gesture keeps the model at its idle origin instead of
-    // teleporting to the clip's authored hips position.
+    console.log('[playAnimation] clip created: duration=' + clip.duration?.toFixed(2) + 's, tracks=' + clip.tracks.length)
+    // Log arm-related tracks
+    const armTracks = clip.tracks.filter(t => /arm|hand|shoulder/i.test(t.name))
+    console.log('[playAnimation] arm tracks:', armTracks.length, armTracks.map(t => t.name).join(', '))
+
     reAnchorRootPositionTrack(clip, activeVrm)
 
-    // A model reload/switch may have swapped the mixer while the .vrma loaded;
-    // bail rather than driving actions on a disposed mixer.
-    if (vrmAnimationMixer.value !== mixer)
+    if (vrmAnimationMixer.value !== mixer) {
+      console.warn('[playAnimation] FAIL: mixer changed during load')
       return
+    }
 
     const gestureAction = mixer.clipAction(clip)
-    gestureAction.clampWhenFinished = false
+    console.log('[playAnimation] action created, starting playback...')
+    // A-pose fix (GPT/VRMAnimationController pattern):
+    // clampWhenFinished=true keeps the gesture paused at its last frame instead
+    // of auto-disabling. This prevents a frame where BOTH idle (faded out) AND
+    // gesture (finished) have weight=0 → PropertyMixer falls back to original
+    // normalized rest pose → humanoid.update() copies A-pose to raw bones.
+    gestureAction.clampWhenFinished = true
     gestureAction.setLoop(loop ? LoopRepeat : LoopOnce, loop ? Infinity : 1)
 
-    // Snapshot normalized bone rotations before cross-fading into the gesture.
-    // idle_loop.vrma uses different bone names than the gesture .vrma files
-    // (e.g. "l_up_arm" vs "J_Bip_L_UpperArm"), so createVRMAnimationClip may drop
-    // idle's arm tracks. When the gesture ends and idle fades back in, arm bones
-    // without tracks stay at the last gesture rotation — looking like A-pose.
-    // Saving the pre-gesture quats and restoring them ensures all bones return.
-    const boneSnapshot = new Map<string, { x: number, y: number, z: number, w: number }>()
-    activeVrm.humanoid.normalizedHumanBonesRoot.traverse((bone) => {
-      if (bone.quaternion) {
-        boneSnapshot.set(bone.name, {
-          x: bone.quaternion.x, y: bone.quaternion.y,
-          z: bone.quaternion.z, w: bone.quaternion.w,
-        })
-      }
-    })
+    // Don't start a new gesture while recovering to idle
+    if (returningToIdle.value) {
+      console.warn('[VRMModel] still returning to idle, skipping gesture')
+      return
+    }
+
+    // Clear any pending recovery state from a previous gesture
+    returnToIdleQueued.value = false
+    returningToIdle.value = false
+    gestureCleanupTime.value = null
+
+    // Stop residual fade on idle from a previous gesture
+    const idleAction = vrmIdleClip.value ? mixer.clipAction(vrmIdleClip.value) : undefined
+    if (idleAction) idleAction.stopFading()
 
     // Fade from whatever is currently visible: a prior gesture if one is
     // active, otherwise the persistent idle action.
-    const idleAction = vrmIdleClip.value ? mixer.clipAction(vrmIdleClip.value) : undefined
     crossFadeToAction(vrmGestureAction.value ?? idleAction, gestureAction, crossFadeDuration)
     vrmGestureAction.value = gestureAction
 
     if (loop)
       return
 
-    // One-shot: when the clip finishes, fade back to idle and drop the gesture.
-    // `finished` fires once per LoopOnce action; filter by action identity so we
-    // ignore finish events from any other gesture the mixer may run.
+    // One-shot: the finished callback ONLY sets a flag. The render loop
+    // processes it BEFORE the next mixer.update() and cleans up AFTER.
     const onFinished = (event: { action: AnimationAction }) => {
       if (event.action !== gestureAction)
         return
@@ -1115,37 +1196,12 @@ async function playAnimation(url: string, options: VrmPlayAnimationOptions = {})
 
       if (vrmAnimationMixer.value !== mixer)
         return
-      // If another gesture took over since this one started, don't yank the model back
-      // to idle — just drop this finished action and let the newer one keep playing.
       if (vrmGestureAction.value !== gestureAction) {
         gestureAction.stop()
         return
       }
 
-      // Restore pre-gesture bone rotations so bones the idle doesn't drive
-      // (due to name mapping differences) don't stay frozen in gesture pose.
-      activeVrm.humanoid.normalizedHumanBonesRoot.traverse((bone) => {
-        const saved = boneSnapshot.get(bone.name)
-        if (saved) {
-          bone.quaternion.set(saved.x, saved.y, saved.z, saved.w)
-        }
-      })
-
-      const idle = vrmIdleClip.value ? mixer.clipAction(vrmIdleClip.value) : undefined
-      if (idle) {
-        // Hard cut back to idle at full weight. Fading a `clampWhenFinished` action that
-        // has just finished proved unreliable: its weight stayed at 1, which both froze
-        // the model on the last frame AND blocked the next gesture (two actions fighting
-        // at weight 1). stop() removes the finished gesture outright so idle owns the pose
-        // and the next playAnimation starts clean.
-        idle.enabled = true
-        idle.setEffectiveTimeScale(1)
-        idle.setEffectiveWeight(1)
-        idle.reset()
-        idle.play()
-      }
-      gestureAction.stop()
-      vrmGestureAction.value = undefined
+      returnToIdleQueued.value = true
     }
     mixer.addEventListener('finished', onFinished)
   }

@@ -1,4 +1,4 @@
-export type VisionWorkloadId = 'screen:interpret' | 'screen:understand' | 'screen:ocr' | 'screen:ui-automation' | 'screen:commentary'
+export type VisionWorkloadId = 'screen:interpret' | 'screen:understand' | 'screen:ocr' | 'screen:ui-automation' | 'screen:commentary' | 'screen:english-reader'
 
 export interface VisionWorkloadConfig {
   id: VisionWorkloadId
@@ -58,6 +58,19 @@ export const VISION_WORKLOADS: VisionWorkloadConfig[] = [
       'Mention: what app or website is open, what the user seems to be doing, anything notable or fun.',
       'Keep it light, warm, and brief — like a pet commenting on what their owner is up to.',
       'Do NOT use markdown, lists, or technical jargon. Just a natural spoken comment.',
+    ].join('\n'),
+  },
+  {
+    id: 'screen:english-reader',
+    label: 'English word reader',
+    description: 'Extract English words from screen for TTS reading.',
+    prompt: [
+      'You are an English reading assistant.',
+      'Look at this screenshot and extract ALL visible English words and sentences.',
+      'Return ONLY the English text, separated by spaces. No Chinese, no explanations.',
+      'Preserve the order: top to bottom, left to right.',
+      'If there are multiple lines, join them with commas.',
+      'Example output: "apple, banana, cherry, This is a sentence."',
     ].join('\n'),
   },
 ]

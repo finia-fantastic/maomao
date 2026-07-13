@@ -369,6 +369,53 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
     void triggerManualLook()
   })
 
+  /**
+   * "读单词" — capture screen, OCR English text via VLM, speak via TTS directly.
+   * Unlike the commentary path, this bypasses the character reaction LLM and
+   * feeds the VLM result straight into TTS.
+   */
+  async function triggerEnglishRead() {
+    if (isInferring.value)
+      return
+
+    const stream = await ensureStream()
+    if (!stream) return
+
+    const video = videoRef.value
+    if (!video) return
+
+    const dataUrl = captureFrame(video, 0.82, 1280, 720)
+    if (!dataUrl) return
+
+    isInferring.value = true
+    try {
+      const result = await visionOrchestratorStore.processCapture({
+        imageDataUrl: dataUrl,
+        workloadId: 'screen:english-reader',
+        sourceId: activeSourceId.value,
+        capturedAt: Date.now(),
+        publishContext: false,
+      })
+
+      const text = result.text
+      if (!text || text.length === 0) return
+
+      // Speak the recognized English directly via TTS, no character reaction.
+      characterOrchestratorStore.handleSparkNotifyWithReaction(
+        buildScreenCommentNotify(text),
+        { fallbackText: text },
+      )
+    }
+    finally {
+      isInferring.value = false
+    }
+  }
+
+  // Watch englishReadRequest — each increment triggers one English OCR + TTS cycle.
+  watch(() => visionStore.englishReadRequest, () => {
+    void triggerEnglishRead()
+  })
+
   // ------ lifecycle -------------------------------------------------------
 
   function startLoop() {

@@ -101,18 +101,28 @@ export async function applyOIDCTokens(tokens: TokenResponse, clientId: string): 
 }
 
 export async function fetchSession() {
-  const { data } = await authClient.getSession()
-  const authStore = useAuthStore()
+  // Skip cloud auth request when there's no token — avoids
+  // ERR_CONNECTION_TIMED_OUT spam when api.airi.build is unreachable.
+  if (!getAuthToken())
+    return false
 
-  if (data) {
-    authStore.user = data.user
-    authStore.session = data.session
-    return true
+  try {
+    const { data } = await authClient.getSession()
+    const authStore = useAuthStore()
+
+    if (data) {
+      authStore.user = data.user
+      authStore.session = data.session
+      return true
+    }
+
+    // Session expired or invalid — clear stale auth state from localStorage
+    authStore.clearAllAuthState()
+    return false
   }
-
-  // Session expired or invalid — clear stale auth state from localStorage
-  authStore.clearAllAuthState()
-  return false
+  catch {
+    return false
+  }
 }
 
 export async function listSessions() {

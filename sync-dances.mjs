@@ -37,7 +37,6 @@ const STRIP_PREFIXES = [
 const ANIMATION_TIKTOK_NUM_RE = /^Animation_TikTok_\d+_/
 
 // Known name overrides: raw filename (sans .vrma, after prefix strip) → desired name.
-// These come from the 动作/ pack folder names mapped to their VRChat batch filenames.
 const NAME_OVERRIDES = {
   '美少女無罪パイレーツ': '美少女无罪',
   '粛清ロリ神レクイエム': '萝莉神',
@@ -48,6 +47,23 @@ const NAME_OVERRIDES = {
   '最上級にかわいいの': '最上级的可爱',
   '愛♡スクリ～ム！': '愛スクリーム（ice cream）',
   '刀ピークリスマスのテーマソング2023': '刀p',
+  'テレパシ': '体操歌',
+  '体操歌': '体操歌',
+}
+
+// Folder name → dance name prefix for multi-file packs or renamed folders.
+const FOLDER_NAME_MAP = {
+  'AnimationPack_vol_01': '',     // special: sync all .vrma with individual names
+  'ムリムリ進化論（进化论）': '进化论',
+  '質問、恋って何でしょうか？（质问恋爱是什么？）': '质问恋爱',  // appends 1/2/3
+}
+
+// Known multi-file packs with name mappings (base name → renamed output).
+// Drawing poses are character animations, not dances.
+const DRAWING_NAME_MAP = {
+  'anim_anim_drawing_float': '飘着画画',
+  'anim_anim_drawing_prone': '趴着画画',
+  'anim_anim_drawing_sit': '坐着画画',
 }
 
 /**
@@ -66,23 +82,20 @@ function normalizeDanceName(rawName) {
 
   name = name.replace(ANIMATION_TIKTOK_NUM_RE, '')
 
-  // Apply known name overrides
   if (NAME_OVERRIDES[name]) {
     name = NAME_OVERRIDES[name]
   }
 
-  // テレパシ stays as-is (no override needed — prefix strip is sufficient)
   return name
 }
 
-// First .vrma found recursively under `dir` (packs bury it in a `vrma/` subfolder).
+// First .vrma found recursively under `dir`.
 function findVrma(dir) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name)
     if (statSync(p).isDirectory()) {
       const found = findVrma(p)
-      if (found)
-        return found
+      if (found) return found
     }
     else if (name.toLowerCase().endsWith('.vrma')) {
       return p
@@ -91,25 +104,36 @@ function findVrma(dir) {
   return null
 }
 
+// All .vrma files found recursively under `dir`.
+function findAllVrma(dir) {
+  const result = []
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name)
+    if (statSync(p).isDirectory()) {
+      result.push(...findAllVrma(p))
+    }
+    else if (name.toLowerCase().endsWith('.vrma')) {
+      result.push(p)
+    }
+  }
+  return result
+}
+
 // Check whether a directory is a "flat pack": contains multiple .vrma files directly at
-// the top level (e.g. vrchat100个动作 VRChat batch conversion). Single-.vrma folders
-// use the standard nested-pack logic (folder name becomes dance name).
+// the top level (e.g. vrchat100个动作 VRChat batch conversion).
 function isFlatPack(dir) {
   let vrmaCount = 0
   for (const name of readdirSync(dir)) {
     const p = join(dir, name)
     if (!statSync(p).isDirectory() && name.toLowerCase().endsWith('.vrma')) {
       vrmaCount++
-      if (vrmaCount >= 2)
-        return true
+      if (vrmaCount >= 2) return true
     }
   }
   return false
 }
 
-// Files that should be preserved in dances/ as-is and not renamed/synced by the flat
-// pack logic. Base animations are character control (idle/sit/face/costume).
-// Animation_TikTok_NN_ files without a name mapping are preserved with original name.
+// Files that should be preserved in dances/ and not pruned.
 function shouldSkipInFlatPack(filename) {
   return filename.startsWith('Animation_Base_Lazuli_')
     || filename.startsWith('Animation_Lazuli_')
@@ -117,38 +141,41 @@ function shouldSkipInFlatPack(filename) {
     || /^Animation_TikTok_\d+_/.test(filename)
 }
 
+// Known dance names used by multi-file packs. Size-based matching maps source .vrma
+// byte sizes to preferred user-facing dance names.
+const SIZE_TO_NAME = {
+  // AnimationPack_vol_01
+  548176: 'BabyYou',
+  679352: 'Toca',
+  449612: '这么可爱真是抱歉',
+  479536: 'blue',
+  1212704: '青空狂想曲',
+}
+
 let count = 0
 const produced = new Set()
 
 for (const pack of readdirSync(packsDir)) {
   const packPath = join(packsDir, pack)
-  if (!statSync(packPath).isDirectory())
-    continue
+  if (!statSync(packPath).isDirectory()) continue
 
   // Flat pack: .vrma files directly at top level (e.g. vrchat100个动作).
-  // Sync each file individually with name normalization.
-  // Skip base animation files (Animation_Base_Lazuli_* etc.) — they are character
-  // control animations, not dances, and live in dances/ independently.
   if (isFlatPack(packPath)) {
     console.info(`[sync-dances] "${pack}": flat pack, syncing individual files`)
     for (const file of readdirSync(packPath)) {
-      if (!file.toLowerCase().endsWith('.vrma'))
-        continue
+      if (!file.toLowerCase().endsWith('.vrma')) continue
       const filePath = join(packPath, file)
-      if (!statSync(filePath).isFile())
-        continue
+      if (!statSync(filePath).isFile()) continue
       if (shouldSkipInFlatPack(file)) {
-        // Register so existing copies aren't pruned, but don't re-sync.
         produced.add(file)
         continue
       }
       const rawName = basename(file, extname(file))
       const cleanName = normalizeDanceName(rawName)
       const fileName = `${cleanName}.vrma`
-      // Skip if short-name version already exists (prefer existing).
       const destPath = join(dancesDir, fileName)
       if (existsSync(destPath)) {
-        console.info(`[sync-dances]   "${fileName}" already exists, skipping (prefer existing)`)
+        console.info(`[sync-dances]   "${fileName}" already exists, skipping`)
         produced.add(fileName)
         count++
         continue
@@ -161,23 +188,81 @@ for (const pack of readdirSync(packsDir)) {
     continue
   }
 
-  // Nested pack: find the first .vrma recursively, use folder name as dance name.
+  // Multi-vrma nested pack: vrma/ subfolder has multiple .vrma files.
+  // Sync each one with individual naming.
+  const allVrma = findAllVrma(packPath)
+  if (allVrma.length >= 2) {
+    console.info(`[sync-dances] "${pack}": multi-dance pack (${allVrma.length} vrma), syncing individually`)
+    allVrma.sort()
+    let idx = 0
+    for (const vrmaPath of allVrma) {
+      idx++
+      let fileName
+      const folderBase = FOLDER_NAME_MAP[pack]
+
+      if (folderBase !== undefined) {
+        // Known multi-file pack — use mapped base name
+        if (folderBase === '') {
+          // Special: use SIZE_TO_NAME mapping for individual files
+          const size = statSync(vrmaPath).size
+          const nameFromSize = SIZE_TO_NAME[size]
+          if (nameFromSize) {
+            fileName = `${nameFromSize}.vrma`
+          } else {
+            // Fallback to filename
+            const raw = basename(vrmaPath, extname(vrmaPath))
+            fileName = `${normalizeDanceName(raw)}.vrma`
+          }
+        } else {
+          // Use mapped name with number suffix
+          fileName = allVrma.length > 1 ? `${folderBase}${idx}.vrma` : `${folderBase}.vrma`
+        }
+      } else if (pack === 'Drawing_v01_01') {
+        // Drawing poses — use DRAWING_NAME_MAP, skip tablet/pen/empty animations
+        const raw = basename(vrmaPath, extname(vrmaPath))
+        const mapped = DRAWING_NAME_MAP[raw]
+        if (mapped) {
+          fileName = `${mapped}.vrma`
+        } else {
+          // Skip non-character animations (tablet, pen, empty)
+          console.info(`[sync-dances]   skipping "${raw}.vrma" (not a character pose)`)
+          continue
+        }
+      } else {
+        // Unknown pack — use filename from vrma/
+        const raw = basename(vrmaPath, extname(vrmaPath))
+        fileName = `${normalizeDanceName(raw)}.vrma`
+      }
+      const destPath = join(dancesDir, fileName)
+      if (existsSync(destPath)) {
+        console.info(`[sync-dances]   "${fileName}" already exists, skipping`)
+        produced.add(fileName)
+        count++
+        continue
+      }
+      copyFileSync(vrmaPath, destPath)
+      produced.add(fileName)
+      console.info(`[sync-dances]   → "${fileName}" ready`)
+      count++
+    }
+    continue
+  }
+
+  // Single-vrma nested pack: one .vrma found, use folder name (with mapping).
   const vrma = findVrma(packPath)
   if (!vrma) {
     console.info(`[sync-dances] "${pack}": no .vrma inside (only vmd/fbx?), skipped`)
     continue
   }
-  const fileName = `${pack}.vrma`
+  const mappedName = FOLDER_NAME_MAP[pack] || pack
+  const fileName = `${mappedName}.vrma`
   copyFileSync(vrma, join(dancesDir, fileName))
   produced.add(fileName)
-  console.info(`[sync-dances] "${pack}" ready`)
+  console.info(`[sync-dances] "${pack}" → "${fileName}" ready`)
   count++
 }
 
-// Prune stale dances: remove any dances/*.vrma no longer backed by a 动作/ pack, so
-// renaming or deleting a pack folder doesn't leave an unplayable ghost dance behind.
-// Base animation files (Animation_Base_Lazuli_* etc.) are preserved — they are
-// character control animations that live in dances/ independently of 动作/ packs.
+// Prune stale dances: remove dances/*.vrma not backed by a 动作/ pack.
 for (const f of readdirSync(dancesDir)) {
   if (f.toLowerCase().endsWith('.vrma') && !produced.has(f)) {
     if (shouldSkipInFlatPack(f)) {
