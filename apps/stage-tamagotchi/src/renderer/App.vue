@@ -51,6 +51,9 @@ import {
 import { electronPluginToolsChanged } from '../shared/eventa/plugin/tools'
 import { initializeElectronAuthCallbackBridge } from './bridges/electron-auth-callback'
 import { initializeStageThreeRuntimeTraceBridge } from './bridges/stage-three-runtime-trace'
+import VisionScreenWatch from './components/VisionScreenWatch.vue'
+import { useIdleGestures } from './composables/useIdleGestures'
+import { useTimeGreeting } from './composables/useTimeGreeting'
 import { useLanguage } from './composables/use-language'
 import { createChatSyncWindowLifecycle, resolveInitialChatSyncRoutePath } from './stores/chat-sync-lifecycle'
 import { useTamagotchiMcpToolsStore } from './stores/mcp-tools'
@@ -71,6 +74,7 @@ const initialWindowRoutePath = resolveInitialChatSyncRoutePath(route.path)
 const chatSyncLifecycle = createChatSyncWindowLifecycle(route.path)
 const isSpotlightWindowRoute = initialWindowRoutePath === '/spotlight'
 const isSettingsWindowRoute = initialWindowRoutePath.startsWith('/settings')
+const isPrimaryStageWindow = initialWindowRoutePath === '/'
 
 function createFullStageRuntime() {
   const contextBridgeStore = useContextBridgeStore()
@@ -79,6 +83,11 @@ function createFullStageRuntime() {
   const cardStore = useAiriCardStore()
   const serverChannelStore = useModsServerChannelStore()
   const characterOrchestratorStore = useCharacterOrchestratorStore()
+  // Background idle gesture loop: randomly fires one of the 7 VRoid basic actions every
+  // 45-95s while a VRM model is loaded (stops when switching to Live2D / no model).
+  useIdleGestures()
+  // One-shot time-of-day greeting on model load (fires once per session).
+  useTimeGreeting()
   const analyticsStore = useSharedAnalyticsStore()
   const inferencePreload = useInferencePreload()
   const pluginHostInspectorStore = usePluginHostInspectorStore()
@@ -309,6 +318,7 @@ onUnmounted(() => {
     <Toaster />
   </ToasterRoot>
   <ResizeHandler v-if="!isSpotlightWindowRoute" />
+  <VisionScreenWatch v-if="isPrimaryStageWindow" />
   <RouterView />
 </template>
 

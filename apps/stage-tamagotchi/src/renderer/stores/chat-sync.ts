@@ -13,6 +13,7 @@ import { useChatSessionStore } from '@proj-airi/stage-ui/stores/chat/session-sto
 import { useChatStreamStore } from '@proj-airi/stage-ui/stores/chat/stream-store'
 import { resolveLlmTools } from '@proj-airi/stage-ui/stores/llm-tool-resolver'
 import { useConsciousnessStore } from '@proj-airi/stage-ui/stores/modules/consciousness'
+import { useVisionStore } from '@proj-airi/stage-ui/stores/modules/vision/store'
 import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
 import { executeToolCallRerun } from '@proj-airi/stage-ui/stores/tool-call-rerun'
 import { useModelStore } from '@proj-airi/stage-ui-three'
@@ -337,8 +338,28 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
   // the user clearly asks to dance we fire the gesture ourselves — the LLM still replies
   // in character. Matches against the auto-discovered dance names (filenames under
   // assets/vrm/animations/dances/, see vrmGestureAnimations).
+
+  // Prefixes that VRChat batch conversion prepends to filenames. Stripping them lets
+  // users say e.g. "跳美少女无罪" even if the file is still named with the full prefix.
+  const DANCE_NAME_PREFIXES = [
+    'tiktok_motion_tiktok_',
+    'tiktok_motion_',
+    'animation_base_lazuli_',
+    'animation_lazuli_lazuli_',
+    'animation_lazuli_',
+  ]
+  const ANIMATION_TIKTOK_NUM_RE = /^animation_tiktok_\d+_/
+
+  function normalizeDanceName(name: string): string {
+    for (const prefix of DANCE_NAME_PREFIXES) {
+      if (name.startsWith(prefix))
+        return name.slice(prefix.length)
+    }
+    return name.replace(ANIMATION_TIKTOK_NUM_RE, '')
+  }
+
   function maybeTriggerDance(text: string): void {
-    if (!text || !text.includes('跳'))
+    if (!text)
       return
     const store = useModelStore()
     if (!store.vrmModelLoaded)
@@ -347,11 +368,16 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     if (!names.length)
       return
     const lower = text.toLowerCase()
-    // Prefer a dance the user named explicitly (e.g. "跳刀p"); otherwise any generic
-    // "跳…舞 / 跳 dance" request plays a random one.
-    const named = names.find(name => lower.includes(name.toLowerCase()) || text.includes(name))
-    const generic = /舞|dance/i.test(text)
-    if (!named && !generic)
+    // Match against both the raw registered name and the prefix-stripped name, so
+    // "跳美少女无罪" matches even if the file is still named with TikTok_Motion_ prefix.
+    const named = names.find((name) => {
+      const stripped = normalizeDanceName(name)
+      return lower.includes(stripped) || text.includes(stripped)
+        || lower.includes(name) || text.includes(name)
+    })
+    // "跳" + generic dance keyword triggers a random dance
+    const wantsDance = text.includes('跳') && /舞|dance/i.test(text)
+    if (!named && !wantsDance)
       return
     const pick = named ?? names[Math.floor(Math.random() * names.length)]
     const url = vrmGestureAnimations[pick]
@@ -359,9 +385,44 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
       store.requestGesturePlay(url, {})
   }
 
+  /**
+   * Manual screen-look trigger. When the user says "看看" / "look" / "看屏幕",
+   * increment the vision store's manualLookRequest counter so the screen-watch
+   * composable fires one capture+comment cycle immediately, bypassing interval
+   * and throttle gates.
+   *
+   * In eco mode this is the primary way to get the pet to look at the screen.
+   * In active mode it's a bonus — lets the user force a comment right now.
+   */
+  function maybeTriggerLook(text: string): void {
+    const visionStore = useVisionStore()
+    if (!visionStore.screenWatchEnabled)
+      return
+    if (!/看看|看屏幕|看一眼|屏幕.*看|看.*屏幕|look|watch/i.test(text))
+      return
+    visionStore.manualLookRequest += 1
+  }
+
+  /** Switch vision mode via chat ("切换耗能模式" / "切换节能模式"). */
+  function maybeSwitchVisionMode(text: string): void {
+    const visionStore = useVisionStore()
+    if (/切换.*(?:耗能|active|高频|游戏)/i.test(text)) {
+      visionStore.setVisionMode('active')
+    }
+    else if (/切换.*(?:节能|eco|省电|低频|工作|画画)/i.test(text)) {
+      visionStore.setVisionMode('eco')
+    }
+  }
+
   async function executeIngest(payload: IngestCommandPayload): Promise<void> {
     // Fire a dance directly on intent, independent of whether the LLM calls the tool.
     maybeTriggerDance(payload.text)
+
+    // Manual screen-look trigger — "看看" fires a forced capture+comment.
+    maybeTriggerLook(payload.text)
+
+    // Vision mode switch — "切换耗能模式" / "切换节能模式".
+    maybeSwitchVisionMode(payload.text)
 
     const providerId = activeProvider.value
     const modelId = activeModel.value

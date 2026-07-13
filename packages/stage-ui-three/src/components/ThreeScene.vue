@@ -272,8 +272,23 @@ function applySceneBootstrap(value: SceneBootstrap) {
 
   if (reason === 'initial-load' || reason === 'unknown' || reason === 'no-model' || reason === 'model-switch') {
     modelOffset.value = { ...value.modelOffset }
-    cameraDistance.value = value.cameraDistance
-    cameraPosition.value = { ...value.cameraPosition }
+
+    // Preserve the user's last camera angle: if the saved cameraPosition
+    // (persisted by useThreeCamera/useLocalStorage) differs from the model's
+    // freshly-computed default, the user has manually adjusted the view and we
+    // keep it. Fall back to the model default only on the very first launch.
+    const savedPos = toVector3(cameraPosition.value)
+    const defaultPos = toVector3(value.cameraPosition)
+    const userAdjusted = savedPos.clone().sub(defaultPos).lengthSq() > 1e-4
+
+    if (userAdjusted) {
+      // Keep saved position & distance; snap lookAt to model centre.
+      cameraDistance.value = Math.max(cameraDistance.value, value.cameraDistance)
+    }
+    else {
+      cameraDistance.value = value.cameraDistance
+      cameraPosition.value = { ...value.cameraPosition }
+    }
     lookAtTarget.value = { ...value.lookAtTarget }
     return
   }

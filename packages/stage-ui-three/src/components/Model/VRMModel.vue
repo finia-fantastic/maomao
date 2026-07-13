@@ -1077,8 +1077,24 @@ async function playAnimation(url: string, options: VrmPlayAnimationOptions = {})
       return
 
     const gestureAction = mixer.clipAction(clip)
-    gestureAction.clampWhenFinished = !loop
+    gestureAction.clampWhenFinished = false
     gestureAction.setLoop(loop ? LoopRepeat : LoopOnce, loop ? Infinity : 1)
+
+    // Snapshot normalized bone rotations before cross-fading into the gesture.
+    // idle_loop.vrma uses different bone names than the gesture .vrma files
+    // (e.g. "l_up_arm" vs "J_Bip_L_UpperArm"), so createVRMAnimationClip may drop
+    // idle's arm tracks. When the gesture ends and idle fades back in, arm bones
+    // without tracks stay at the last gesture rotation — looking like A-pose.
+    // Saving the pre-gesture quats and restoring them ensures all bones return.
+    const boneSnapshot = new Map<string, { x: number, y: number, z: number, w: number }>()
+    activeVrm.humanoid.normalizedHumanBonesRoot.traverse((bone) => {
+      if (bone.quaternion) {
+        boneSnapshot.set(bone.name, {
+          x: bone.quaternion.x, y: bone.quaternion.y,
+          z: bone.quaternion.z, w: bone.quaternion.w,
+        })
+      }
+    })
 
     // Fade from whatever is currently visible: a prior gesture if one is
     // active, otherwise the persistent idle action.
@@ -1106,14 +1122,22 @@ async function playAnimation(url: string, options: VrmPlayAnimationOptions = {})
         return
       }
 
+      // Restore pre-gesture bone rotations so bones the idle doesn't drive
+      // (due to name mapping differences) don't stay frozen in gesture pose.
+      activeVrm.humanoid.normalizedHumanBonesRoot.traverse((bone) => {
+        const saved = boneSnapshot.get(bone.name)
+        if (saved) {
+          bone.quaternion.set(saved.x, saved.y, saved.z, saved.w)
+        }
+      })
+
       const idle = vrmIdleClip.value ? mixer.clipAction(vrmIdleClip.value) : undefined
       if (idle) {
         // Hard cut back to idle at full weight. Fading a `clampWhenFinished` action that
         // has just finished proved unreliable: its weight stayed at 1, which both froze
         // the model on the last frame AND blocked the next gesture (two actions fighting
         // at weight 1). stop() removes the finished gesture outright so idle owns the pose
-        // and the next playAnimation starts clean. A small pop at a gesture's end is an
-        // acceptable trade for reliable, repeatable playback.
+        // and the next playAnimation starts clean.
         idle.enabled = true
         idle.setEffectiveTimeScale(1)
         idle.setEffectiveWeight(1)

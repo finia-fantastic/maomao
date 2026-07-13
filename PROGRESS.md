@@ -3,7 +3,8 @@
 > 个人定制分支：把 AIRI 精简成**纯桌面版**，做成一个叫 **Niko（猫猫）** 的桌宠——会说话（小野寺小咲音色）、能聊天（DeepSeek）、能读单词库、能调网页工具、会跳舞。
 > 分支：`admin/chore/desktop-only-slim`（基于 `main`，本地，未 push）
 > 最后更新：2026-07-12（对话进行中）
-> **注意**：下面"本次会话新增"（语音接入、LLM、背单词按钮、跳舞、相机）多为**工作树未提交改动**，还没 commit。
+> **GitHub**：已作为新项目上传到 **https://github.com/finia-fantastic/maomao**（分支 `maomao-main` → 远程 `main`，干净单提交 `886e11a`，排除了 155M 素材文件夹，扫描确认无密钥）。
+> ⚠️ 上传**之后**又加的（`sync-dances.mjs` + 动作/ 投放工作流 + 5 支舞 + 背单词 PYTHONUTF8 修复）**尚未推到 GitHub**，还在本地工作树；要同步需再 `commit` + `git push maomao maomao-main:main`。
 
 ---
 
@@ -59,7 +60,7 @@ AIRI 无内置歌声合成。可行路径：用户提供预渲染歌声音频文
 
 ### 5. 跳舞（VRM）—— ✅ 已做（工作树未提交）
 - 跳舞系统合入主项目（来自 agent 工作树 `agent-a12c24eb7f28a0e1d`）：`VRMModel.playAnimation`（crossFade 进舞，跳完 `stop()` **硬切回 idle**——修了"跳一次就卡在最后一帧、之后跳不了"的 bug）、LLM 工具 `vrm_play_animation`/`vrm_list_animations`、model-store `requestGesturePlay`、ThreeScene watcher。
-- **多舞蹈自动发现**：把 `.vrma` 丢进 `packages/stage-ui-three/src/assets/vrm/animations/dances/`，**文件名即舞名**，`import.meta.glob` 自动注册。现有：`刀p`、`露露卡`。加新舞 = 丢文件 + 重启桌宠。
+- **多舞蹈 + 投放文件夹工作流**：用户把整个舞蹈包**文件夹**丢进根目录 `动作/`（gitignore，不入库）；根目录 `sync-dances.mjs` 递归找每个包里的 `.vrma`、按**包文件夹名**复制进 `packages/stage-ui-three/src/assets/vrm/animations/dances/`（`import.meta.glob` 自动注册；带清理，改名/删包不留垃圾）。`run_pet.bat` 启动时自动跑同步。**加舞 = 丢文件夹进 动作/ + 把文件夹改成想喊的简体名 + 双击 run_pet.bat**。现有 5 支：刀p、心予报、快乐合成器、最上级的可爱、露露卡。
 - **跳舞触发靠关键词**（不靠 DeepSeek 自觉）：`chat-sync.ts` 的 `maybeTriggerDance()`——用户消息含"跳"+（"舞"或某舞名）就**直接**播放。**原因**：AIRI 人设提示词太入戏，DeepSeek 只会用文字"演"跳舞、不去调工具。说"跳个舞"随机、"跳刀p"/"跳露露卡"指定。
 - 只支持 **VRM(3D)**，Live2D 不行。用户舞蹈素材在 `C:\Users\Administrator\airi-app\动作\`（MMD 包，含 vmd/fbx/vrma；**只用 vrma**，vmd 是 MMD 骨骼不能直接用）。
 
@@ -69,7 +70,7 @@ AIRI 无内置歌声合成。可行路径：用户提供预渲染歌声音频文
 - **开关 `ATTACH_HAND_PROP` 当前 = `false`**（用户说先放下）。改 `true` + 重启即挂回；握持位置 `HAND_PROP_POSITION_OFFSET` 等真机调。
 
 ### 7. 背单词按钮 —— ✅ 已做（工作树未提交）
-控制栏展开菜单：删了"移到屏幕中心"，加了"背单词"按钮（`i-solar:notebook-linear`）→ 主进程 spawn `pythonw mainv10.py` 启动用户的 Python 背单词程序。契约 `electronOpenVocabApp`（`src/shared/eventa`），handler `openVocabApp()` 在 `src/main/services/airi/vocab-db/index.ts`，按钮在 `controls-island/index.vue`。实测 `pythonw mainv10.py` 能起。⚠️ 写死用户路径 `C:\Users\Administrator\Desktop\代码\01英语单词app\mainv10.py`（`mainv10.py` 是当前成品版，其它 mainv* 作废），发给别人无效。
+控制栏展开菜单：删了"移到屏幕中心"，加了"背单词"按钮（`i-solar:notebook-linear`）→ 主进程 spawn `pythonw mainv10.py` 启动用户的 Python 背单词程序。契约 `electronOpenVocabApp`（`src/shared/eventa`），handler `openVocabApp()` 在 `src/main/services/airi/vocab-db/index.ts`，按钮在 `controls-island/index.vue`。⚠️ **关键坑（已修）**：mainv10.py 顶部有 `print("✅…")`，Node spawn 下 stdout 是 GBK 编码、编不出 ✅ emoji → 启动即崩（点按钮"没反应"）。修法：spawn 时传 `env: { PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' }`（不动 mainv10.py）。⚠️ 写死用户路径 `C:\Users\Administrator\Desktop\代码\01英语单词app\mainv10.py`（`mainv10.py` 是当前成品版，其它 mainv* 作废），发给别人无效。
 
 ### 8. 开机自动同步音律（beat-sync）—— 🔬 agent 做完，未合入
 工作树 `agent-ae5e1b166ae1500f7`：加"开机自动挂系统声音律动"开关，复用 `electron-screen-capture` 的 loopback（不弹选择器抓系统声音）。**待合入主项目**。（同步音律=beat-sync=跟着音乐律动身体，非唱歌。）

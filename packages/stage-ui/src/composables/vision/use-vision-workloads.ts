@@ -1,4 +1,4 @@
-export type VisionWorkloadId = 'screen:interpret' | 'screen:understand' | 'screen:ocr' | 'screen:ui-automation'
+export type VisionWorkloadId = 'screen:interpret' | 'screen:understand' | 'screen:ocr' | 'screen:ui-automation' | 'screen:commentary'
 
 export interface VisionWorkloadConfig {
   id: VisionWorkloadId
@@ -46,6 +46,18 @@ export const VISION_WORKLOADS: VisionWorkloadConfig[] = [
     prompt: [
       'Identify actionable UI elements (buttons, inputs, menus).',
       'Return a list of elements with labels and approximate purpose.',
+    ].join('\n'),
+  },
+  {
+    id: 'screen:commentary',
+    label: 'Screen commentary',
+    description: 'Casual, conversational description of what the user is doing, for use by the desktop pet.',
+    prompt: [
+      'You are a friendly desktop companion watching the user\'s screen.',
+      'Describe what you see in 2-3 sentences, in a casual, conversational tone.',
+      'Mention: what app or website is open, what the user seems to be doing, anything notable or fun.',
+      'Keep it light, warm, and brief — like a pet commenting on what their owner is up to.',
+      'Do NOT use markdown, lists, or technical jargon. Just a natural spoken comment.',
     ].join('\n'),
   },
 ]
