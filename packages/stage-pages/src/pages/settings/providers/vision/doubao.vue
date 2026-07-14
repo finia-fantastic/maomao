@@ -23,7 +23,7 @@ import { computed } from 'vue'
  * 3. Endpoint ID (推理接入点 ep-xxxxxx) — 90% 连接失败都因为漏填这个
  */
 
-const providerId = 'vision-doubao'
+const providerId = 'vision-doubao-mini'
 const providersStore = useProvidersStore()
 const visionStore = useVisionStore()
 const { providers } = storeToRefs(providersStore) as { providers: RemovableRef<Record<string, any>> }
@@ -32,7 +32,8 @@ const { activeProvider } = storeToRefs(visionStore)
 const apiKey = computed({
   get: () => providers.value[providerId]?.apiKey || '',
   set: (value) => {
-    if (!providers.value[providerId]) providers.value[providerId] = {}
+    if (!providers.value[providerId])
+      providers.value[providerId] = {}
     providers.value[providerId].apiKey = value
   },
 })
@@ -40,7 +41,8 @@ const apiKey = computed({
 const baseUrl = computed({
   get: () => providers.value[providerId]?.baseUrl || 'https://ark.cn-beijing.volces.com/api/v3',
   set: (value) => {
-    if (!providers.value[providerId]) providers.value[providerId] = {}
+    if (!providers.value[providerId])
+      providers.value[providerId] = {}
     providers.value[providerId].baseUrl = value
   },
 })
@@ -50,7 +52,8 @@ const baseUrl = computed({
 const endpointId = computed({
   get: () => providers.value[providerId]?.endpointId || '',
   set: (value) => {
-    if (!providers.value[providerId]) providers.value[providerId] = {}
+    if (!providers.value[providerId])
+      providers.value[providerId] = {}
     providers.value[providerId].endpointId = value
   },
 })
@@ -112,7 +115,7 @@ function goToModelSelection() {
             v-model="endpointId"
             type="text"
             placeholder="ep-20250715xxxxxxxxxx"
-            class="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-primary-500 dark:border-neutral-700 dark:bg-neutral-900"
+            class="w-full border border-neutral-300 rounded-lg bg-white px-3 py-2 text-sm outline-none transition-colors dark:border-neutral-700 focus:border-primary-500 dark:bg-neutral-900"
           >
           <p text="xs neutral-500">
             在火山方舟控制台 → 推理接入点 → 复制 ep-xxxxxx

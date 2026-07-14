@@ -138,9 +138,16 @@ const visionStore = useVisionStore()
  * useVisionScreenWatch — same flow as saying "看看" in chat.
  */
 function takeScreenshot() {
+  console.info('[Controls] Screenshot button clicked')
   if (!visionStore.screenWatchEnabled) {
-    // Enable screen watch temporarily if not already on
     visionStore.screenWatchEnabled = true
+    // Give the stream a moment to start before triggering capture.
+    // screenWatchEnabled watcher calls startLoop → ensureStream →
+    // getDisplayMedia (system dialog). We wait briefly then force a tick.
+    setTimeout(() => {
+      visionStore.manualLookRequest += 1
+    }, 2000)
+    return
   }
   visionStore.manualLookRequest += 1
 }

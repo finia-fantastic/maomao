@@ -15,6 +15,9 @@ const DOUBAO_MODELS = [
   { id: 'doubao-seed-2-0-mini-260428', name: 'doubao-seed-2-0-mini-260428' },
 ]
 
+const DOUBAO_MINI_EP_ID = 'ep-20260715012304-n6p8t'
+const DOUBAO_SEEDREAM_EP_ID = 'ep-20260715013539-k65t4'
+
 const doubaoConfigSchema = z.object({
   apiKey: z.string('API Key'),
   baseUrl: z.string('Base URL'),
@@ -101,6 +104,198 @@ export const providerDoubao = defineProvider({
       // 去掉可能的 'Endpoint:' 前缀
       return modelId.replace(/^Endpoint:\s*/, '')
     },
+    connectivityFailureReason: () =>
+      '火山方舟 ARK 不支持 /models 端点。请直接测试对话功能。',
+  }) as any,
+})
+
+/**
+ * doubao-mini: 豆包 Mini 视觉 (ep-20260715012304-n6p8t)
+ * 专用于视觉/对话的推理接入点。与 `doubao` 共享 API Key 和 Base URL。
+ */
+export const providerDoubaoMini = defineProvider({
+  id: 'doubao-mini',
+  order: 9,
+  name: 'Doubao Mini (豆包 Mini 视觉)',
+  nameLocalize: ({ t }) => t('settings.pages.providers.provider.doubao-mini.title'),
+  description: '豆包 Mini 视觉 — 通过方舟推理接入点使用视觉/对话能力。',
+  descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.doubao-mini.description'),
+  tasks: ['chat'],
+  icon: 'i-lobe-icons:volcengine',
+  iconColor: 'i-lobe-icons:volcengine',
+
+  createProviderConfig: ({ t }) => z.object({
+    apiKey: z.string('API Key').meta({
+      labelLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.api-key.label'),
+      descriptionLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.api-key.description'),
+      placeholderLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.api-key.placeholder'),
+      type: 'password',
+    }),
+    baseUrl: z.string('Base URL').default('https://ark.cn-beijing.volces.com/api/v3').meta({
+      labelLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.base-url.label'),
+      descriptionLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.base-url.description'),
+      placeholderLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.base-url.placeholder'),
+    }),
+    endpointId: z.string('Endpoint ID').default(DOUBAO_MINI_EP_ID).meta({
+      label: 'Mini 视觉 Endpoint ID',
+      description: '豆包 Mini 视觉推理接入点 ID。已在火山方舟控制台预配。',
+      placeholder: DOUBAO_MINI_EP_ID,
+    }),
+  }),
+
+  createProvider(config) {
+    // NOTICE: ARK Seed-2.0-mini uses /responses format, not /chat/completions.
+    // Override completions to translate OpenAI ↔ ARK format.
+    const apiKey = (config as any)?.apiKey ?? ''
+    const baseUrl = (config as any)?.baseUrl ?? 'https://ark.cn-beijing.volces.com/api/v3'
+    const openaiProvider = createOpenAI(apiKey, baseUrl)
+
+    const arkResponsesChat = (model: string) => {
+      const originalChat = (openaiProvider as any).chat(model)
+      return {
+        ...originalChat,
+        completions: async (input: any) => {
+          const arkMessages = (input.messages || []).map((m: any) => {
+            if (typeof m.content === 'string') {
+              return { role: m.role, content: [{ type: 'input_text', text: m.content }] }
+            }
+            if (Array.isArray(m.content)) {
+              return {
+                role: m.role,
+                content: m.content.map((p: any) => {
+                  if (p.type === 'text')
+                    return { type: 'input_text', text: p.text }
+                  if (p.type === 'image_url')
+                    return { type: 'input_image', image_url: p.image_url?.url }
+                  return p
+                }),
+              }
+            }
+            return { role: m.role, content: [{ type: 'input_text', text: String(m.content) }] }
+          })
+
+          const resp = await fetch(`${baseUrl}/responses`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({ model, input: arkMessages }),
+            signal: input.signal || AbortSignal.timeout(60_000),
+          })
+
+          if (!resp.ok) {
+            const errText = await resp.text().catch(() => '')
+            throw new Error(`ARK /responses ${resp.status}: ${errText.slice(0, 200)}`)
+          }
+
+          const data = await resp.json()
+          const outputMsg = data.output?.find?.((o: any) => o?.type === 'message')
+          const text = outputMsg?.content
+            ?.filter?.((c: any) => c?.type === 'output_text')
+            ?.map?.((c: any) => c.text)
+            ?.join('') || ''
+
+          return {
+            id: data.id || 'ark-response',
+            object: 'chat.completion',
+            created: Date.now(),
+            model,
+            choices: [{ index: 0, message: { role: 'assistant', content: text }, finish_reason: 'stop' }],
+          }
+        },
+      }
+    }
+
+    return { ...openaiProvider, chat: arkResponsesChat }
+  },
+
+  extraMethods: {
+    listModels: async (config?: Record<string, unknown>) => {
+      const cfg = config as Record<string, unknown> | undefined
+      const endpointId = (cfg?.endpointId as string)?.trim() || DOUBAO_MINI_EP_ID
+      return [{
+        id: endpointId,
+        name: `Endpoint: ${endpointId}`,
+        provider: 'doubao-mini',
+      }]
+    },
+  },
+
+  validationRequiredWhen(config) {
+    const cfg = config as Record<string, unknown> | undefined
+    return !!(cfg?.apiKey as string)?.trim()
+  },
+
+  validators: createOpenAICompatibleValidators({
+    checks: [ProviderValidationCheck.ChatCompletions],
+    normalizeModelId: modelId => modelId.replace(/^Endpoint:\s*/, ''),
+    connectivityFailureReason: () =>
+      '火山方舟 ARK 不支持 /models 端点。请直接测试对话功能。',
+  }) as any,
+})
+
+/**
+ * doubao-seedream: 豆包 Seedream 绘图 (ep-20260715013539-k65t4)
+ * 专用于文生图（Seedream-4.5）的推理接入点。
+ * 与 `doubao` / `doubao-mini` 共享 API Key 和 Base URL。
+ */
+export const providerDoubaoSeedream = defineProvider({
+  id: 'doubao-seedream',
+  order: 9,
+  name: 'Doubao Seedream (豆包 画图)',
+  nameLocalize: ({ t }) => t('settings.pages.providers.provider.doubao-seedream.title'),
+  description: '豆包 Seedream 文生图 — 通过方舟推理接入点使用绘画能力。',
+  descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.doubao-seedream.description'),
+  tasks: ['chat'],
+  icon: 'i-lobe-icons:volcengine',
+  iconColor: 'i-lobe-icons:volcengine',
+
+  createProviderConfig: ({ t }) => z.object({
+    apiKey: z.string('API Key').meta({
+      labelLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.api-key.label'),
+      descriptionLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.api-key.description'),
+      placeholderLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.api-key.placeholder'),
+      type: 'password',
+    }),
+    baseUrl: z.string('Base URL').default('https://ark.cn-beijing.volces.com/api/v3').meta({
+      labelLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.base-url.label'),
+      descriptionLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.base-url.description'),
+      placeholderLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.base-url.placeholder'),
+    }),
+    seedreamEndpointId: z.string('Seedream Endpoint ID').default(DOUBAO_SEEDREAM_EP_ID).meta({
+      label: 'Seedream 画图 Endpoint ID',
+      description: '豆包 Seedream 文生图推理接入点 ID。猫猫画画时调用此模型生成图片。',
+      placeholder: DOUBAO_SEEDREAM_EP_ID,
+    }),
+  }),
+
+  createProvider(config) {
+    const apiKey = (config as any)?.apiKey ?? ''
+    const baseUrl = (config as any)?.baseUrl ?? 'https://ark.cn-beijing.volces.com/api/v3'
+    return createOpenAI(apiKey, baseUrl)
+  },
+
+  extraMethods: {
+    listModels: async (config?: Record<string, unknown>) => {
+      const cfg = config as Record<string, unknown> | undefined
+      const endpointId = (cfg?.seedreamEndpointId as string)?.trim() || DOUBAO_SEEDREAM_EP_ID
+      return [{
+        id: endpointId,
+        name: `Endpoint: ${endpointId}`,
+        provider: 'doubao-seedream',
+      }]
+    },
+  },
+
+  validationRequiredWhen(config) {
+    const cfg = config as Record<string, unknown> | undefined
+    return !!(cfg?.apiKey as string)?.trim()
+  },
+
+  validators: createOpenAICompatibleValidators({
+    checks: [ProviderValidationCheck.ChatCompletions],
+    normalizeModelId: modelId => modelId.replace(/^Endpoint:\s*/, ''),
     connectivityFailureReason: () =>
       '火山方舟 ARK 不支持 /models 端点。请直接测试对话功能。',
   }) as any,
