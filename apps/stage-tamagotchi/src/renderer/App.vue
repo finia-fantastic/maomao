@@ -22,8 +22,7 @@ import { storeToRefs } from 'pinia'
 import { onMounted, onUnmounted, watch } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { toast, Toaster } from 'vue-sonner'
-import { useModelStore } from '@proj-airi/stage-ui-three'
-import { vrmGestureAnimations } from '@proj-airi/stage-ui-three/assets/vrm'
+
 
 import ResizeHandler from './components/ResizeHandler.vue'
 
@@ -54,6 +53,7 @@ import { electronPluginToolsChanged } from '../shared/eventa/plugin/tools'
 import { initializeElectronAuthCallbackBridge } from './bridges/electron-auth-callback'
 import { initializeStageThreeRuntimeTraceBridge } from './bridges/stage-three-runtime-trace'
 import VisionScreenWatch from './components/VisionScreenWatch.vue'
+
 import { useIdleGestures } from './composables/useIdleGestures'
 import { useTimeGreeting } from './composables/useTimeGreeting'
 import { useLanguage } from './composables/use-language'
@@ -85,25 +85,6 @@ function createFullStageRuntime() {
   const cardStore = useAiriCardStore()
   const serverChannelStore = useModsServerChannelStore()
   const characterOrchestratorStore = useCharacterOrchestratorStore()
-  // Startup self-test: auto-play "趴着画画" on model load to verify
-  // the animation registry and A-pose fix work correctly.
-  const modelStore = useModelStore()
-  watch(() => modelStore.vrmModelLoaded, (loaded) => {
-    if (!loaded) return
-    const keys = Object.keys(vrmGestureAnimations)
-    console.log('[startup-test] registry has', keys.length, 'animations')
-    console.log('[startup-test] all keys:', keys.join(', '))
-    const testNames = ['趴着画画', '坐着画画', '飘着画画']
-    for (const n of testNames) {
-      const u = vrmGestureAnimations[n]
-      console.log('[startup-test] ' + n + ': ' + (u ? 'FOUND ' + u.slice(-40) : 'NOT FOUND'))
-    }
-    const url = vrmGestureAnimations['趴着画画']
-    if (url) {
-      console.log('[startup-test] hardcoding playDance("趴着画画") in 2s...')
-      setTimeout(() => modelStore.requestGesturePlay(url, {}), 2000)
-    }
-  })
   // Background idle gesture loop: randomly fires one of the 7 VRoid basic actions every
   // 45-95s while a VRM model is loaded (stops when switching to Live2D / no model).
   useIdleGestures()

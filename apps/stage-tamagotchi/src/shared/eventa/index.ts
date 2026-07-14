@@ -520,3 +520,5 @@ export const i18nGetLocale = defineInvokeEventa<string | undefined>('eventa:invo
 
 export { electron } from '@proj-airi/electron-eventa'
 export * from '@proj-airi/electron-eventa/electron-updater'
+
+export * from './memory'

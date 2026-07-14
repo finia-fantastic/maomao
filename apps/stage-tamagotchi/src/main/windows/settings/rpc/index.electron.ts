@@ -25,6 +25,7 @@ import {
 import { createAuthService } from '../../../services/airi/auth'
 import { createGodotStageService } from '../../../services/airi/godot-stage'
 import { createMcpServersService } from '../../../services/airi/mcp-servers'
+import { createMemoryService } from '../../../services/memory'
 import { createWidgetsService } from '../../../services/airi/widgets'
 import { createAutoUpdaterService } from '../../../services/electron'
 import { centerWindowOnDisplay } from '../../shared/display'
@@ -58,6 +59,9 @@ export async function setupSettingsWindowInvokes(params: {
   createMcpServersService({ context, manager: params.mcpStdioManager })
   createGodotStageService({ context, manager: params.godotStageManager, window: params.settingsWindow })
   createAuthService({ context, window: params.settingsWindow, windowAuthManager: params.windowAuthManager })
+
+  // Register memory service for the settings window (memory management UI)
+  createMemoryService(context)
 
   // Register the global shortcut service for the settings window.
   params.globalShortcut.registerWindow({ context, window: params.settingsWindow })

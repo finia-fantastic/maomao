@@ -80,8 +80,10 @@ import {
 } from '../../composables/vrm/animation'
 import { loadVrm } from '../../composables/vrm/core'
 import { useVRMEmote } from '../../composables/vrm/expression'
-import { syncVrmHandProp } from '../../composables/vrm/handProp'
+import { switchVrmHandProp, syncVrmHandProp } from '../../composables/vrm/handProp'
+import { hideDrawingWorkstation, showDrawingWorkstation } from '../../composables/vrm/drawingWorkstation'
 import { resolveInternalVrmHooks } from '../../composables/vrm/internal-hooks'
+import { useModelStore } from '../../stores/model-store'
 import { useVRMLipSync } from '../../composables/vrm/lip-sync'
 import {
   createThreeRendererMemorySnapshot,
@@ -1005,6 +1007,23 @@ const focusPos = useVRMEyeFocusFor({
 })
 
 onMounted(async () => {
+  // Watch handPropType from modelStore and switch props on the VRM.
+  const modelStore = useModelStore()
+  watch(() => modelStore.handPropType, (type) => {
+    if (vrm.value) switchVrmHandProp(vrm.value, type)
+  }, { immediate: true })
+
+  // Watch workstationVisible — show/hide desk + screen + adjust gaze.
+  watch(() => modelStore.workstationVisible, (visible) => {
+    if (!vrm.value || !vrmGroup.value || !scene.value) return
+    if (visible) {
+      showDrawingWorkstation(scene.value, vrm.value, vrmGroup.value)
+    }
+    else {
+      hideDrawingWorkstation()
+    }
+  })
+
   // watch if the model needs to be reloaded
   // Registered BEFORE the initial load to avoid missing src changes
   // that arrive while the first loadModel() is still in-flight.
@@ -1175,13 +1194,27 @@ async function playAnimation(url: string, options: VrmPlayAnimationOptions = {})
     returningToIdle.value = false
     gestureCleanupTime.value = null
 
-    // Stop residual fade on idle from a previous gesture
     const idleAction = vrmIdleClip.value ? mixer.clipAction(vrmIdleClip.value) : undefined
-    if (idleAction) idleAction.stopFading()
 
-    // Fade from whatever is currently visible: a prior gesture if one is
-    // active, otherwise the persistent idle action.
-    crossFadeToAction(vrmGestureAction.value ?? idleAction, gestureAction, crossFadeDuration)
+    // Stop idle entirely when a gesture plays — no cross-fade blending
+    // so the character holds still during dances instead of mixing idle.
+    if (idleAction) {
+      idleAction.stopFading()
+      idleAction.stop()
+    }
+
+    // If there's an active gesture being interrupted, cross-fade from it;
+    // otherwise start the new gesture with an instant cut (no idle blend).
+    if (vrmGestureAction.value) {
+      crossFadeToAction(vrmGestureAction.value, gestureAction, crossFadeDuration)
+    }
+    else {
+      gestureAction.enabled = true
+      gestureAction.setEffectiveTimeScale(1)
+      gestureAction.setEffectiveWeight(1)
+      gestureAction.reset()
+      gestureAction.play()
+    }
     vrmGestureAction.value = gestureAction
 
     if (loop)

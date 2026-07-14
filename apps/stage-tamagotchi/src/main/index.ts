@@ -40,6 +40,7 @@ import { setupGlobalShortcutService } from './services/electron/global-shortcut'
 import { setupMediaPermissionHandlers } from './services/electron/media-permissions'
 import { setupTray } from './tray'
 import { setupAboutWindowReusable } from './windows/about'
+import { initMemoryDatabase, closeMemoryDatabase } from './services/memory'
 import { setupBeatSync } from './windows/beat-sync'
 import { setupCaptionWindowManager } from './windows/caption'
 import { setupChatWindowReusableFunc } from './windows/chat'
@@ -114,6 +115,9 @@ app.whenReady().then(async () => {
   if (!shouldStartMainProcess) {
     return
   }
+
+  // Initialize the memory SQLite database (singleton; used by createMemoryService)
+  initMemoryDatabase()
 
   setupMediaPermissionHandlers(session.defaultSession)
 
@@ -329,6 +333,9 @@ async function handleAppExit() {
     logIfError('execute onAppBeforeQuit hooks', () => emitAppBeforeQuit()),
     logIfError('stop injeca', () => injeca.stop()),
   ])
+
+  // Close the memory database after all services stopped
+  logIfError('close memory database', () => closeMemoryDatabase())
 
   // Prevent the global log hook from trying to write to the file after close() is called,
   // which would cause a recursive failure if close() itself throws.

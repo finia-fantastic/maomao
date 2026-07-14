@@ -153,6 +153,34 @@ export const useModelStore = defineStore('modelStore', () => {
   const vrmModelLoaded = ref(false)
 
   /**
+   * Which hand-held prop to show on the VRM model.
+   * - 'none' — no prop (default)
+   * - 'camera' — Canon AT-1 camera in both hands
+   * - 'pencil' — pencil in right hand
+   * - 'tablet-pen' — tablet in left hand + pencil in right hand
+   */
+  const handPropType = ref<'none' | 'camera' | 'pencil' | 'tablet-pen'>('none')
+
+  /** Request a hand prop type change. Idempotent — same type is no-op. */
+  function requestHandProp(type: 'none' | 'camera' | 'pencil' | 'tablet-pen') {
+    handPropType.value = type
+  }
+
+  /** Whether the drawing workstation (desk + screen) is shown. */
+  const workstationVisible = ref(false)
+
+  function requestWorkstation(visible: boolean) {
+    workstationVisible.value = visible
+  }
+
+  /**
+   * Whether a gesture animation (dance, pose, etc.) is currently playing.
+   * Set by the scene when playback starts, cleared when it finishes.
+   * Idle gesture loop checks this to avoid interrupting active dances.
+   */
+  const isGesturePlaying = ref(false)
+
+  /**
    * Transient request to play a body-gesture `.vrma` on the mounted model.
    * Fire-and-forget and not persisted; the scene watches it and plays once.
    */
@@ -295,6 +323,11 @@ export const useModelStore = defineStore('modelStore', () => {
 
     vrmModelLoaded,
     gesturePlayRequest,
+    isGesturePlaying,
+    handPropType,
+    requestHandProp,
+    workstationVisible,
+    requestWorkstation,
     requestGesturePlay,
 
     resetModelStore,

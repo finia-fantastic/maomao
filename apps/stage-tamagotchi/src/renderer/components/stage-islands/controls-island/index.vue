@@ -2,6 +2,7 @@
 import { defineInvoke } from '@moeru/eventa'
 import { useElectronEventaContext, useElectronEventaInvoke, useElectronMouseInElement } from '@proj-airi/electron-vueuse'
 import { useSettings } from '@proj-airi/stage-ui/stores/settings'
+import { useVisionStore } from '@proj-airi/stage-ui/stores/modules/vision/store'
 import { useTheme } from '@proj-airi/ui'
 import { refDebounced, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
@@ -129,6 +130,21 @@ const adjustStyleClasses = computed(() => {
  */
 const startDraggingWindow = !isLinux() ? defineInvoke(context.value, electronStartDraggingWindow) : undefined
 
+const visionStore = useVisionStore()
+
+/**
+ * Trigger a one-shot screen capture + vision analysis.
+ * Increments manualLookRequest which is watched by
+ * useVisionScreenWatch — same flow as saying "看看" in chat.
+ */
+function takeScreenshot() {
+  if (!visionStore.screenWatchEnabled) {
+    // Enable screen watch temporarily if not already on
+    visionStore.screenWatchEnabled = true
+  }
+  visionStore.manualLookRequest += 1
+}
+
 function refreshWindow() {
   window.location.reload()
 }
@@ -231,6 +247,15 @@ function openVocabProgram() {
             </ControlButtonTooltip>
 
             <ControlsIslandFadeOnHover :icon-class="adjustStyleClasses.icon" :button-style="adjustStyleClasses.button" />
+
+            <ControlButtonTooltip disable-hoverable-content>
+              <ControlButton :button-style="adjustStyleClasses.button" @click="takeScreenshot">
+                <div i-solar:camera-linear :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
+              </ControlButton>
+              <template #tooltip>
+                截图看看
+              </template>
+            </ControlButtonTooltip>
 
             <ControlButtonTooltip disable-hoverable-content>
               <ControlButton :button-style="adjustStyleClasses.button" hover:bg-red-500 hover:text-white @click="closeWindow()">

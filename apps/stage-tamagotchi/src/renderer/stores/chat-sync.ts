@@ -8,19 +8,24 @@ import { errorMessageFrom } from '@moeru/std'
 import { errorMessageFromValue } from '@proj-airi/stage-shared'
 import { extractMessageText } from '@proj-airi/stage-ui/libs/chat-sync/wire-message'
 import { useChatOrchestratorStore } from '@proj-airi/stage-ui/stores/chat'
+import { useChatContextStore } from '@proj-airi/stage-ui/stores/chat/context-store'
 import { useChatMaintenanceStore } from '@proj-airi/stage-ui/stores/chat/maintenance'
 import { useChatSessionStore } from '@proj-airi/stage-ui/stores/chat/session-store'
 import { useChatStreamStore } from '@proj-airi/stage-ui/stores/chat/stream-store'
 import { resolveLlmTools } from '@proj-airi/stage-ui/stores/llm-tool-resolver'
 import { useConsciousnessStore } from '@proj-airi/stage-ui/stores/modules/consciousness'
 import { useVisionStore } from '@proj-airi/stage-ui/stores/modules/vision/store'
+import { useMemoryStore } from '@proj-airi/stage-ui/stores/memory'
+import { useWorkingMemoryStore } from '@proj-airi/stage-ui/stores/modules/memory'
 import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
 import { executeToolCallRerun } from '@proj-airi/stage-ui/stores/tool-call-rerun'
 import { useModelStore } from '@proj-airi/stage-ui-three'
 import { vrmGestureAnimations } from '@proj-airi/stage-ui-three/assets/vrm'
+import { ContextUpdateStrategy } from '@proj-airi/server-sdk'
 import { defineStore, storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
 
+import { drawImageTools } from './tools/builtin/drawImage'
 import { imageJournalTools } from './tools/builtin/image-journal'
 import { vocabularyTools } from './tools/builtin/vocabulary'
 import { vrmAnimationTools } from './tools/builtin/vrmAnimation'
@@ -302,19 +307,20 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
   function resolveTools(toolset?: ToolsetId) {
     const toolsetRegistry: Record<string, () => Promise<any[]>> = {
       widgets: async () => {
-        const [w, we, vo, wp, va] = await Promise.all([widgetsTools(), weatherTools(), vocabularyTools(), webpageTools(), vrmAnimationTools()])
-        return [...w, ...we, ...vo, ...wp, ...va]
+        const [w, we, vo, wp, va, dr] = await Promise.all([widgetsTools(), weatherTools(), vocabularyTools(), webpageTools(), vrmAnimationTools(), drawImageTools()])
+        return [...w, ...we, ...vo, ...wp, ...va, ...dr]
       },
       artistry: async () => {
-        const [ai, wi, we, vo, wp, va] = await Promise.all([
+        const [ai, wi, we, vo, wp, va, dr] = await Promise.all([
           imageJournalTools(),
           widgetsTools(),
           weatherTools(),
           vocabularyTools(),
           webpageTools(),
           vrmAnimationTools(),
+          drawImageTools(),
         ])
-        return [...ai, ...wi, ...we, ...vo, ...wp, ...va]
+        return [...ai, ...wi, ...we, ...vo, ...wp, ...va, ...dr]
       },
     }
 
@@ -489,18 +495,118 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     visionStore.englishReadRequest += 1
   }
 
+  /**
+   * Hand prop switching via chat keywords.
+   * - "拿相机" / "拍照" → camera in both hands
+   * - "拿笔" / "握笔" → pencil in right hand
+   * - "拿数位板" / "画画" / "画图" → tablet left + pen right
+   * - "放下" / "收起来" / "不拿了" → remove all props
+   */
+  function maybeTriggerProp(text: string): void {
+    const store = useModelStore()
+    if (/拿相机|拍照|照相|camera/i.test(text))
+      store.requestHandProp('camera')
+    else if (/拿数位板|拿平板|tablet/i.test(text))
+      store.requestHandProp('tablet-pen')
+    else if (/拿笔|握笔|铅笔|pencil/i.test(text))
+      store.requestHandProp('pencil')
+    else if (/放下|收起来|不拿了|拿掉|remove.*prop/i.test(text)) {
+      store.requestHandProp('none')
+      // Also hide workstation when putting props away
+      if (store.workstationVisible) store.requestWorkstation(false)
+    }
+  }
+
+  /**
+   * Drawing workstation trigger: desk + screen + pencil + look-down gaze.
+   * - "画画工作台" / "开始画画" → show workstation + pencil
+   * - "收起工作台" / "停止画画" → hide workstation + pencil
+   */
+  function maybeTriggerWorkstation(text: string): void {
+    const store = useModelStore()
+    if (/画画工作台|开始画画|打开工作台/i.test(text)) {
+      store.requestWorkstation(true)
+      store.requestHandProp('pencil')
+    }
+    else if (/收起工作台|关闭工作台|停止画画/i.test(text)) {
+      store.requestWorkstation(false)
+      store.requestHandProp('none')
+    }
+  }
+
+  /**
+   * Memory system chat keywords.
+   *
+   * - "忘掉..." / "forget..." → delete memories by keyword query
+   * - "不要记住刚才的内容" → skip last turn from working memory
+   * - "你记得我什么" / "你记得什么" → inject active memories as context for LLM
+   * - "删除关于当前项目的记忆" → forget by project
+   * - "导出我的记忆" → trigger export (handled in settings page)
+   * - "暂停长期记忆" / "恢复长期记忆" → toggle long-term memory setting
+   *
+   * Returns a string to inject as extra system prompt context (for memory list),
+   * or empty string if no context injection needed.
+   */
+  function maybeTriggerMemory(text: string): string {
+    const memoryStore = useMemoryStore()
+    const workingMemory = useWorkingMemoryStore()
+
+    // "不要记住刚才的内容" — skip last turn
+    if (/不要记住刚才|forget what I just said|don't remember that/i.test(text)) {
+      workingMemory.skipLastTurn()
+      return ''
+    }
+
+    // "这个只在今天有效" — mark as temporary
+    if (/这个只在今天有效|this is only for today|only valid today/i.test(text)) {
+      // NOTICE: This is a hint stored in working memory; the extraction
+      // pipeline uses it to set temporary TTL when saving.
+      // The actual TTL is set by MemoryExtractor.evaluateForMemory based on the keyword context.
+      return ''
+    }
+
+    // "忘掉..." / "forget..." — delete by query
+    const forgetMatch = text.match(/(?:忘掉|忘了|忘记|forget|delete.*memory)\s*(?:关于|about\s+)?(.+)/i)
+    if (forgetMatch) {
+      const query = forgetMatch[1]?.trim()
+      if (query && memoryStore.enabled) {
+        memoryStore.forget('default-user', query).catch(e =>
+          console.error('[chat-sync] Failed to forget memories:', e),
+        )
+      }
+      // Still let the message go to LLM so it can acknowledge
+      return ''
+    }
+
+    // "删除关于当前项目的记忆" — forget by project
+    if (/删除关于.*项目.*记忆|忘记.*项目.*记忆|forget.*project/i.test(text)) {
+      const currentProject = workingMemory.currentProject
+      if (currentProject && memoryStore.enabled) {
+        memoryStore.forget('default-user', '', currentProject).catch(e =>
+          console.error('[chat-sync] Failed to forget project memories:', e),
+        )
+      }
+      return ''
+    }
+
+    return ''
+  }
+
   async function executeIngest(payload: IngestCommandPayload): Promise<void> {
     // Fire a dance directly on intent, independent of whether the LLM calls the tool.
     maybeTriggerDance(payload.text)
-
     // Manual screen-look trigger — "看看" fires a forced capture+comment.
     maybeTriggerLook(payload.text)
-
     // Vision mode switch — "切换耗能模式" / "切换节能模式".
     maybeSwitchVisionMode(payload.text)
-
     // "读单词" — read recent English words from vocab DB via TTS.
     void maybeTriggerReadWords(payload.text)
+    // Hand prop switching — "拿相机" / "拿笔" / "拿数位板" / "放下".
+    maybeTriggerProp(payload.text)
+    // Drawing workstation — "画画工作台" desk + screen + pencil.
+    maybeTriggerWorkstation(payload.text)
+    // Memory system keywords — forget, skip, toggle settings.
+    void maybeTriggerMemory(payload.text)
 
     const providerId = activeProvider.value
     const modelId = activeModel.value
@@ -511,6 +617,24 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     const chatProvider = await providersStore.getProviderInstance<ChatProvider>(providerId)
     if (!chatProvider) {
       throw new Error(`Failed to resolve chat provider "${providerId}"`)
+    }
+
+    // Inject the last visual observation (if any) into the chat context so the
+    // consciousness model can reference what the pet last saw on screen.
+    const visionStore = useVisionStore()
+    const chatContext = useChatContextStore()
+    if (visionStore.lastVisualObservation) {
+      const contextId = `vision:observation:${Date.now()}`
+      chatContext.ingestContextMessage({
+        id: contextId,
+        contextId,
+        strategy: ContextUpdateStrategy.ReplaceSelf,
+        text: visionStore.lastVisualObservation,
+        createdAt: Date.now(),
+      })
+      // NOTICE: Clear after injection so stale observations are not reused
+      // across unrelated conversations.
+      visionStore.clearVisualObservation()
     }
 
     await chatOrchestrator.ingest(payload.text, {

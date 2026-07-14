@@ -1,5 +1,6 @@
 import type { OIDCFlowParams, TokenResponse } from './auth-oidc'
 
+import { isStageTamagotchi } from '@proj-airi/stage-shared'
 import { createAuthClient } from 'better-auth/vue'
 
 import { useAuthStore } from '../stores/auth'
@@ -39,11 +40,17 @@ export async function initializeAuth() {
   if (initialized)
     return
 
+  initialized = true
+
+  // NOTICE: Desktop pet (stage-tamagotchi) is a local-only app with no cloud auth.
+  // Skip ALL server-bound auth initialization to avoid timeouts connecting to
+  // api.airi.build from China or any network where the auth server is unreachable.
+  if (isStageTamagotchi())
+    return
+
   // NOTICE: OIDC callback is handled by the dedicated callback page
   // (e.g. /auth/callback). initializeAuth() only restores existing
   // sessions and refresh schedules — it does NOT consume the code.
-
-  initialized = true
 
   const authStore = useAuthStore()
 
@@ -101,6 +108,12 @@ export async function applyOIDCTokens(tokens: TokenResponse, clientId: string): 
 }
 
 export async function fetchSession() {
+  // NOTICE: Desktop pet (stage-tamagotchi) runs locally with no cloud auth.
+  // Skip all server-bound session fetches to avoid timeouts connecting to
+  // api.airi.build.
+  if (isStageTamagotchi())
+    return false
+
   // Skip cloud auth request when there's no token — avoids
   // ERR_CONNECTION_TIMED_OUT spam when api.airi.build is unreachable.
   if (!getAuthToken())

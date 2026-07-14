@@ -40,6 +40,14 @@ export const useVisionStore = defineStore('vision', () => {
   // Kept off by default so the pet never captures the screen without explicit opt-in.
   const screenWatchEnabled = useLocalStorageManualReset('settings/vision/screen-watch-enabled', false)
 
+  /**
+   * Last formatted visual observation string (e.g. from Doubao vision inference), ready to be
+   * injected into the consciousness model's context before the next LLM call.
+   * Set by the screen-watch pipeline after a successful Doubao VLM inference; consumed and
+   * cleared by chat-sync's `executeIngest` before calling `chatOrchestrator.ingest`.
+   */
+  const lastVisualObservation = ref('')
+
   /** Current vision mode — drives capture + comment interval presets. */
   const visionMode = useLocalStorageManualReset<VisionMode>('settings/vision/mode', 'eco')
 
@@ -149,6 +157,14 @@ export const useVisionStore = defineStore('vision', () => {
     visionMode.reset()
   }
 
+  function setVisualObservation(formatted: string) {
+    lastVisualObservation.value = formatted
+  }
+
+  function clearVisualObservation() {
+    lastVisualObservation.value = ''
+  }
+
   return {
     activeProvider,
     activeModel,
@@ -160,6 +176,7 @@ export const useVisionStore = defineStore('vision', () => {
     visionMode,
     manualLookRequest,
     englishReadRequest,
+    lastVisualObservation,
 
     supportsModelListing,
     providerModels,
@@ -172,5 +189,7 @@ export const useVisionStore = defineStore('vision', () => {
     getModelsForProvider,
     setVisionMode,
     resetState,
+    setVisualObservation,
+    clearVisualObservation,
   }
 })

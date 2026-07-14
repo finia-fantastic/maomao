@@ -32,6 +32,7 @@ import './ollama'
 import './mimo'
 import './cloudflare-workers-ai'
 import './azure-ai-foundry'
+import './doubao'
 import './official'
 
 export {

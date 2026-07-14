@@ -4,9 +4,11 @@ export * from './display-models'
 // Keep this barrel file pointing at real store modules so package resolution
 // and typecheck stay valid even when consumers should prefer explicit subpaths.
 export * from './mcp'
+export * from './memory'
 export * from './modules/airi-card'
 export * from './modules/artistry'
 export * from './modules/consciousness'
+export * from './modules/memory'
 export * from './modules/speech'
 export * from './providers'
 export * from './settings'

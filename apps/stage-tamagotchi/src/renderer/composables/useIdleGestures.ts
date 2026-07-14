@@ -34,6 +34,18 @@ function randomIntervalMs(minS: number, maxS: number): number {
 export function useIdleGestures() {
   const store = useModelStore()
 
+  // Track when the last user-triggered gesture was requested so we don't
+  // interrupt an active dance with a random idle fidget. Idle ticks that
+  // fire within this window are skipped and rescheduled.
+  let lastUserGestureTime = 0
+  const USER_GESTURE_COOLDOWN_MS = 30_000
+
+  // Watch gesturePlayRequest nonce — any new request (user dance, chat
+  // trigger, etc.) resets the cooldown timer.
+  watch(() => store.gesturePlayRequest?.nonce, (nonce) => {
+    if (nonce != null) lastUserGestureTime = Date.now()
+  })
+
   // Start background idle-gesture loop whenever a VRM model is loaded; stop when it
   // isn't (e.g. switch to Live2D or no model).
   watch(() => store.vrmModelLoaded, (loaded) => {
@@ -62,9 +74,21 @@ export function useIdleGestures() {
   }
 
   function tick() {
-    // If nothing loaded (unlikely — the watcher guards this, but belt-and-suspenders).
     if (!store.vrmModelLoaded)
       return
+
+    // Skip if the drawing workstation is visible — don't break the pose.
+    if (store.workstationVisible) {
+      schedule()
+      return
+    }
+
+    // Skip if a user/chat gesture was recently triggered — don't interrupt
+    // an active dance with a random idle fidget.
+    if (Date.now() - lastUserGestureTime < USER_GESTURE_COOLDOWN_MS) {
+      schedule()
+      return
+    }
 
     const name = pickNext(lastGesture)
     const url = vrmGestureAnimations[name]
