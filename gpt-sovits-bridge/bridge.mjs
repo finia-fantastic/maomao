@@ -19,8 +19,9 @@
 //     --POST http://127.0.0.1:9880/tts {text,ref_audio_path,prompt_text,...}-->
 //   GPT-SoVITS api_v2.py  --WAV bytes--> bridge --WAV bytes--> AIRI --decodeAudioData
 
-import { createServer } from 'node:http'
 import process from 'node:process'
+
+import { createServer } from 'node:http'
 
 /**
  * Bridge configuration. Every field is overridable by an environment variable so the

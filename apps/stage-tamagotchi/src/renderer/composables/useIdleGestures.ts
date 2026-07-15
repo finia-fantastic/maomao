@@ -5,7 +5,6 @@
 
 import { useModelStore } from '@proj-airi/stage-ui-three'
 import { vrmGestureAnimations } from '@proj-airi/stage-ui-three/assets/vrm'
-
 import { onScopeDispose, watch } from 'vue'
 
 // The 7 VRoid basic actions (pixiv VRoid Project free motion pack) — short,
@@ -43,13 +42,15 @@ export function useIdleGestures() {
   // Watch gesturePlayRequest nonce — any new request (user dance, chat
   // trigger, etc.) resets the cooldown timer.
   watch(() => store.gesturePlayRequest?.nonce, (nonce) => {
-    if (nonce != null) lastUserGestureTime = Date.now()
+    if (nonce != null)
+      lastUserGestureTime = Date.now()
   })
 
   // Start background idle-gesture loop whenever a VRM model is loaded; stop when it
   // isn't (e.g. switch to Live2D or no model).
   watch(() => store.vrmModelLoaded, (loaded) => {
-    if (loaded) start(); else stop()
+    if (loaded)
+      start(); else stop()
   })
 
   // ------------------------------------------------------------------
@@ -101,7 +102,7 @@ export function useIdleGestures() {
 
   function start() {
     if (timer !== undefined)
-      return  // already running
+      return // already running
     schedule()
   }
 

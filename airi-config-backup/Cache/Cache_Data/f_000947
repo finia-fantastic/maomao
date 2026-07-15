@@ -1,0 +1,2022 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue");/* Injection by vite-plugin-vue-inspector Start */
+import { createElementVNode as __createElementVNode,createVNode as __createVNode,createBlock as __createBlock,createElementBlock as __createElementBlock } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d"
+function _interopVNode(vnode) {
+  if (vnode && vnode.props && 'data-v-inspector' in vnode.props) {
+    const data = vnode.props['data-v-inspector']
+    delete vnode.props['data-v-inspector']
+    Object.defineProperty(vnode.props, '__v_inspector', { value: data, enumerable: false })
+  }
+  return vnode
+}
+function _createElementVNode(...args) { return _interopVNode(__createElementVNode(...args)) }
+function _createVNode(...args) { return _interopVNode(__createVNode(...args)) }
+function _createBlock(...args) { return _interopVNode(__createBlock(...args)) }
+function _createElementBlock(...args) { return _interopVNode(__createElementBlock(...args)) }
+/* Injection by vite-plugin-vue-inspector End */
+import { defineComponent as _defineComponent } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import { defaultModelParameters, useExpressionStore, useLive2dParams, useSettingsLive2d } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui-live2d/src/index.ts";
+import { OPFSCache } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui-live2d/src/utils/opfs-loader.ts";
+import { Button, Checkbox, FieldCheckbox, FieldCombobox, FieldRange, SelectTab } from "/@fs/C:/Users/Administrator/airi-app/packages/ui/src/index.ts";
+import { storeToRefs } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/pinia.js?v=6c17d38d";
+import { computed, onMounted, ref, watch } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import { useI18n } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue-i18n.js?v=6c17d38d";
+import { PropertyPoint } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/data-pane/index.ts";
+import { Section } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/layouts/index.ts";
+import { ColorPalette } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/widgets/index.ts";
+const _sfc_main = /* @__PURE__ */ _defineComponent({
+	__name: "live2d",
+	props: {
+		palette: {
+			type: Array,
+			required: true
+		},
+		allowExtractColors: {
+			type: Boolean,
+			required: false,
+			default: true
+		},
+		runtimeSnapshot: {
+			type: Object,
+			required: true
+		}
+	},
+	emits: ["extractColorsFromModel"],
+	setup(__props, { expose: __expose }) {
+		__expose();
+		const props = __props;
+		const { t } = useI18n();
+		const settings = useSettingsLive2d();
+		const { live2dEyeTracking, live2dModelEyeOffset, live2dIdleAnimationEnabled, live2dAutoBlinkEnabled, live2dForceAutoBlinkEnabled, live2dExpressionEnabled, live2dShadowEnabled, live2dMaxFps, live2dRenderScale, live2dForceIdleEyeAnimation } = storeToRefs(settings);
+		const live2d = useLive2dParams();
+		const { scale, position, modelParameters, currentMotion } = storeToRefs(live2d);
+		const expressionStore = useExpressionStore();
+		const { expressions, expressionGroups } = storeToRefs(expressionStore);
+		/**
+		* Check if an expression group is currently active.
+		* Only considers non-zero exp3 params (zero-valued params are "reset" instructions).
+		* A group is active when at least one of its activation params matches the exp3 value.
+		*/
+		function isGroupActive(group) {
+			return group.parameters.some((p) => {
+				if (p.value === 0) return false;
+				const entry = expressions.value.get(p.parameterId);
+				return entry != null && entry.currentValue === p.value;
+			});
+		}
+		const selectedRuntimeMotion = ref("");
+		const runtimeMotions = ref([]);
+		const canExtractColors = computed(() => props.runtimeSnapshot.canCapturePreview);
+		const runtimeMotionOptions = computed(() => {
+			const options = runtimeMotions.value.map((motion) => ({
+				label: motion.name,
+				value: motion.displayPath,
+				description: motion.displayPath
+			}));
+			if (options.length > 0) {
+				options.unshift({
+					label: t("settings.live2d.animation.idle-motion.disable-motion"),
+					value: "<motion disabled>",
+					description: t("settings.live2d.animation.idle-motion.disable-motion-description")
+				});
+			}
+			return options;
+		});
+		const fpsOptions = computed(() => [
+			{
+				value: 30,
+				label: "30"
+			},
+			{
+				value: 60,
+				label: "60"
+			},
+			{
+				value: 0,
+				label: t("settings.live2d.parameters.fps.options.unlimited")
+			}
+		]);
+		const blinkModeOptions = computed(() => [{
+			value: "auto",
+			label: t("settings.live2d.animation.auto-blink.title"),
+			description: t("settings.live2d.animation.auto-blink.description")
+		}, {
+			value: "force",
+			label: t("settings.live2d.animation.force-auto-blink.title"),
+			description: t("settings.live2d.animation.force-auto-blink.description")
+		}]);
+		const live2dBlinkMode = computed({
+			get() {
+				return live2dForceAutoBlinkEnabled.value ? "force" : "auto";
+			},
+			set(mode) {
+				live2dAutoBlinkEnabled.value = true;
+				live2dForceAutoBlinkEnabled.value = mode === "force";
+			}
+		});
+		watch(() => live2d.availableMotions, (motions) => {
+			runtimeMotions.value = motions.map((m) => ({
+				name: m.fileName.split("/").pop() || m.fileName,
+				displayPath: m.fileName,
+				group: m.motionName,
+				index: m.motionIndex
+			}));
+			console.info("Available motions:", runtimeMotions.value);
+		}, { immediate: true });
+		const llmModeOptions = computed(() => [
+			{
+				value: "none",
+				label: t("settings.live2d.expressions.expose-to-llm-options.none")
+			},
+			{
+				value: "all",
+				label: t("settings.live2d.expressions.expose-to-llm-options.all")
+			},
+			{
+				value: "custom",
+				label: t("settings.live2d.expressions.expose-to-llm-options.custom")
+			}
+		]);
+		// Get available runtime motions from the model
+		onMounted(() => {
+			// Restore selected motion
+			const savedPath = localStorage.getItem("selected-runtime-motion");
+			if (savedPath) {
+				selectedRuntimeMotion.value = savedPath;
+			}
+		});
+		// Function to reset all parameters to default values
+		function resetToDefaultParameters() {
+			modelParameters.value = { ...defaultModelParameters };
+		}
+		const clearingCache = ref(false);
+		async function clearModelCache() {
+			clearingCache.value = true;
+			try {
+				await OPFSCache.clearAll();
+			} finally {
+				clearingCache.value = false;
+			}
+		}
+		function handleMotionSelect(selectedMotionPath) {
+			if (typeof selectedMotionPath !== "string") {
+				return;
+			}
+			const motion = runtimeMotions.value.find((item) => item.displayPath === selectedMotionPath);
+			if (!motion) {
+				live2dIdleAnimationEnabled.value = false;
+				return;
+			}
+			localStorage.setItem("selected-runtime-motion", motion.displayPath);
+			localStorage.setItem("selected-runtime-motion-group", motion.group);
+			localStorage.setItem("selected-runtime-motion-index", motion.index.toString());
+			// Enable idle animation
+			live2dIdleAnimationEnabled.value = true;
+			// Set the current motion to the selected runtime motion
+			currentMotion.value = {
+				group: motion.group,
+				index: motion.index
+			};
+			console.info("Selected runtime motion:", motion.name);
+			console.info("Full path:", motion.displayPath);
+			console.info("Group:", motion.group, "Index:", motion.index);
+		}
+		// async function patchMotionMap(source: File, motionMap: Record<string, string>): Promise<File> {
+		//   if (!Object.keys(motionMap).length)
+		//     return source
+		//   const jsZip = new JSZip()
+		//   const zip = await jsZip.loadAsync(source)
+		//   const fileName = Object.keys(zip.files).find(key => key.endsWith('model3.json'))
+		//   if (!fileName) {
+		//     throw new Error('model3.json not found')
+		//   }
+		//   const model3Json = await zip.file(fileName)!.async('string')
+		//   const model3JsonObject = JSON.parse(model3Json)
+		//   const motions: Record<string, { File: string }[]> = {}
+		//   Object.entries(motionMap).forEach(([key, value]) => {
+		//     if (motions[value]) {
+		//       motions[value].push({ File: key })
+		//       return
+		//     }
+		//     motions[value] = [{ File: key }]
+		//   })
+		//   model3JsonObject.FileReferences.Motions = motions
+		//   zip.file(fileName, JSON.stringify(model3JsonObject, null, 2))
+		//   const zipBlob = await zip.generateAsync({ type: 'blob' })
+		//   return new File([zipBlob], source.name, {
+		//     type: source.type,
+		//     lastModified: source.lastModified,
+		//   })
+		// }
+		// async function saveMotionMap() {
+		//   const fileFromIndexedDB = await localforage.getItem<File>('live2dModel')
+		//   if (!fileFromIndexedDB) {
+		//     return
+		//   }
+		//   const patchedFile = await patchMotionMap(fileFromIndexedDB, motionMap.value)
+		//   modelFile.value = patchedFile
+		// }
+		const __returned__ = {
+			props,
+			t,
+			settings,
+			live2dEyeTracking,
+			live2dModelEyeOffset,
+			live2dIdleAnimationEnabled,
+			live2dAutoBlinkEnabled,
+			live2dForceAutoBlinkEnabled,
+			live2dExpressionEnabled,
+			live2dShadowEnabled,
+			live2dMaxFps,
+			live2dRenderScale,
+			live2dForceIdleEyeAnimation,
+			live2d,
+			scale,
+			position,
+			modelParameters,
+			currentMotion,
+			expressionStore,
+			expressions,
+			expressionGroups,
+			isGroupActive,
+			selectedRuntimeMotion,
+			runtimeMotions,
+			canExtractColors,
+			runtimeMotionOptions,
+			fpsOptions,
+			blinkModeOptions,
+			live2dBlinkMode,
+			llmModeOptions,
+			resetToDefaultParameters,
+			clearingCache,
+			clearModelCache,
+			handleMotionSelect,
+			get Button() {
+				return Button;
+			},
+			get Checkbox() {
+				return Checkbox;
+			},
+			get FieldCheckbox() {
+				return FieldCheckbox;
+			},
+			get FieldCombobox() {
+				return FieldCombobox;
+			},
+			get FieldRange() {
+				return FieldRange;
+			},
+			get SelectTab() {
+				return SelectTab;
+			},
+			get PropertyPoint() {
+				return PropertyPoint;
+			},
+			get Section() {
+				return Section;
+			},
+			get ColorPalette() {
+				return ColorPalette;
+			}
+		};
+		Object.defineProperty(__returned__, "__isScriptSetup", {
+			enumerable: false,
+			value: true
+		});
+		return __returned__;
+	}
+});
+import { toDisplayString as _toDisplayString,  withCtx as _withCtx,  normalizeClass as _normalizeClass, createTextVNode as _createTextVNode, openBlock as _openBlock,  createCommentVNode as _createCommentVNode,  renderSlot as _renderSlot, renderList as _renderList, Fragment as _Fragment } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+const _hoisted_1 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:240:9"
+};
+const _hoisted_2 = { "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:241:11" };
+const _hoisted_3 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:250:9"
+};
+const _hoisted_4 = { "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:251:11" };
+const _hoisted_5 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:260:9"
+};
+const _hoisted_6 = { "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:261:11" };
+const _hoisted_7 = {
+	text: "neutral-500 dark:neutral-400",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:282:5"
+};
+const _hoisted_8 = {
+	key: 0,
+	class: "grid grid-cols-4",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:347:5"
+};
+const _hoisted_9 = {
+	class: "text-xs text-neutral-500 dark:text-neutral-400",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:356:11"
+};
+const _hoisted_10 = {
+	key: 1,
+	class: "flex flex-wrap gap-4",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:374:5"
+};
+const _hoisted_11 = {
+	class: "flex-1",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:375:7"
+};
+const _hoisted_12 = {
+	class: "flex items-center gap-1 text-sm font-medium",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:376:9"
+};
+const _hoisted_13 = {
+	class: "text-xs text-neutral-500 dark:text-neutral-400",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:379:9"
+};
+const _hoisted_14 = {
+	class: "flex flex-wrap gap-4",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:419:5"
+};
+const _hoisted_15 = {
+	class: "flex-1",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:420:7"
+};
+const _hoisted_16 = {
+	class: "flex items-center gap-1 text-sm font-medium",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:421:9"
+};
+const _hoisted_17 = {
+	class: "text-xs text-neutral-500 dark:text-neutral-400",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:426:9"
+};
+const _hoisted_18 = {
+	"mt-4": "",
+	flex: "",
+	"items-center": "",
+	"justify-between": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:435:5"
+};
+const _hoisted_19 = {
+	"text-sm": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:436:7"
+};
+const _hoisted_20 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:464:9"
+};
+const _hoisted_21 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:474:9"
+};
+const _hoisted_22 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:484:9"
+};
+const _hoisted_23 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:499:9"
+};
+const _hoisted_24 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:509:9"
+};
+const _hoisted_25 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:519:9"
+};
+const _hoisted_26 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:529:9"
+};
+const _hoisted_27 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:544:9"
+};
+const _hoisted_28 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:554:9"
+};
+const _hoisted_29 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:564:9"
+};
+const _hoisted_30 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:574:9"
+};
+const _hoisted_31 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:584:9"
+};
+const _hoisted_32 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:594:9"
+};
+const _hoisted_33 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:604:9"
+};
+const _hoisted_34 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:614:9"
+};
+const _hoisted_35 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:629:9"
+};
+const _hoisted_36 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:639:9"
+};
+const _hoisted_37 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:654:9"
+};
+const _hoisted_38 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:669:9"
+};
+const _hoisted_39 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:679:9"
+};
+const _hoisted_40 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:689:9"
+};
+const _hoisted_41 = {
+	flex: "",
+	"items-center": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:699:9"
+};
+const _hoisted_42 = {
+	flex: "",
+	"items-center": "",
+	"justify-between": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:719:5"
+};
+const _hoisted_43 = {
+	"text-sm": "",
+	"text-neutral-600": "",
+	"dark:text-neutral-400": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:720:7"
+};
+const _hoisted_44 = {
+	key: 0,
+	"py-2": "",
+	"text-xs": "",
+	"text-neutral-500": "",
+	"dark:text-neutral-400": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:723:5"
+};
+const _hoisted_45 = {
+	key: 1,
+	"py-2": "",
+	"text-sm": "",
+	"text-neutral-500": "",
+	"dark:text-neutral-400": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:727:7"
+};
+const _hoisted_46 = {
+	flex: "",
+	"flex-col": "",
+	"gap-2": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:733:7"
+};
+const _hoisted_47 = {
+	"text-sm": "",
+	"text-neutral-700": "",
+	"dark:text-neutral-300": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:739:11"
+};
+const _hoisted_48 = {
+	"mt-4": "",
+	flex: "",
+	"flex-wrap": "",
+	"items-center": "",
+	"gap-3": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:747:7"
+};
+const _hoisted_49 = {
+	"whitespace-nowrap": "",
+	"text-sm": "",
+	"text-neutral-600": "",
+	"dark:text-neutral-400": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:748:9"
+};
+const _hoisted_50 = {
+	key: 0,
+	"text-xs": "",
+	"text-neutral-500": "",
+	"dark:text-neutral-400": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:756:7"
+};
+const _hoisted_51 = {
+	key: 1,
+	"mt-2": "",
+	flex: "",
+	"flex-col": "",
+	"gap-2": "",
+	"border-l-2": "",
+	"border-neutral-200": "",
+	"pl-3": "",
+	"dark:border-neutral-700": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:761:7"
+};
+const _hoisted_52 = {
+	"text-xs": "",
+	"text-neutral-600": "",
+	"dark:text-neutral-400": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:767:11"
+};
+const _hoisted_53 = {
+	"mt-4": "",
+	flex: "",
+	"gap-2": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:776:7"
+};
+function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+	return _openBlock(), _createElementBlock(
+		_Fragment,
+		null,
+		[
+			_createVNode($setup["Section"], {
+				title: $setup.t("settings.live2d.scale-and-position.title"),
+				icon: "i-solar:scale-bold-duotone",
+				class: _normalizeClass([
+					"rounded-xl",
+					"bg-white/80  dark:bg-black/75",
+					"backdrop-blur-lg"
+				]),
+				size: "sm",
+				expand: true,
+				"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:227:3"
+			}, {
+				default: _withCtx(() => [
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.scale,
+						"onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => $setup.scale = $event),
+						as: "div",
+						min: .1,
+						max: 3,
+						step: .01,
+						label: $setup.t("settings.live2d.scale-and-position.scale"),
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:238:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_1, [_createElementVNode(
+							"div",
+							_hoisted_2,
+							_toDisplayString($setup.t("settings.live2d.scale-and-position.scale")),
+							1
+							/* TEXT */
+						), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[0] || (_cache[0] = () => $setup.scale = 1),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:242:11"
+						}, [..._cache[65] || (_cache[65] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:243:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue", "label"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.position.x,
+						"onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.position.x = $event),
+						as: "div",
+						min: -3e3,
+						max: 3e3,
+						step: 1,
+						label: $setup.t("settings.live2d.scale-and-position.x"),
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:248:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_3, [_createElementVNode(
+							"div",
+							_hoisted_4,
+							_toDisplayString($setup.t("settings.live2d.scale-and-position.x")),
+							1
+							/* TEXT */
+						), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[2] || (_cache[2] = () => $setup.position.x = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:252:11"
+						}, [..._cache[66] || (_cache[66] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:253:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue", "label"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.position.y,
+						"onUpdate:modelValue": _cache[5] || (_cache[5] = ($event) => $setup.position.y = $event),
+						as: "div",
+						min: -3e3,
+						max: 3e3,
+						step: 1,
+						label: $setup.t("settings.live2d.scale-and-position.y"),
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:258:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_5, [_createElementVNode(
+							"div",
+							_hoisted_6,
+							_toDisplayString($setup.t("settings.live2d.scale-and-position.y")),
+							1
+							/* TEXT */
+						), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[4] || (_cache[4] = () => $setup.position.y = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:262:11"
+						}, [..._cache[67] || (_cache[67] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:263:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue", "label"])
+				]),
+				_: 1
+			}, 8, ["title"]),
+			$props.allowExtractColors ? (_openBlock(), _createBlock($setup["Section"], {
+				key: 0,
+				title: $setup.t("settings.live2d.theme-color-from-model.title"),
+				icon: "i-solar:magic-stick-3-bold-duotone",
+				"inner-class": "text-sm",
+				class: _normalizeClass([
+					"rounded-xl",
+					"bg-white/80  dark:bg-black/75",
+					"backdrop-blur-lg"
+				]),
+				size: "sm",
+				expand: false,
+				"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:269:3"
+			}, {
+				default: _withCtx(() => [
+					_createElementVNode(
+						"p",
+						_hoisted_7,
+						_toDisplayString($setup.t("settings.live2d.theme-color-from-model.description")),
+						1
+						/* TEXT */
+					),
+					_createVNode($setup["ColorPalette"], {
+						class: "mb-4 mt-2",
+						colors: $props.palette.map((hex) => ({
+							hex,
+							name: hex
+						})),
+						"mx-auto": "",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:285:5"
+					}, null, 8, ["colors"]),
+					_createVNode($setup["Button"], {
+						variant: "secondary",
+						disabled: !$setup.canExtractColors,
+						onClick: _cache[6] || (_cache[6] = ($event) => _ctx.$emit("extractColorsFromModel")),
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:286:5"
+					}, {
+						default: _withCtx(() => [_createTextVNode(
+							_toDisplayString($setup.t("settings.live2d.theme-color-from-model.button-extract.title")),
+							1
+							/* TEXT */
+						)]),
+						_: 1
+					}, 8, ["disabled"])
+				]),
+				_: 1
+			}, 8, ["title"])) : _createCommentVNode("v-if", true),
+			_createCommentVNode(" <Section\r\n    v-if=\"modelFile\"\r\n    :title=\"t('settings.live2d.edit-motion-map.title')\"\r\n    icon=\"i-solar:face-scan-circle-bold-duotone\"\r\n    :class=\"[\r\n      'rounded-xl',\r\n      'bg-white/80  dark:bg-black/75',\r\n      'backdrop-blur-lg',\r\n    ]\"\r\n    size=\"sm\"\r\n    :expand=\"false\"\r\n  >\r\n    <div v-for=\"motion in availableMotions\" :key=\"motion.fileName\" flex items-center justify-between text-sm>\r\n      <span font-medium font-mono>{{ motion.fileName }}</span>\r\n\r\n      <div flex gap-2>\r\n        <select v-model=\"motionMap[motion.fileName]\">\r\n          <option v-for=\"emotion in Object.keys(Emotion)\" :key=\"emotion\">\r\n            {{ emotion }}\r\n          </option>\r\n        </select>\r\n\r\n        <Button\r\n          class=\"form-control\"\r\n          @click=\"currentMotion = { group: motion.motionName, index: motion.motionIndex }\"\r\n        >\r\n          Play\r\n        </Button>\r\n      </div>\r\n    </div>\r\n    <Button @click=\"saveMotionMap\">\r\n      Save and patch\r\n    </Button>\r\n    <a\r\n      mt-2 block :href=\"exportObjectUrl\"\r\n      :download=\"`${modelFile?.name || 'live2d'}-motion-edited.zip`\"\r\n    >\r\n      <Button w-full>Export</button>\r\n    </a>\r\n  </Section> "),
+			_createVNode($setup["Section"], {
+				title: $setup.t("settings.live2d.animation.title"),
+				icon: "i-solar:settings-bold-duotone",
+				class: _normalizeClass([
+					"rounded-xl",
+					"bg-white/80  dark:bg-black/75",
+					"backdrop-blur-lg"
+				]),
+				size: "sm",
+				expand: false,
+				"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:330:3"
+			}, {
+				default: _withCtx(() => [
+					_createVNode($setup["FieldCheckbox"], {
+						modelValue: $setup.live2dEyeTracking,
+						"onUpdate:modelValue": _cache[7] || (_cache[7] = ($event) => $setup.live2dEyeTracking = $event),
+						label: $setup.t("settings.live2d.animation.focus.title"),
+						description: $setup.t("settings.live2d.animation.focus.description"),
+						placement: "right",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:341:5"
+					}, null, 8, [
+						"modelValue",
+						"label",
+						"description"
+					]),
+					$setup.live2dEyeTracking ? (_openBlock(), _createElementBlock("div", _hoisted_8, [_createVNode($setup["PropertyPoint"], {
+						x: $setup.live2dModelEyeOffset.x,
+						"onUpdate:x": _cache[8] || (_cache[8] = ($event) => $setup.live2dModelEyeOffset.x = $event),
+						y: $setup.live2dModelEyeOffset.y,
+						"onUpdate:y": _cache[9] || (_cache[9] = ($event) => $setup.live2dModelEyeOffset.y = $event),
+						"x-config": {
+							min: -100,
+							max: 100,
+							step: .01,
+							label: "X",
+							formatValue: (val) => val?.toFixed(2)
+						},
+						"y-config": {
+							min: -100,
+							max: 100,
+							step: .01,
+							label: "Y",
+							formatValue: (val) => val?.toFixed(2)
+						},
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:348:7"
+					}, {
+						label: _withCtx(() => [_createElementVNode(
+							"p",
+							_hoisted_9,
+							_toDisplayString($setup.t("settings.live2d.animation.focus.offset")),
+							1
+							/* TEXT */
+						)]),
+						_: 1
+					}, 8, [
+						"x",
+						"y",
+						"x-config",
+						"y-config"
+					])])) : _createCommentVNode("v-if", true),
+					_createVNode($setup["FieldCheckbox"], {
+						modelValue: $setup.live2dForceIdleEyeAnimation,
+						"onUpdate:modelValue": _cache[10] || (_cache[10] = ($event) => $setup.live2dForceIdleEyeAnimation = $event),
+						label: $setup.t("settings.live2d.animation.force-idle-eye-animation.title"),
+						description: $setup.t("settings.live2d.animation.force-idle-eye-animation.description"),
+						placement: "right",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:362:5"
+					}, null, 8, [
+						"modelValue",
+						"label",
+						"description"
+					]),
+					_createVNode($setup["FieldCheckbox"], {
+						modelValue: $setup.live2dAutoBlinkEnabled,
+						"onUpdate:modelValue": _cache[11] || (_cache[11] = ($event) => $setup.live2dAutoBlinkEnabled = $event),
+						label: $setup.t("settings.live2d.animation.blink-enable.title"),
+						description: $setup.t("settings.live2d.animation.blink-enable.description"),
+						placement: "right",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:368:5"
+					}, null, 8, [
+						"modelValue",
+						"label",
+						"description"
+					]),
+					$setup.live2dAutoBlinkEnabled ? (_openBlock(), _createElementBlock("label", _hoisted_10, [_createElementVNode("div", _hoisted_11, [_createElementVNode(
+						"div",
+						_hoisted_12,
+						_toDisplayString($setup.t("settings.live2d.animation.blink-mode.title")),
+						1
+						/* TEXT */
+					), _createElementVNode(
+						"div",
+						_hoisted_13,
+						_toDisplayString($setup.t("settings.live2d.animation.blink-mode.description")),
+						1
+						/* TEXT */
+					)]), _createVNode($setup["SelectTab"], {
+						modelValue: $setup.live2dBlinkMode,
+						"onUpdate:modelValue": _cache[12] || (_cache[12] = ($event) => $setup.live2dBlinkMode = $event),
+						options: $setup.blinkModeOptions,
+						size: "sm",
+						class: _normalizeClass(["shrink-0"]),
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:383:7"
+					}, null, 8, ["modelValue", "options"])])) : _createCommentVNode("v-if", true),
+					_createVNode($setup["FieldCombobox"], {
+						modelValue: $setup.selectedRuntimeMotion,
+						"onUpdate:modelValue": [_cache[13] || (_cache[13] = ($event) => $setup.selectedRuntimeMotion = $event), $setup.handleMotionSelect],
+						label: $setup.t("settings.live2d.animation.idle-motion.title"),
+						options: $setup.runtimeMotionOptions,
+						placeholder: $setup.t("settings.live2d.animation.idle-motion.placeholder"),
+						"select-class": ["w-full"],
+						"content-min-width": 256,
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:385:5"
+					}, {
+						empty: _withCtx(() => [_createTextVNode(
+							_toDisplayString($setup.t("settings.live2d.animation.idle-motion.no-motion")),
+							1
+							/* TEXT */
+						)]),
+						_: 1
+					}, 8, [
+						"modelValue",
+						"label",
+						"options",
+						"placeholder"
+					])
+				]),
+				_: 1
+			}, 8, ["title"]),
+			_createVNode($setup["Section"], {
+				title: $setup.t("settings.live2d.parameters.title"),
+				icon: "i-solar:settings-bold-duotone",
+				class: _normalizeClass([
+					"rounded-xl",
+					"bg-white/80  dark:bg-black/75",
+					"backdrop-blur-lg"
+				]),
+				size: "sm",
+				expand: false,
+				"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:399:3"
+			}, {
+				default: _withCtx(() => [
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.live2dRenderScale,
+						"onUpdate:modelValue": _cache[14] || (_cache[14] = ($event) => $setup.live2dRenderScale = $event),
+						as: "div",
+						min: .5,
+						max: 2,
+						step: .25,
+						label: $setup.t("settings.live2d.parameters.render-scale.title"),
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:410:5"
+					}, null, 8, ["modelValue", "label"]),
+					_createElementVNode("label", _hoisted_14, [_createElementVNode("div", _hoisted_15, [_createElementVNode("div", _hoisted_16, [_renderSlot(_ctx.$slots, "label", {}, () => [_createTextVNode(
+						_toDisplayString($setup.t("settings.live2d.parameters.fps.title")),
+						1
+						/* TEXT */
+					)])]), _createElementVNode("div", _hoisted_17, [_renderSlot(_ctx.$slots, "description", {}, () => [_createTextVNode(
+						_toDisplayString($setup.t("settings.live2d.parameters.fps.description")),
+						1
+						/* TEXT */
+					)])])]), _createVNode($setup["SelectTab"], {
+						modelValue: $setup.live2dMaxFps,
+						"onUpdate:modelValue": _cache[15] || (_cache[15] = ($event) => $setup.live2dMaxFps = $event),
+						options: $setup.fpsOptions,
+						size: "sm",
+						class: _normalizeClass(["shrink-0"]),
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:432:7"
+					}, null, 8, ["modelValue", "options"])]),
+					_createElementVNode("div", _hoisted_18, [_createElementVNode(
+						"span",
+						_hoisted_19,
+						_toDisplayString($setup.t("settings.live2d.parameters.shadow")),
+						1
+						/* TEXT */
+					), _createVNode($setup["Checkbox"], {
+						modelValue: $setup.live2dShadowEnabled,
+						"onUpdate:modelValue": _cache[16] || (_cache[16] = ($event) => $setup.live2dShadowEnabled = $event),
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:437:7"
+					}, null, 8, ["modelValue"])]),
+					_createVNode($setup["Button"], {
+						variant: "secondary",
+						class: "mt-4 w-full",
+						onClick: $setup.resetToDefaultParameters,
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:440:5"
+					}, {
+						default: _withCtx(() => [_createTextVNode(
+							_toDisplayString($setup.t("settings.live2d.parameters.reset-parameters")),
+							1
+							/* TEXT */
+						)]),
+						_: 1
+					}),
+					_createVNode($setup["Button"], {
+						variant: "secondary",
+						class: "mt-2 w-full",
+						disabled: $setup.clearingCache,
+						loading: $setup.clearingCache,
+						onClick: $setup.clearModelCache,
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:448:5"
+					}, {
+						default: _withCtx(() => [_createTextVNode(
+							_toDisplayString($setup.t("settings.live2d.clear-model-cache")),
+							1
+							/* TEXT */
+						)]),
+						_: 1
+					}, 8, ["disabled", "loading"]),
+					_createCommentVNode(" Head Rotation "),
+					_cache[112] || (_cache[112] = _createElementVNode(
+						"div",
+						{
+							"mb-2": "",
+							"mt-4": "",
+							"text-xs": "",
+							"text-neutral-500": "",
+							"font-semibold": "",
+							"dark:text-neutral-400": "",
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:459:5"
+						},
+						" Head Rotation ",
+						-1
+						/* CACHED */
+					)),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.angleX,
+						"onUpdate:modelValue": _cache[18] || (_cache[18] = ($event) => $setup.modelParameters.angleX = $event),
+						as: "div",
+						min: -30,
+						max: 30,
+						step: .1,
+						label: "Angle X",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:462:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_20, [_cache[69] || (_cache[69] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:465:11" },
+							"Angle X",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[17] || (_cache[17] = () => $setup.modelParameters.angleX = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:466:11"
+						}, [..._cache[68] || (_cache[68] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:467:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.angleY,
+						"onUpdate:modelValue": _cache[20] || (_cache[20] = ($event) => $setup.modelParameters.angleY = $event),
+						as: "div",
+						min: -30,
+						max: 30,
+						step: .1,
+						label: "Angle Y",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:472:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_21, [_cache[71] || (_cache[71] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:475:11" },
+							"Angle Y",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[19] || (_cache[19] = () => $setup.modelParameters.angleY = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:476:11"
+						}, [..._cache[70] || (_cache[70] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:477:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.angleZ,
+						"onUpdate:modelValue": _cache[22] || (_cache[22] = ($event) => $setup.modelParameters.angleZ = $event),
+						as: "div",
+						min: -30,
+						max: 30,
+						step: .1,
+						label: "Angle Z",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:482:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_22, [_cache[73] || (_cache[73] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:485:11" },
+							"Angle Z",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[21] || (_cache[21] = () => $setup.modelParameters.angleZ = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:486:11"
+						}, [..._cache[72] || (_cache[72] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:487:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createCommentVNode(" Eyes "),
+					_cache[113] || (_cache[113] = _createElementVNode(
+						"div",
+						{
+							"mb-2": "",
+							"mt-4": "",
+							"text-xs": "",
+							"text-neutral-500": "",
+							"font-semibold": "",
+							"dark:text-neutral-400": "",
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:494:5"
+						},
+						" Eyes ",
+						-1
+						/* CACHED */
+					)),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.leftEyeOpen,
+						"onUpdate:modelValue": _cache[24] || (_cache[24] = ($event) => $setup.modelParameters.leftEyeOpen = $event),
+						as: "div",
+						min: 0,
+						max: 1,
+						step: .01,
+						label: "Left Eye Open/Close",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:497:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_23, [_cache[75] || (_cache[75] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:500:11" },
+							"Left Eye Open/Close",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[23] || (_cache[23] = () => $setup.modelParameters.leftEyeOpen = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:501:11"
+						}, [..._cache[74] || (_cache[74] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:502:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.rightEyeOpen,
+						"onUpdate:modelValue": _cache[26] || (_cache[26] = ($event) => $setup.modelParameters.rightEyeOpen = $event),
+						as: "div",
+						min: 0,
+						max: 1,
+						step: .01,
+						label: "Right Eye Open/Close",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:507:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_24, [_cache[77] || (_cache[77] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:510:11" },
+							"Right Eye Open/Close",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[25] || (_cache[25] = () => $setup.modelParameters.rightEyeOpen = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:511:11"
+						}, [..._cache[76] || (_cache[76] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:512:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.leftEyeSmile,
+						"onUpdate:modelValue": _cache[28] || (_cache[28] = ($event) => $setup.modelParameters.leftEyeSmile = $event),
+						as: "div",
+						min: 0,
+						max: 1,
+						step: .01,
+						label: "Left Eye Smiling",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:517:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_25, [_cache[79] || (_cache[79] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:520:11" },
+							"Left Eye Smiling",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[27] || (_cache[27] = () => $setup.modelParameters.leftEyeSmile = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:521:11"
+						}, [..._cache[78] || (_cache[78] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:522:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.rightEyeSmile,
+						"onUpdate:modelValue": _cache[30] || (_cache[30] = ($event) => $setup.modelParameters.rightEyeSmile = $event),
+						as: "div",
+						min: 0,
+						max: 1,
+						step: .01,
+						label: "Right Eye Smiling",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:527:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_26, [_cache[81] || (_cache[81] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:530:11" },
+							"Right Eye Smiling",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[29] || (_cache[29] = () => $setup.modelParameters.rightEyeSmile = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:531:11"
+						}, [..._cache[80] || (_cache[80] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:532:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createCommentVNode(" Eyebrows "),
+					_cache[114] || (_cache[114] = _createElementVNode(
+						"div",
+						{
+							"mb-2": "",
+							"mt-4": "",
+							"text-xs": "",
+							"text-neutral-500": "",
+							"font-semibold": "",
+							"dark:text-neutral-400": "",
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:539:5"
+						},
+						" Eyebrows ",
+						-1
+						/* CACHED */
+					)),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.leftEyebrowLR,
+						"onUpdate:modelValue": _cache[32] || (_cache[32] = ($event) => $setup.modelParameters.leftEyebrowLR = $event),
+						as: "div",
+						min: -1,
+						max: 1,
+						step: .01,
+						label: "Left eyebrow Left/Right",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:542:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_27, [_cache[83] || (_cache[83] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:545:11" },
+							"Left eyebrow Left/Right",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[31] || (_cache[31] = () => $setup.modelParameters.leftEyebrowLR = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:546:11"
+						}, [..._cache[82] || (_cache[82] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:547:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.rightEyebrowLR,
+						"onUpdate:modelValue": _cache[34] || (_cache[34] = ($event) => $setup.modelParameters.rightEyebrowLR = $event),
+						as: "div",
+						min: -1,
+						max: 1,
+						step: .01,
+						label: "Right eyebrow Left/Right",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:552:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_28, [_cache[85] || (_cache[85] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:555:11" },
+							"Right eyebrow Left/Right",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[33] || (_cache[33] = () => $setup.modelParameters.rightEyebrowLR = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:556:11"
+						}, [..._cache[84] || (_cache[84] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:557:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.leftEyebrowY,
+						"onUpdate:modelValue": _cache[36] || (_cache[36] = ($event) => $setup.modelParameters.leftEyebrowY = $event),
+						as: "div",
+						min: -1,
+						max: 1,
+						step: .01,
+						label: "Left Eyebrow Y (Up/Down)",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:562:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_29, [_cache[87] || (_cache[87] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:565:11" },
+							"Left Eyebrow Y",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[35] || (_cache[35] = () => $setup.modelParameters.leftEyebrowY = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:566:11"
+						}, [..._cache[86] || (_cache[86] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:567:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.rightEyebrowY,
+						"onUpdate:modelValue": _cache[38] || (_cache[38] = ($event) => $setup.modelParameters.rightEyebrowY = $event),
+						as: "div",
+						min: -1,
+						max: 1,
+						step: .01,
+						label: "Right Eyebrow Y (Up/Down)",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:572:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_30, [_cache[89] || (_cache[89] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:575:11" },
+							"Right Eyebrow Y",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[37] || (_cache[37] = () => $setup.modelParameters.rightEyebrowY = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:576:11"
+						}, [..._cache[88] || (_cache[88] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:577:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.leftEyebrowAngle,
+						"onUpdate:modelValue": _cache[40] || (_cache[40] = ($event) => $setup.modelParameters.leftEyebrowAngle = $event),
+						as: "div",
+						min: -1,
+						max: 1,
+						step: .01,
+						label: "Left Eyebrow Angle",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:582:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_31, [_cache[91] || (_cache[91] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:585:11" },
+							"Left Eyebrow Angle",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[39] || (_cache[39] = () => $setup.modelParameters.leftEyebrowAngle = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:586:11"
+						}, [..._cache[90] || (_cache[90] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:587:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.rightEyebrowAngle,
+						"onUpdate:modelValue": _cache[42] || (_cache[42] = ($event) => $setup.modelParameters.rightEyebrowAngle = $event),
+						as: "div",
+						min: -1,
+						max: 1,
+						step: .01,
+						label: "Right Eyebrow Angle",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:592:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_32, [_cache[93] || (_cache[93] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:595:11" },
+							"Right Eyebrow Angle",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[41] || (_cache[41] = () => $setup.modelParameters.rightEyebrowAngle = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:596:11"
+						}, [..._cache[92] || (_cache[92] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:597:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.leftEyebrowForm,
+						"onUpdate:modelValue": _cache[44] || (_cache[44] = ($event) => $setup.modelParameters.leftEyebrowForm = $event),
+						as: "div",
+						min: -1,
+						max: 1,
+						step: .01,
+						label: "Left Eyebrow Form (Deformation)",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:602:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_33, [_cache[95] || (_cache[95] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:605:11" },
+							"Left Eyebrow Form",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[43] || (_cache[43] = () => $setup.modelParameters.leftEyebrowForm = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:606:11"
+						}, [..._cache[94] || (_cache[94] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:607:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.rightEyebrowForm,
+						"onUpdate:modelValue": _cache[46] || (_cache[46] = ($event) => $setup.modelParameters.rightEyebrowForm = $event),
+						as: "div",
+						min: -1,
+						max: 1,
+						step: .01,
+						label: "Right Eyebrow Form (Deformation)",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:612:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_34, [_cache[97] || (_cache[97] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:615:11" },
+							"Right Eyebrow Form",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[45] || (_cache[45] = () => $setup.modelParameters.rightEyebrowForm = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:616:11"
+						}, [..._cache[96] || (_cache[96] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:617:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createCommentVNode(" Mouth "),
+					_cache[115] || (_cache[115] = _createElementVNode(
+						"div",
+						{
+							"mb-2": "",
+							"mt-4": "",
+							"text-xs": "",
+							"text-neutral-500": "",
+							"font-semibold": "",
+							"dark:text-neutral-400": "",
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:624:5"
+						},
+						" Mouth ",
+						-1
+						/* CACHED */
+					)),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.mouthOpen,
+						"onUpdate:modelValue": _cache[48] || (_cache[48] = ($event) => $setup.modelParameters.mouthOpen = $event),
+						as: "div",
+						min: 0,
+						max: 1,
+						step: .01,
+						label: "Mouth Open/Close",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:627:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_35, [_cache[99] || (_cache[99] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:630:11" },
+							"Mouth Open/Close",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[47] || (_cache[47] = () => $setup.modelParameters.mouthOpen = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:631:11"
+						}, [..._cache[98] || (_cache[98] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:632:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.mouthForm,
+						"onUpdate:modelValue": _cache[50] || (_cache[50] = ($event) => $setup.modelParameters.mouthForm = $event),
+						as: "div",
+						min: -1,
+						max: 1,
+						step: .01,
+						label: "Mouth Form (Deformation)",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:637:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_36, [_cache[101] || (_cache[101] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:640:11" },
+							"Mouth Form",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[49] || (_cache[49] = () => $setup.modelParameters.mouthForm = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:641:11"
+						}, [..._cache[100] || (_cache[100] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:642:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createCommentVNode(" Face "),
+					_cache[116] || (_cache[116] = _createElementVNode(
+						"div",
+						{
+							"mb-2": "",
+							"mt-4": "",
+							"text-xs": "",
+							"text-neutral-500": "",
+							"font-semibold": "",
+							"dark:text-neutral-400": "",
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:649:5"
+						},
+						" Face ",
+						-1
+						/* CACHED */
+					)),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.cheek,
+						"onUpdate:modelValue": _cache[52] || (_cache[52] = ($event) => $setup.modelParameters.cheek = $event),
+						as: "div",
+						min: 0,
+						max: 1,
+						step: .01,
+						label: "Cheek",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:652:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_37, [_cache[103] || (_cache[103] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:655:11" },
+							"Cheek",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[51] || (_cache[51] = () => $setup.modelParameters.cheek = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:656:11"
+						}, [..._cache[102] || (_cache[102] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:657:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createCommentVNode(" Body "),
+					_cache[117] || (_cache[117] = _createElementVNode(
+						"div",
+						{
+							"mb-2": "",
+							"mt-4": "",
+							"text-xs": "",
+							"text-neutral-500": "",
+							"font-semibold": "",
+							"dark:text-neutral-400": "",
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:664:5"
+						},
+						" Body ",
+						-1
+						/* CACHED */
+					)),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.bodyAngleX,
+						"onUpdate:modelValue": _cache[54] || (_cache[54] = ($event) => $setup.modelParameters.bodyAngleX = $event),
+						as: "div",
+						min: -10,
+						max: 10,
+						step: .1,
+						label: "Body rotation X",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:667:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_38, [_cache[105] || (_cache[105] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:670:11" },
+							"Body rotation X",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[53] || (_cache[53] = () => $setup.modelParameters.bodyAngleX = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:671:11"
+						}, [..._cache[104] || (_cache[104] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:672:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.bodyAngleY,
+						"onUpdate:modelValue": _cache[56] || (_cache[56] = ($event) => $setup.modelParameters.bodyAngleY = $event),
+						as: "div",
+						min: -10,
+						max: 10,
+						step: .1,
+						label: "Body rotation Y",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:677:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_39, [_cache[107] || (_cache[107] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:680:11" },
+							"Body rotation Y",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[55] || (_cache[55] = () => $setup.modelParameters.bodyAngleY = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:681:11"
+						}, [..._cache[106] || (_cache[106] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:682:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.bodyAngleZ,
+						"onUpdate:modelValue": _cache[58] || (_cache[58] = ($event) => $setup.modelParameters.bodyAngleZ = $event),
+						as: "div",
+						min: -10,
+						max: 10,
+						step: .1,
+						label: "Body rotation Z",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:687:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_40, [_cache[109] || (_cache[109] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:690:11" },
+							"Body rotation Z",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[57] || (_cache[57] = () => $setup.modelParameters.bodyAngleZ = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:691:11"
+						}, [..._cache[108] || (_cache[108] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:692:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"]),
+					_createVNode($setup["FieldRange"], {
+						modelValue: $setup.modelParameters.breath,
+						"onUpdate:modelValue": _cache[60] || (_cache[60] = ($event) => $setup.modelParameters.breath = $event),
+						as: "div",
+						min: 0,
+						max: 1,
+						step: .01,
+						label: "Breath",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:697:5"
+					}, {
+						label: _withCtx(() => [_createElementVNode("div", _hoisted_41, [_cache[111] || (_cache[111] = _createElementVNode(
+							"div",
+							{ "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:700:11" },
+							"Breath",
+							-1
+							/* CACHED */
+						)), _createElementVNode("button", {
+							"px-2": "",
+							"text-xs": "",
+							"outline-none": "",
+							title: "Reset value to default",
+							onClick: _cache[59] || (_cache[59] = () => $setup.modelParameters.breath = 0),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:701:11"
+						}, [..._cache[110] || (_cache[110] = [_createElementVNode(
+							"div",
+							{
+								"i-solar:forward-linear": "",
+								"transform-scale-x--100": "",
+								text: "neutral-500 dark:neutral-400",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:702:13"
+							},
+							null,
+							-1
+							/* CACHED */
+						)])])])]),
+						_: 1
+					}, 8, ["modelValue"])
+				]),
+				_: 3
+			}, 8, ["title"]),
+			_createVNode($setup["Section"], {
+				title: $setup.t("settings.live2d.expressions.title"),
+				icon: "i-solar:face-scan-circle-bold-duotone",
+				class: _normalizeClass([
+					"rounded-xl",
+					"bg-white/80  dark:bg-black/75",
+					"backdrop-blur-lg"
+				]),
+				size: "sm",
+				expand: false,
+				"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:708:3"
+			}, {
+				default: _withCtx(() => [_createElementVNode("div", _hoisted_42, [_createElementVNode(
+					"span",
+					_hoisted_43,
+					_toDisplayString($setup.t("settings.live2d.expressions.override-toggle")),
+					1
+					/* TEXT */
+				), _createVNode($setup["Checkbox"], {
+					modelValue: $setup.live2dExpressionEnabled,
+					"onUpdate:modelValue": _cache[61] || (_cache[61] = ($event) => $setup.live2dExpressionEnabled = $event),
+					"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:721:7"
+				}, null, 8, ["modelValue"])]), !$setup.live2dExpressionEnabled ? (_openBlock(), _createElementBlock(
+					"div",
+					_hoisted_44,
+					_toDisplayString($setup.t("settings.live2d.expressions.sdk-preset-preserved-notice")),
+					1
+					/* TEXT */
+				)) : $setup.expressionGroups.size === 0 ? (_openBlock(), _createElementBlock(
+					"div",
+					_hoisted_45,
+					_toDisplayString($setup.t("settings.live2d.expressions.no-expression")),
+					1
+					/* TEXT */
+				)) : (_openBlock(), _createElementBlock(
+					_Fragment,
+					{ key: 2 },
+					[
+						_createCommentVNode(" Expression preview toggles "),
+						_createElementVNode("div", _hoisted_46, [(_openBlock(true), _createElementBlock(
+							_Fragment,
+							null,
+							_renderList($setup.expressionGroups, ([groupName, group]) => {
+								return _openBlock(), _createElementBlock("div", {
+									key: groupName,
+									flex: "",
+									"items-center": "",
+									"justify-between": "",
+									"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:734:9"
+								}, [_createElementVNode(
+									"span",
+									_hoisted_47,
+									_toDisplayString(groupName),
+									1
+									/* TEXT */
+								), _createVNode($setup["Checkbox"], {
+									"model-value": $setup.isGroupActive(group),
+									"onUpdate:modelValue": ($event) => $setup.expressionStore.toggle(groupName),
+									"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:740:11"
+								}, null, 8, ["model-value", "onUpdate:modelValue"])]);
+							}),
+							128
+							/* KEYED_FRAGMENT */
+						))]),
+						_createElementVNode("div", _hoisted_48, [_createElementVNode(
+							"span",
+							_hoisted_49,
+							_toDisplayString($setup.t("settings.live2d.expressions.expose-to-llm-toggle")),
+							1
+							/* TEXT */
+						), _createVNode($setup["SelectTab"], {
+							"model-value": $setup.expressionStore.llmMode,
+							options: $setup.llmModeOptions,
+							size: "sm",
+							"onUpdate:modelValue": _cache[62] || (_cache[62] = (v) => $setup.expressionStore.setLlmMode(v)),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:749:9"
+						}, null, 8, ["model-value", "options"])]),
+						$setup.expressionStore.llmMode !== "none" ? (_openBlock(), _createElementBlock(
+							"span",
+							_hoisted_50,
+							_toDisplayString($setup.t("settings.live2d.expressions.llm-integration-wip")),
+							1
+							/* TEXT */
+						)) : _createCommentVNode("v-if", true),
+						_createCommentVNode(" Custom per-expression LLM toggles (only when mode = 'custom') "),
+						$setup.expressionStore.llmMode === "custom" ? (_openBlock(), _createElementBlock("div", _hoisted_51, [(_openBlock(true), _createElementBlock(
+							_Fragment,
+							null,
+							_renderList($setup.expressionGroups, ([groupName]) => {
+								return _openBlock(), _createElementBlock("div", {
+									key: `llm-${groupName}`,
+									flex: "",
+									"items-center": "",
+									"justify-between": "",
+									"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:762:9"
+								}, [_createElementVNode(
+									"span",
+									_hoisted_52,
+									_toDisplayString(groupName),
+									1
+									/* TEXT */
+								), _createVNode($setup["Checkbox"], {
+									"model-value": $setup.expressionStore.llmExposed.get(groupName) ?? false,
+									"onUpdate:modelValue": (v) => $setup.expressionStore.setLlmExposed(groupName, v),
+									"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:768:11"
+								}, null, 8, ["model-value", "onUpdate:modelValue"])]);
+							}),
+							128
+							/* KEYED_FRAGMENT */
+						))])) : _createCommentVNode("v-if", true),
+						_createCommentVNode(" Action buttons "),
+						_createElementVNode("div", _hoisted_53, [_createVNode($setup["Button"], {
+							variant: "secondary",
+							onClick: _cache[63] || (_cache[63] = ($event) => $setup.expressionStore.saveDefaults()),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:777:9"
+						}, {
+							default: _withCtx(() => [_createTextVNode(
+								_toDisplayString($setup.t("settings.live2d.expressions.save-default")),
+								1
+								/* TEXT */
+							)]),
+							_: 1
+						}), _createVNode($setup["Button"], {
+							variant: "secondary",
+							onClick: _cache[64] || (_cache[64] = ($event) => $setup.expressionStore.resetAll()),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue:780:9"
+						}, {
+							default: _withCtx(() => [_createTextVNode(
+								_toDisplayString($setup.t("settings.live2d.expressions.reset")),
+								1
+								/* TEXT */
+							)]),
+							_: 1
+						})])
+					],
+					64
+					/* STABLE_FRAGMENT */
+				))]),
+				_: 1
+			}, 8, ["title"])
+		],
+		64
+		/* STABLE_FRAGMENT */
+	);
+}
+_sfc_main.__hmrId = "38e7257c";
+typeof __VUE_HMR_RUNTIME__ !== "undefined" && __VUE_HMR_RUNTIME__.createRecord(_sfc_main.__hmrId, _sfc_main);
+import.meta.hot.on("file-changed", ({ file }) => {
+	__VUE_HMR_RUNTIME__.CHANGED_FILE = file;
+});
+import.meta.hot.accept((mod) => {
+	if (!mod) return;
+	const { default: updated, _rerender_only } = mod;
+	if (_rerender_only) {
+		__VUE_HMR_RUNTIME__.rerender(updated.__hmrId, updated.render);
+	} else {
+		__VUE_HMR_RUNTIME__.reload(updated.__hmrId, updated);
+	}
+});
+import _export_sfc from "/@id/__x00__plugin-vue:export-helper";
+export default /* @__PURE__ */ _export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/settings/model-settings/live2d.vue"]]);
+
+//# sourceMappingURL=data:application/json;base64,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QXNFO01BQzNELHVCQUFnQixZQUFPLDBCQUFsQyxvQkFZTSxPQVpOLGFBWU0sb0JBWEo7T0FVTTtPQUFBO09BQUEsWUFUa0IsMEJBQWdCLENBQTlCLGVBQVM7NkJBRG5CLG9CQVVNO1NBUkgsS0FBRyxPQUFTO1NBQ2I7U0FBSztTQUFhO1NBQWdCLG9CQUFpQjtZQUVuRDtTQUF5TDtTQUF6TDtTQUF5TCxpQkFBbkIsVUFBUztTQUFBOztTQUFBLEVBQy9LLGFBR0U7U0FGQyxlQUFhLHVCQUFnQixXQUFXLElBQUksVUFBUztTQUNyRCx3QkFBcUIsTUFBZSx1QkFBZ0IsY0FBYyxXQUFXLEVBQUM7U0FBRyxvQkFBaUI7Ozs7OztNQUt6Ryx1Q0FBdUI7TUFDdkIsb0JBT00sT0FQTixhQU9NLENBTkosYUFFUztPQUZELFNBQVE7T0FBYSxTQUFLLHdDQUFFLHVCQUFnQixjQUFZO09BQUksb0JBQWlCOzsrQkFDaEM7eUJBQWhELFNBQUM7UUFBQTs7UUFBQTs7VUFFTixhQUVTO09BRkQsU0FBUTtPQUFhLFNBQUssd0NBQUUsdUJBQWdCLFVBQVE7T0FBSSxvQkFBaUI7OytCQUNuQzt5QkFBekMsU0FBQztRQUFBOztRQUFBIiwibmFtZXMiOltdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJsaXZlMmQudnVlIl0sInNvdXJjZXNDb250ZW50IjpbIjxzY3JpcHQgc2V0dXAgbGFuZz1cInRzXCI+XHJcbmltcG9ydCB0eXBlIHsgTW9kZWxTZXR0aW5nc1J1bnRpbWVTbmFwc2hvdCB9IGZyb20gJy4vcnVudGltZSdcclxuXHJcbmltcG9ydCB7IGRlZmF1bHRNb2RlbFBhcmFtZXRlcnMsIHVzZUV4cHJlc3Npb25TdG9yZSwgdXNlTGl2ZTJkUGFyYW1zLCB1c2VTZXR0aW5nc0xpdmUyZCB9IGZyb20gJ0Bwcm9qLWFpcmkvc3RhZ2UtdWktbGl2ZTJkJ1xyXG5pbXBvcnQgeyBPUEZTQ2FjaGUgfSBmcm9tICdAcHJvai1haXJpL3N0YWdlLXVpLWxpdmUyZC91dGlscy9vcGZzLWxvYWRlcidcclxuaW1wb3J0IHsgQnV0dG9uLCBDaGVja2JveCwgRmllbGRDaGVja2JveCwgRmllbGRDb21ib2JveCwgRmllbGRSYW5nZSwgU2VsZWN0VGFiIH0gZnJvbSAnQHByb2otYWlyaS91aSdcclxuaW1wb3J0IHsgc3RvcmVUb1JlZnMgfSBmcm9tICdwaW5pYSdcclxuaW1wb3J0IHsgY29tcHV0ZWQsIG9uTW91bnRlZCwgcmVmLCB3YXRjaCB9IGZyb20gJ3Z1ZSdcclxuaW1wb3J0IHsgdXNlSTE4biB9IGZyb20gJ3Z1ZS1pMThuJ1xyXG5cclxuaW1wb3J0IHsgUHJvcGVydHlQb2ludCB9IGZyb20gJy4uLy4uLy4uL2RhdGEtcGFuZSdcclxuaW1wb3J0IHsgU2VjdGlvbiB9IGZyb20gJy4uLy4uLy4uL2xheW91dHMnXHJcbmltcG9ydCB7IENvbG9yUGFsZXR0ZSB9IGZyb20gJy4uLy4uLy4uL3dpZGdldHMnXHJcblxyXG5jb25zdCBwcm9wcyA9IHdpdGhEZWZhdWx0cyhkZWZpbmVQcm9wczx7XHJcbiAgcGFsZXR0ZTogc3RyaW5nW11cclxuICBhbGxvd0V4dHJhY3RDb2xvcnM/OiBib29sZWFuXHJcbiAgcnVudGltZVNuYXBzaG90OiBNb2RlbFNldHRpbmdzUnVudGltZVNuYXBzaG90XHJcbn0+KCksIHtcclxuICBhbGxvd0V4dHJhY3RDb2xvcnM6IHRydWUsXHJcbn0pXHJcbmRlZmluZUVtaXRzPHtcclxuICAoZTogJ2V4dHJhY3RDb2xvcnNGcm9tTW9kZWwnKTogdm9pZFxyXG59PigpXHJcblxyXG5jb25zdCB7IHQgfSA9IHVzZUkxOG4oKVxyXG5cclxuY29uc3Qgc2V0dGluZ3MgPSB1c2VTZXR0aW5nc0xpdmUyZCgpXHJcbmNvbnN0IHtcclxuICBsaXZlMmRFeWVUcmFja2luZyxcclxuICBsaXZlMmRNb2RlbEV5ZU9mZnNldCxcclxuICBsaXZlMmRJZGxlQW5pbWF0aW9uRW5hYmxlZCxcclxuICBsaXZlMmRBdXRvQmxpbmtFbmFibGVkLFxyXG4gIGxpdmUyZEZvcmNlQXV0b0JsaW5rRW5hYmxlZCxcclxuICBsaXZlMmRFeHByZXNzaW9uRW5hYmxlZCxcclxuICBsaXZlMmRTaGFkb3dFbmFibGVkLFxyXG4gIGxpdmUyZE1heEZwcyxcclxuICBsaXZlMmRSZW5kZXJTY2FsZSxcclxuICBsaXZlMmRGb3JjZUlkbGVFeWVBbmltYXRpb24sXHJcbn0gPSBzdG9yZVRvUmVmcyhzZXR0aW5ncylcclxuXHJcbmNvbnN0IGxpdmUyZCA9IHVzZUxpdmUyZFBhcmFtcygpXHJcbmNvbnN0IHtcclxuICBzY2FsZSxcclxuICBwb3NpdGlvbixcclxuICBtb2RlbFBhcmFtZXRlcnMsXHJcbiAgY3VycmVudE1vdGlvbixcclxufSA9IHN0b3JlVG9SZWZzKGxpdmUyZClcclxuXHJcbmNvbnN0IGV4cHJlc3Npb25TdG9yZSA9IHVzZUV4cHJlc3Npb25TdG9yZSgpXHJcbmNvbnN0IHsgZXhwcmVzc2lvbnMsIGV4cHJlc3Npb25Hcm91cHMgfSA9IHN0b3JlVG9SZWZzKGV4cHJlc3Npb25TdG9yZSlcclxuXHJcbi8qKlxyXG4gKiBDaGVjayBpZiBhbiBleHByZXNzaW9uIGdyb3VwIGlzIGN1cnJlbnRseSBhY3RpdmUuXHJcbiAqIE9ubHkgY29uc2lkZXJzIG5vbi16ZXJvIGV4cDMgcGFyYW1zICh6ZXJvLXZhbHVlZCBwYXJhbXMgYXJlIFwicmVzZXRcIiBpbnN0cnVjdGlvbnMpLlxyXG4gKiBBIGdyb3VwIGlzIGFjdGl2ZSB3aGVuIGF0IGxlYXN0IG9uZSBvZiBpdHMgYWN0aXZhdGlvbiBwYXJhbXMgbWF0Y2hlcyB0aGUgZXhwMyB2YWx1ZS5cclxuICovXHJcbmZ1bmN0aW9uIGlzR3JvdXBBY3RpdmUoZ3JvdXA6IHsgcGFyYW1ldGVyczogeyBwYXJhbWV0ZXJJZDogc3RyaW5nLCB2YWx1ZTogbnVtYmVyIH1bXSB9KTogYm9vbGVhbiB7XHJcbiAgcmV0dXJuIGdyb3VwLnBhcmFtZXRlcnMuc29tZSgocCkgPT4ge1xyXG4gICAgaWYgKHAudmFsdWUgPT09IDApXHJcbiAgICAgIHJldHVybiBmYWxzZSAvLyBTa2lwIHJlc2V0IHBhcmFtc1xyXG4gICAgY29uc3QgZW50cnkgPSBleHByZXNzaW9ucy52YWx1ZS5nZXQocC5wYXJhbWV0ZXJJZClcclxuICAgIHJldHVybiBlbnRyeSAhPSBudWxsICYmIGVudHJ5LmN1cnJlbnRWYWx1ZSA9PT0gcC52YWx1ZVxyXG4gIH0pXHJcbn1cclxuXHJcbmNvbnN0IHNlbGVjdGVkUnVudGltZU1vdGlvbiA9IHJlZjxzdHJpbmc+KCcnKVxyXG5jb25zdCBydW50aW1lTW90aW9ucyA9IHJlZjxBcnJheTx7IG5hbWU6IHN0cmluZywgZGlzcGxheVBhdGg6IHN0cmluZywgZ3JvdXA6IHN0cmluZywgaW5kZXg6IG51bWJlciB9Pj4oW10pXHJcbmNvbnN0IGNhbkV4dHJhY3RDb2xvcnMgPSBjb21wdXRlZCgoKSA9PiBwcm9wcy5ydW50aW1lU25hcHNob3QuY2FuQ2FwdHVyZVByZXZpZXcpXHJcbmNvbnN0IHJ1bnRpbWVNb3Rpb25PcHRpb25zID0gY29tcHV0ZWQoKCkgPT4ge1xyXG4gIGNvbnN0IG9wdGlvbnMgPSBydW50aW1lTW90aW9ucy52YWx1ZS5tYXAobW90aW9uID0+ICh7XHJcbiAgICBsYWJlbDogbW90aW9uLm5hbWUsXHJcbiAgICB2YWx1ZTogbW90aW9uLmRpc3BsYXlQYXRoLFxyXG4gICAgZGVzY3JpcHRpb246IG1vdGlvbi5kaXNwbGF5UGF0aCxcclxuICB9KSlcclxuICBpZiAob3B0aW9ucy5sZW5ndGggPiAwKSB7XHJcbiAgICBvcHRpb25zLnVuc2hpZnQoe1xyXG4gICAgICBsYWJlbDogdCgnc2V0dGluZ3MubGl2ZTJkLmFuaW1hdGlvbi5pZGxlLW1vdGlvbi5kaXNhYmxlLW1vdGlvbicpLFxyXG4gICAgICB2YWx1ZTogJzxtb3Rpb24gZGlzYWJsZWQ+JyxcclxuICAgICAgZGVzY3JpcHRpb246IHQoJ3NldHRpbmdzLmxpdmUyZC5hbmltYXRpb24uaWRsZS1tb3Rpb24uZGlzYWJsZS1tb3Rpb24tZGVzY3JpcHRpb24nKSxcclxuICAgIH0pXHJcbiAgfVxyXG4gIHJldHVybiBvcHRpb25zXHJcbn0pXHJcbmNvbnN0IGZwc09wdGlvbnMgPSBjb21wdXRlZCgoKSA9PiBbXHJcbiAgeyB2YWx1ZTogMzAsIGxhYmVsOiAnMzAnIH0sXHJcbiAgeyB2YWx1ZTogNjAsIGxhYmVsOiAnNjAnIH0sXHJcbiAgeyB2YWx1ZTogMCwgbGFiZWw6IHQoJ3NldHRpbmdzLmxpdmUyZC5wYXJhbWV0ZXJzLmZwcy5vcHRpb25zLnVubGltaXRlZCcpIH0sXHJcbl0pXHJcbmNvbnN0IGJsaW5rTW9kZU9wdGlvbnMgPSBjb21wdXRlZCgoKSA9PiBbXHJcbiAge1xyXG4gICAgdmFsdWU6ICdhdXRvJyxcclxuICAgIGxhYmVsOiB0KCdzZXR0aW5ncy5saXZlMmQuYW5pbWF0aW9uLmF1dG8tYmxpbmsudGl0bGUnKSxcclxuICAgIGRlc2NyaXB0aW9uOiB0KCdzZXR0aW5ncy5saXZlMmQuYW5pbWF0aW9uLmF1dG8tYmxpbmsuZGVzY3JpcHRpb24nKSxcclxuICB9LFxyXG4gIHtcclxuICAgIHZhbHVlOiAnZm9yY2UnLFxyXG4gICAgbGFiZWw6IHQoJ3NldHRpbmdzLmxpdmUyZC5hbmltYXRpb24uZm9yY2UtYXV0by1ibGluay50aXRsZScpLFxyXG4gICAgZGVzY3JpcHRpb246IHQoJ3NldHRpbmdzLmxpdmUyZC5hbmltYXRpb24uZm9yY2UtYXV0by1ibGluay5kZXNjcmlwdGlvbicpLFxyXG4gIH0sXHJcbl0pXHJcbmNvbnN0IGxpdmUyZEJsaW5rTW9kZSA9IGNvbXB1dGVkPCdhdXRvJyB8ICdmb3JjZSc+KHtcclxuICBnZXQoKSB7XHJcbiAgICByZXR1cm4gbGl2ZTJkRm9yY2VBdXRvQmxpbmtFbmFibGVkLnZhbHVlID8gJ2ZvcmNlJyA6ICdhdXRvJ1xyXG4gIH0sXHJcbiAgc2V0KG1vZGUpIHtcclxuICAgIGxpdmUyZEF1dG9CbGlua0VuYWJsZWQudmFsdWUgPSB0cnVlXHJcbiAgICBsaXZlMmRGb3JjZUF1dG9CbGlua0VuYWJsZWQudmFsdWUgPSBtb2RlID09PSAnZm9yY2UnXHJcbiAgfSxcclxufSlcclxuXHJcbndhdGNoKCgpID0+IGxpdmUyZC5hdmFpbGFibGVNb3Rpb25zLCAobW90aW9ucykgPT4ge1xyXG4gIHJ1bnRpbWVNb3Rpb25zLnZhbHVlID0gbW90aW9ucy5tYXAobSA9PiAoe1xyXG4gICAgbmFtZTogbS5maWxlTmFtZS5zcGxpdCgnLycpLnBvcCgpIHx8IG0uZmlsZU5hbWUsXHJcbiAgICBkaXNwbGF5UGF0aDogbS5maWxlTmFtZSxcclxuICAgIGdyb3VwOiBtLm1vdGlvbk5hbWUsXHJcbiAgICBpbmRleDogbS5tb3Rpb25JbmRleCxcclxuICB9KSlcclxuXHJcbiAgY29uc29sZS5pbmZvKCdBdmFpbGFibGUgbW90aW9uczonLCBydW50aW1lTW90aW9ucy52YWx1ZSlcclxufSwgeyBpbW1lZGlhdGU6IHRydWUgfSlcclxuXHJcbmNvbnN0IGxsbU1vZGVPcHRpb25zID0gY29tcHV0ZWQoKCkgPT4gW1xyXG4gIHsgdmFsdWU6ICdub25lJywgbGFiZWw6IHQoJ3NldHRpbmdzLmxpdmUyZC5leHByZXNzaW9ucy5leHBvc2UtdG8tbGxtLW9wdGlvbnMubm9uZScpIH0sXHJcbiAgeyB2YWx1ZTogJ2FsbCcsIGxhYmVsOiB0KCdzZXR0aW5ncy5saXZlMmQuZXhwcmVzc2lvbnMuZXhwb3NlLXRvLWxsbS1vcHRpb25zLmFsbCcpIH0sXHJcbiAgeyB2YWx1ZTogJ2N1c3RvbScsIGxhYmVsOiB0KCdzZXR0aW5ncy5saXZlMmQuZXhwcmVzc2lvbnMuZXhwb3NlLXRvLWxsbS1vcHRpb25zLmN1c3RvbScpIH0sXHJcbl0pXHJcblxyXG4vLyBHZXQgYXZhaWxhYmxlIHJ1bnRpbWUgbW90aW9ucyBmcm9tIHRoZSBtb2RlbFxyXG5vbk1vdW50ZWQoKCkgPT4ge1xyXG4gIC8vIFJlc3RvcmUgc2VsZWN0ZWQgbW90aW9uXHJcbiAgY29uc3Qgc2F2ZWRQYXRoID0gbG9jYWxTdG9yYWdlLmdldEl0ZW0oJ3NlbGVjdGVkLXJ1bnRpbWUtbW90aW9uJylcclxuICBpZiAoc2F2ZWRQYXRoKSB7XHJcbiAgICBzZWxlY3RlZFJ1bnRpbWVNb3Rpb24udmFsdWUgPSBzYXZlZFBhdGhcclxuICB9XHJcbn0pXHJcblxyXG4vLyBGdW5jdGlvbiB0byByZXNldCBhbGwgcGFyYW1ldGVycyB0byBkZWZhdWx0IHZhbHVlc1xyXG5mdW5jdGlvbiByZXNldFRvRGVmYXVsdFBhcmFtZXRlcnMoKSB7XHJcbiAgbW9kZWxQYXJhbWV0ZXJzLnZhbHVlID0geyAuLi5kZWZhdWx0TW9kZWxQYXJhbWV0ZXJzIH1cclxufVxyXG5cclxuY29uc3QgY2xlYXJpbmdDYWNoZSA9IHJlZihmYWxzZSlcclxuXHJcbmFzeW5jIGZ1bmN0aW9uIGNsZWFyTW9kZWxDYWNoZSgpIHtcclxuICBjbGVhcmluZ0NhY2hlLnZhbHVlID0gdHJ1ZVxyXG4gIHRyeSB7XHJcbiAgICBhd2FpdCBPUEZTQ2FjaGUuY2xlYXJBbGwoKVxyXG4gIH1cclxuICBmaW5hbGx5IHtcclxuICAgIGNsZWFyaW5nQ2FjaGUudmFsdWUgPSBmYWxzZVxyXG4gIH1cclxufVxyXG5cclxuZnVuY3Rpb24gaGFuZGxlTW90aW9uU2VsZWN0KHNlbGVjdGVkTW90aW9uUGF0aDogc3RyaW5nIHwgbnVtYmVyIHwgdW5kZWZpbmVkKSB7XHJcbiAgaWYgKHR5cGVvZiBzZWxlY3RlZE1vdGlvblBhdGggIT09ICdzdHJpbmcnKSB7XHJcbiAgICByZXR1cm5cclxuICB9XHJcblxyXG4gIGNvbnN0IG1vdGlvbiA9IHJ1bnRpbWVNb3Rpb25zLnZhbHVlLmZpbmQoaXRlbSA9PiBpdGVtLmRpc3BsYXlQYXRoID09PSBzZWxlY3RlZE1vdGlvblBhdGgpXHJcbiAgaWYgKCFtb3Rpb24pIHtcclxuICAgIGxpdmUyZElkbGVBbmltYXRpb25FbmFibGVkLnZhbHVlID0gZmFsc2VcclxuICAgIHJldHVyblxyXG4gIH1cclxuXHJcbiAgbG9jYWxTdG9yYWdlLnNldEl0ZW0oJ3NlbGVjdGVkLXJ1bnRpbWUtbW90aW9uJywgbW90aW9uLmRpc3BsYXlQYXRoKVxyXG4gIGxvY2FsU3RvcmFnZS5zZXRJdGVtKCdzZWxlY3RlZC1ydW50aW1lLW1vdGlvbi1ncm91cCcsIG1vdGlvbi5ncm91cClcclxuICBsb2NhbFN0b3JhZ2Uuc2V0SXRlbSgnc2VsZWN0ZWQtcnVudGltZS1tb3Rpb24taW5kZXgnLCBtb3Rpb24uaW5kZXgudG9TdHJpbmcoKSlcclxuXHJcbiAgLy8gRW5hYmxlIGlkbGUgYW5pbWF0aW9uXHJcbiAgbGl2ZTJkSWRsZUFuaW1hdGlvbkVuYWJsZWQudmFsdWUgPSB0cnVlXHJcblxyXG4gIC8vIFNldCB0aGUgY3VycmVudCBtb3Rpb24gdG8gdGhlIHNlbGVjdGVkIHJ1bnRpbWUgbW90aW9uXHJcbiAgY3VycmVudE1vdGlvbi52YWx1ZSA9IHsgZ3JvdXA6IG1vdGlvbi5ncm91cCwgaW5kZXg6IG1vdGlvbi5pbmRleCB9XHJcblxyXG4gIGNvbnNvbGUuaW5mbygnU2VsZWN0ZWQgcnVudGltZSBtb3Rpb246JywgbW90aW9uLm5hbWUpXHJcbiAgY29uc29sZS5pbmZvKCdGdWxsIHBhdGg6JywgbW90aW9uLmRpc3BsYXlQYXRoKVxyXG4gIGNvbnNvbGUuaW5mbygnR3JvdXA6JywgbW90aW9uLmdyb3VwLCAnSW5kZXg6JywgbW90aW9uLmluZGV4KVxyXG59XHJcblxyXG4vLyBhc3luYyBmdW5jdGlvbiBwYXRjaE1vdGlvbk1hcChzb3VyY2U6IEZpbGUsIG1vdGlvbk1hcDogUmVjb3JkPHN0cmluZywgc3RyaW5nPik6IFByb21pc2U8RmlsZT4ge1xyXG4vLyAgIGlmICghT2JqZWN0LmtleXMobW90aW9uTWFwKS5sZW5ndGgpXHJcbi8vICAgICByZXR1cm4gc291cmNlXHJcblxyXG4vLyAgIGNvbnN0IGpzWmlwID0gbmV3IEpTWmlwKClcclxuLy8gICBjb25zdCB6aXAgPSBhd2FpdCBqc1ppcC5sb2FkQXN5bmMoc291cmNlKVxyXG4vLyAgIGNvbnN0IGZpbGVOYW1lID0gT2JqZWN0LmtleXMoemlwLmZpbGVzKS5maW5kKGtleSA9PiBrZXkuZW5kc1dpdGgoJ21vZGVsMy5qc29uJykpXHJcbi8vICAgaWYgKCFmaWxlTmFtZSkge1xyXG4vLyAgICAgdGhyb3cgbmV3IEVycm9yKCdtb2RlbDMuanNvbiBub3QgZm91bmQnKVxyXG4vLyAgIH1cclxuXHJcbi8vICAgY29uc3QgbW9kZWwzSnNvbiA9IGF3YWl0IHppcC5maWxlKGZpbGVOYW1lKSEuYXN5bmMoJ3N0cmluZycpXHJcbi8vICAgY29uc3QgbW9kZWwzSnNvbk9iamVjdCA9IEpTT04ucGFyc2UobW9kZWwzSnNvbilcclxuXHJcbi8vICAgY29uc3QgbW90aW9uczogUmVjb3JkPHN0cmluZywgeyBGaWxlOiBzdHJpbmcgfVtdPiA9IHt9XHJcbi8vICAgT2JqZWN0LmVudHJpZXMobW90aW9uTWFwKS5mb3JFYWNoKChba2V5LCB2YWx1ZV0pID0+IHtcclxuLy8gICAgIGlmIChtb3Rpb25zW3ZhbHVlXSkge1xyXG4vLyAgICAgICBtb3Rpb25zW3ZhbHVlXS5wdXNoKHsgRmlsZToga2V5IH0pXHJcbi8vICAgICAgIHJldHVyblxyXG4vLyAgICAgfVxyXG4vLyAgICAgbW90aW9uc1t2YWx1ZV0gPSBbeyBGaWxlOiBrZXkgfV1cclxuLy8gICB9KVxyXG5cclxuLy8gICBtb2RlbDNKc29uT2JqZWN0LkZpbGVSZWZlcmVuY2VzLk1vdGlvbnMgPSBtb3Rpb25zXHJcblxyXG4vLyAgIHppcC5maWxlKGZpbGVOYW1lLCBKU09OLnN0cmluZ2lmeShtb2RlbDNKc29uT2JqZWN0LCBudWxsLCAyKSlcclxuLy8gICBjb25zdCB6aXBCbG9iID0gYXdhaXQgemlwLmdlbmVyYXRlQXN5bmMoeyB0eXBlOiAnYmxvYicgfSlcclxuXHJcbi8vICAgcmV0dXJuIG5ldyBGaWxlKFt6aXBCbG9iXSwgc291cmNlLm5hbWUsIHtcclxuLy8gICAgIHR5cGU6IHNvdXJjZS50eXBlLFxyXG4vLyAgICAgbGFzdE1vZGlmaWVkOiBzb3VyY2UubGFzdE1vZGlmaWVkLFxyXG4vLyAgIH0pXHJcbi8vIH1cclxuXHJcbi8vIGFzeW5jIGZ1bmN0aW9uIHNhdmVNb3Rpb25NYXAoKSB7XHJcbi8vICAgY29uc3QgZmlsZUZyb21JbmRleGVkREIgPSBhd2FpdCBsb2NhbGZvcmFnZS5nZXRJdGVtPEZpbGU+KCdsaXZlMmRNb2RlbCcpXHJcbi8vICAgaWYgKCFmaWxlRnJvbUluZGV4ZWREQikge1xyXG4vLyAgICAgcmV0dXJuXHJcbi8vICAgfVxyXG5cclxuLy8gICBjb25zdCBwYXRjaGVkRmlsZSA9IGF3YWl0IHBhdGNoTW90aW9uTWFwKGZpbGVGcm9tSW5kZXhlZERCLCBtb3Rpb25NYXAudmFsdWUpXHJcbi8vICAgbW9kZWxGaWxlLnZhbHVlID0gcGF0Y2hlZEZpbGVcclxuLy8gfVxyXG48L3NjcmlwdD5cclxuXHJcbjx0ZW1wbGF0ZT5cclxuICA8U2VjdGlvblxyXG4gICAgOnRpdGxlPVwidCgnc2V0dGluZ3MubGl2ZTJkLnNjYWxlLWFuZC1wb3NpdGlvbi50aXRsZScpXCJcclxuICAgIGljb249XCJpLXNvbGFyOnNjYWxlLWJvbGQtZHVvdG9uZVwiXHJcbiAgICA6Y2xhc3M9XCJbXHJcbiAgICAgICdyb3VuZGVkLXhsJyxcclxuICAgICAgJ2JnLXdoaXRlLzgwICBkYXJrOmJnLWJsYWNrLzc1JyxcclxuICAgICAgJ2JhY2tkcm9wLWJsdXItbGcnLFxyXG4gICAgXVwiXHJcbiAgICBzaXplPVwic21cIlxyXG4gICAgOmV4cGFuZD1cInRydWVcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6MjI3OjNcIlxyXG4gID5cclxuICAgIDxGaWVsZFJhbmdlIHYtbW9kZWw9XCJzY2FsZVwiIGFzPVwiZGl2XCIgOm1pbj1cIjAuMVwiIDptYXg9XCIzXCIgOnN0ZXA9XCIwLjAxXCIgOmxhYmVsPVwidCgnc2V0dGluZ3MubGl2ZTJkLnNjYWxlLWFuZC1wb3NpdGlvbi5zY2FsZScpXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjIzODo1XCI+XHJcbiAgICAgIDx0ZW1wbGF0ZSAjbGFiZWw+XHJcbiAgICAgICAgPGRpdiBmbGV4IGl0ZW1zLWNlbnRlciBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6MjQwOjlcIj5cclxuICAgICAgICAgIDxkaXYgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjI0MToxMVwiPnt7IHQoJ3NldHRpbmdzLmxpdmUyZC5zY2FsZS1hbmQtcG9zaXRpb24uc2NhbGUnKSB9fTwvZGl2PlxyXG4gICAgICAgICAgPGJ1dHRvbiBweC0yIHRleHQteHMgb3V0bGluZS1ub25lIHRpdGxlPVwiUmVzZXQgdmFsdWUgdG8gZGVmYXVsdFwiIEBjbGljaz1cIigpID0+IHNjYWxlID0gMVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZToyNDI6MTFcIj5cclxuICAgICAgICAgICAgPGRpdiBpLXNvbGFyOmZvcndhcmQtbGluZWFyIHRyYW5zZm9ybS1zY2FsZS14LS0xMDAgdGV4dD1cIm5ldXRyYWwtNTAwIGRhcms6bmV1dHJhbC00MDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6MjQzOjEzXCIgLz5cclxuICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L3RlbXBsYXRlPlxyXG4gICAgPC9GaWVsZFJhbmdlPlxyXG4gICAgPEZpZWxkUmFuZ2Ugdi1tb2RlbD1cInBvc2l0aW9uLnhcIiBhcz1cImRpdlwiIDptaW49XCItMzAwMFwiIDptYXg9XCIzMDAwXCIgOnN0ZXA9XCIxXCIgOmxhYmVsPVwidCgnc2V0dGluZ3MubGl2ZTJkLnNjYWxlLWFuZC1wb3NpdGlvbi54JylcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6MjQ4OjVcIj5cclxuICAgICAgPHRlbXBsYXRlICNsYWJlbD5cclxuICAgICAgICA8ZGl2IGZsZXggaXRlbXMtY2VudGVyIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZToyNTA6OVwiPlxyXG4gICAgICAgICAgPGRpdiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6MjUxOjExXCI+e3sgdCgnc2V0dGluZ3MubGl2ZTJkLnNjYWxlLWFuZC1wb3NpdGlvbi54JykgfX08L2Rpdj5cclxuICAgICAgICAgIDxidXR0b24gcHgtMiB0ZXh0LXhzIG91dGxpbmUtbm9uZSB0aXRsZT1cIlJlc2V0IHZhbHVlIHRvIGRlZmF1bHRcIiBAY2xpY2s9XCIoKSA9PiBwb3NpdGlvbi54ID0gMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZToyNTI6MTFcIj5cclxuICAgICAgICAgICAgPGRpdiBpLXNvbGFyOmZvcndhcmQtbGluZWFyIHRyYW5zZm9ybS1zY2FsZS14LS0xMDAgdGV4dD1cIm5ldXRyYWwtNTAwIGRhcms6bmV1dHJhbC00MDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6MjUzOjEzXCIgLz5cclxuICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L3RlbXBsYXRlPlxyXG4gICAgPC9GaWVsZFJhbmdlPlxyXG4gICAgPEZpZWxkUmFuZ2Ugdi1tb2RlbD1cInBvc2l0aW9uLnlcIiBhcz1cImRpdlwiIDptaW49XCItMzAwMFwiIDptYXg9XCIzMDAwXCIgOnN0ZXA9XCIxXCIgOmxhYmVsPVwidCgnc2V0dGluZ3MubGl2ZTJkLnNjYWxlLWFuZC1wb3NpdGlvbi55JylcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6MjU4OjVcIj5cclxuICAgICAgPHRlbXBsYXRlICNsYWJlbD5cclxuICAgICAgICA8ZGl2IGZsZXggaXRlbXMtY2VudGVyIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZToyNjA6OVwiPlxyXG4gICAgICAgICAgPGRpdiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6MjYxOjExXCI+e3sgdCgnc2V0dGluZ3MubGl2ZTJkLnNjYWxlLWFuZC1wb3NpdGlvbi55JykgfX08L2Rpdj5cclxuICAgICAgICAgIDxidXR0b24gcHgtMiB0ZXh0LXhzIG91dGxpbmUtbm9uZSB0aXRsZT1cIlJlc2V0IHZhbHVlIHRvIGRlZmF1bHRcIiBAY2xpY2s9XCIoKSA9PiBwb3NpdGlvbi55ID0gMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZToyNjI6MTFcIj5cclxuICAgICAgICAgICAgPGRpdiBpLXNvbGFyOmZvcndhcmQtbGluZWFyIHRyYW5zZm9ybS1zY2FsZS14LS0xMDAgdGV4dD1cIm5ldXRyYWwtNTAwIGRhcms6bmV1dHJhbC00MDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6MjYzOjEzXCIgLz5cclxuICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L3RlbXBsYXRlPlxyXG4gICAgPC9GaWVsZFJhbmdlPlxyXG4gIDwvU2VjdGlvbj5cclxuICA8U2VjdGlvblxyXG4gICAgdi1pZj1cImFsbG93RXh0cmFjdENvbG9yc1wiXHJcbiAgICA6dGl0bGU9XCJ0KCdzZXR0aW5ncy5saXZlMmQudGhlbWUtY29sb3ItZnJvbS1tb2RlbC50aXRsZScpXCJcclxuICAgIGljb249XCJpLXNvbGFyOm1hZ2ljLXN0aWNrLTMtYm9sZC1kdW90b25lXCJcclxuICAgIGlubmVyLWNsYXNzPVwidGV4dC1zbVwiXHJcbiAgICA6Y2xhc3M9XCJbXHJcbiAgICAgICdyb3VuZGVkLXhsJyxcclxuICAgICAgJ2JnLXdoaXRlLzgwICBkYXJrOmJnLWJsYWNrLzc1JyxcclxuICAgICAgJ2JhY2tkcm9wLWJsdXItbGcnLFxyXG4gICAgXVwiXHJcbiAgICBzaXplPVwic21cIlxyXG4gICAgOmV4cGFuZD1cImZhbHNlXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjI2OTozXCJcclxuICA+XHJcbiAgICA8cCB0ZXh0PVwibmV1dHJhbC01MDAgZGFyazpuZXV0cmFsLTQwMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZToyODI6NVwiPlxyXG4gICAgICB7eyB0KCdzZXR0aW5ncy5saXZlMmQudGhlbWUtY29sb3ItZnJvbS1tb2RlbC5kZXNjcmlwdGlvbicpIH19XHJcbiAgICA8L3A+XHJcbiAgICA8Q29sb3JQYWxldHRlIGNsYXNzPVwibWItNCBtdC0yXCIgOmNvbG9ycz1cInBhbGV0dGUubWFwKGhleCA9PiAoeyBoZXgsIG5hbWU6IGhleCB9KSlcIiBteC1hdXRvIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZToyODU6NVwiIC8+XHJcbiAgICA8QnV0dG9uIHZhcmlhbnQ9XCJzZWNvbmRhcnlcIiA6ZGlzYWJsZWQ9XCIhY2FuRXh0cmFjdENvbG9yc1wiIEBjbGljaz1cIiRlbWl0KCdleHRyYWN0Q29sb3JzRnJvbU1vZGVsJylcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6Mjg2OjVcIj5cclxuICAgICAge3sgdCgnc2V0dGluZ3MubGl2ZTJkLnRoZW1lLWNvbG9yLWZyb20tbW9kZWwuYnV0dG9uLWV4dHJhY3QudGl0bGUnKSB9fVxyXG4gICAgPC9CdXR0b24+XHJcbiAgPC9TZWN0aW9uPlxyXG4gIDwhLS0gPFNlY3Rpb25cclxuICAgIHYtaWY9XCJtb2RlbEZpbGVcIlxyXG4gICAgOnRpdGxlPVwidCgnc2V0dGluZ3MubGl2ZTJkLmVkaXQtbW90aW9uLW1hcC50aXRsZScpXCJcclxuICAgIGljb249XCJpLXNvbGFyOmZhY2Utc2Nhbi1jaXJjbGUtYm9sZC1kdW90b25lXCJcclxuICAgIDpjbGFzcz1cIltcclxuICAgICAgJ3JvdW5kZWQteGwnLFxyXG4gICAgICAnYmctd2hpdGUvODAgIGRhcms6YmctYmxhY2svNzUnLFxyXG4gICAgICAnYmFja2Ryb3AtYmx1ci1sZycsXHJcbiAgICBdXCJcclxuICAgIHNpemU9XCJzbVwiXHJcbiAgICA6ZXhwYW5kPVwiZmFsc2VcIlxyXG4gID5cclxuICAgIDxkaXYgdi1mb3I9XCJtb3Rpb24gaW4gYXZhaWxhYmxlTW90aW9uc1wiIDprZXk9XCJtb3Rpb24uZmlsZU5hbWVcIiBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gdGV4dC1zbT5cclxuICAgICAgPHNwYW4gZm9udC1tZWRpdW0gZm9udC1tb25vPnt7IG1vdGlvbi5maWxlTmFtZSB9fTwvc3Bhbj5cclxuXHJcbiAgICAgIDxkaXYgZmxleCBnYXAtMj5cclxuICAgICAgICA8c2VsZWN0IHYtbW9kZWw9XCJtb3Rpb25NYXBbbW90aW9uLmZpbGVOYW1lXVwiPlxyXG4gICAgICAgICAgPG9wdGlvbiB2LWZvcj1cImVtb3Rpb24gaW4gT2JqZWN0LmtleXMoRW1vdGlvbilcIiA6a2V5PVwiZW1vdGlvblwiPlxyXG4gICAgICAgICAgICB7eyBlbW90aW9uIH19XHJcbiAgICAgICAgICA8L29wdGlvbj5cclxuICAgICAgICA8L3NlbGVjdD5cclxuXHJcbiAgICAgICAgPEJ1dHRvblxyXG4gICAgICAgICAgY2xhc3M9XCJmb3JtLWNvbnRyb2xcIlxyXG4gICAgICAgICAgQGNsaWNrPVwiY3VycmVudE1vdGlvbiA9IHsgZ3JvdXA6IG1vdGlvbi5tb3Rpb25OYW1lLCBpbmRleDogbW90aW9uLm1vdGlvbkluZGV4IH1cIlxyXG4gICAgICAgID5cclxuICAgICAgICAgIFBsYXlcclxuICAgICAgICA8L0J1dHRvbj5cclxuICAgICAgPC9kaXY+XHJcbiAgICA8L2Rpdj5cclxuICAgIDxCdXR0b24gQGNsaWNrPVwic2F2ZU1vdGlvbk1hcFwiPlxyXG4gICAgICBTYXZlIGFuZCBwYXRjaFxyXG4gICAgPC9CdXR0b24+XHJcbiAgICA8YVxyXG4gICAgICBtdC0yIGJsb2NrIDpocmVmPVwiZXhwb3J0T2JqZWN0VXJsXCJcclxuICAgICAgOmRvd25sb2FkPVwiYCR7bW9kZWxGaWxlPy5uYW1lIHx8ICdsaXZlMmQnfS1tb3Rpb24tZWRpdGVkLnppcGBcIlxyXG4gICAgPlxyXG4gICAgICA8QnV0dG9uIHctZnVsbD5FeHBvcnQ8L2J1dHRvbj5cclxuICAgIDwvYT5cclxuICA8L1NlY3Rpb24+IC0tPlxyXG4gIDxTZWN0aW9uXHJcbiAgICA6dGl0bGU9XCJ0KCdzZXR0aW5ncy5saXZlMmQuYW5pbWF0aW9uLnRpdGxlJylcIlxyXG4gICAgaWNvbj1cImktc29sYXI6c2V0dGluZ3MtYm9sZC1kdW90b25lXCJcclxuICAgIDpjbGFzcz1cIltcclxuICAgICAgJ3JvdW5kZWQteGwnLFxyXG4gICAgICAnYmctd2hpdGUvODAgIGRhcms6YmctYmxhY2svNzUnLFxyXG4gICAgICAnYmFja2Ryb3AtYmx1ci1sZycsXHJcbiAgICBdXCJcclxuICAgIHNpemU9XCJzbVwiXHJcbiAgICA6ZXhwYW5kPVwiZmFsc2VcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6MzMwOjNcIlxyXG4gID5cclxuICAgIDxGaWVsZENoZWNrYm94XHJcbiAgICAgIHYtbW9kZWw9XCJsaXZlMmRFeWVUcmFja2luZ1wiXHJcbiAgICAgIDpsYWJlbD1cInQoJ3NldHRpbmdzLmxpdmUyZC5hbmltYXRpb24uZm9jdXMudGl0bGUnKVwiXHJcbiAgICAgIDpkZXNjcmlwdGlvbj1cInQoJ3NldHRpbmdzLmxpdmUyZC5hbmltYXRpb24uZm9jdXMuZGVzY3JpcHRpb24nKVwiXHJcbiAgICAgIHBsYWNlbWVudD1cInJpZ2h0XCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjM0MTo1XCJcclxuICAgIC8+XHJcbiAgICA8ZGl2IHYtaWY9XCJsaXZlMmRFeWVUcmFja2luZ1wiIGNsYXNzPVwiZ3JpZCBncmlkLWNvbHMtNFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTozNDc6NVwiPlxyXG4gICAgICA8UHJvcGVydHlQb2ludFxyXG4gICAgICAgIHYtbW9kZWw6eD1cImxpdmUyZE1vZGVsRXllT2Zmc2V0LnhcIlxyXG4gICAgICAgIHYtbW9kZWw6eT1cImxpdmUyZE1vZGVsRXllT2Zmc2V0LnlcIlxyXG5cclxuICAgICAgICA6eC1jb25maWc9XCJ7IG1pbjogLTEwMCwgbWF4OiAxMDAsIHN0ZXA6IDAuMDEsIGxhYmVsOiAnWCcsIGZvcm1hdFZhbHVlOiAodmFsOiBudW1iZXIpID0+IHZhbD8udG9GaXhlZCgyKSB9XCJcclxuICAgICAgICA6eS1jb25maWc9XCJ7IG1pbjogLTEwMCwgbWF4OiAxMDAsIHN0ZXA6IDAuMDEsIGxhYmVsOiAnWScsIGZvcm1hdFZhbHVlOiAodmFsOiBudW1iZXIpID0+IHZhbD8udG9GaXhlZCgyKSB9XCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjM0ODo3XCJcclxuICAgICAgPlxyXG4gICAgICAgIDx0ZW1wbGF0ZSAjbGFiZWw+XHJcbiAgICAgICAgICA8cCBjbGFzcz1cInRleHQteHMgdGV4dC1uZXV0cmFsLTUwMCBkYXJrOnRleHQtbmV1dHJhbC00MDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6MzU2OjExXCI+XHJcbiAgICAgICAgICAgIHt7IHQoJ3NldHRpbmdzLmxpdmUyZC5hbmltYXRpb24uZm9jdXMub2Zmc2V0JykgfX1cclxuICAgICAgICAgIDwvcD5cclxuICAgICAgICA8L3RlbXBsYXRlPlxyXG4gICAgICA8L1Byb3BlcnR5UG9pbnQ+XHJcbiAgICA8L2Rpdj5cclxuICAgIDxGaWVsZENoZWNrYm94XHJcbiAgICAgIHYtbW9kZWw9XCJsaXZlMmRGb3JjZUlkbGVFeWVBbmltYXRpb25cIlxyXG4gICAgICA6bGFiZWw9XCJ0KCdzZXR0aW5ncy5saXZlMmQuYW5pbWF0aW9uLmZvcmNlLWlkbGUtZXllLWFuaW1hdGlvbi50aXRsZScpXCJcclxuICAgICAgOmRlc2NyaXB0aW9uPVwidCgnc2V0dGluZ3MubGl2ZTJkLmFuaW1hdGlvbi5mb3JjZS1pZGxlLWV5ZS1hbmltYXRpb24uZGVzY3JpcHRpb24nKVwiXHJcbiAgICAgIHBsYWNlbWVudD1cInJpZ2h0XCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjM2Mjo1XCJcclxuICAgIC8+XHJcbiAgICA8RmllbGRDaGVja2JveFxyXG4gICAgICB2LW1vZGVsPVwibGl2ZTJkQXV0b0JsaW5rRW5hYmxlZFwiXHJcbiAgICAgIDpsYWJlbD1cInQoJ3NldHRpbmdzLmxpdmUyZC5hbmltYXRpb24uYmxpbmstZW5hYmxlLnRpdGxlJylcIlxyXG4gICAgICA6ZGVzY3JpcHRpb249XCJ0KCdzZXR0aW5ncy5saXZlMmQuYW5pbWF0aW9uLmJsaW5rLWVuYWJsZS5kZXNjcmlwdGlvbicpXCJcclxuICAgICAgcGxhY2VtZW50PVwicmlnaHRcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6MzY4OjVcIlxyXG4gICAgLz5cclxuICAgIDxsYWJlbCB2LWlmPVwibGl2ZTJkQXV0b0JsaW5rRW5hYmxlZFwiIGNsYXNzPVwiZmxleCBmbGV4LXdyYXAgZ2FwLTRcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6Mzc0OjVcIj5cclxuICAgICAgPGRpdiBjbGFzcz1cImZsZXgtMVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTozNzU6N1wiPlxyXG4gICAgICAgIDxkaXYgY2xhc3M9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMSB0ZXh0LXNtIGZvbnQtbWVkaXVtXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjM3Njo5XCI+XHJcbiAgICAgICAgICB7eyB0KCdzZXR0aW5ncy5saXZlMmQuYW5pbWF0aW9uLmJsaW5rLW1vZGUudGl0bGUnKSB9fVxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICAgIDxkaXYgY2xhc3M9XCJ0ZXh0LXhzIHRleHQtbmV1dHJhbC01MDAgZGFyazp0ZXh0LW5ldXRyYWwtNDAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjM3OTo5XCI+XHJcbiAgICAgICAgICB7eyB0KCdzZXR0aW5ncy5saXZlMmQuYW5pbWF0aW9uLmJsaW5rLW1vZGUuZGVzY3JpcHRpb24nKSB9fVxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L2Rpdj5cclxuICAgICAgPFNlbGVjdFRhYiB2LW1vZGVsPVwibGl2ZTJkQmxpbmtNb2RlXCIgOm9wdGlvbnM9XCJibGlua01vZGVPcHRpb25zXCIgc2l6ZT1cInNtXCIgOmNsYXNzPVwiWydzaHJpbmstMCddXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjM4Mzo3XCIgLz5cclxuICAgIDwvbGFiZWw+XHJcbiAgICA8RmllbGRDb21ib2JveFxyXG4gICAgICB2LW1vZGVsPVwic2VsZWN0ZWRSdW50aW1lTW90aW9uXCJcclxuICAgICAgOmxhYmVsPVwidCgnc2V0dGluZ3MubGl2ZTJkLmFuaW1hdGlvbi5pZGxlLW1vdGlvbi50aXRsZScpXCJcclxuICAgICAgOm9wdGlvbnM9XCJydW50aW1lTW90aW9uT3B0aW9uc1wiXHJcbiAgICAgIDpwbGFjZWhvbGRlcj1cInQoJ3NldHRpbmdzLmxpdmUyZC5hbmltYXRpb24uaWRsZS1tb3Rpb24ucGxhY2Vob2xkZXInKVwiXHJcbiAgICAgIDpzZWxlY3QtY2xhc3M9XCJbJ3ctZnVsbCddXCJcclxuICAgICAgOmNvbnRlbnQtbWluLXdpZHRoPVwiMjU2XCJcclxuICAgICAgQHVwZGF0ZTptb2RlbC12YWx1ZT1cImhhbmRsZU1vdGlvblNlbGVjdFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTozODU6NVwiXHJcbiAgICA+XHJcbiAgICAgIDx0ZW1wbGF0ZSAjZW1wdHk+XHJcbiAgICAgICAge3sgdCgnc2V0dGluZ3MubGl2ZTJkLmFuaW1hdGlvbi5pZGxlLW1vdGlvbi5uby1tb3Rpb24nKSB9fVxyXG4gICAgICA8L3RlbXBsYXRlPlxyXG4gICAgPC9GaWVsZENvbWJvYm94PlxyXG4gIDwvU2VjdGlvbj5cclxuICA8U2VjdGlvblxyXG4gICAgOnRpdGxlPVwidCgnc2V0dGluZ3MubGl2ZTJkLnBhcmFtZXRlcnMudGl0bGUnKVwiXHJcbiAgICBpY29uPVwiaS1zb2xhcjpzZXR0aW5ncy1ib2xkLWR1b3RvbmVcIlxyXG4gICAgOmNsYXNzPVwiW1xyXG4gICAgICAncm91bmRlZC14bCcsXHJcbiAgICAgICdiZy13aGl0ZS84MCAgZGFyazpiZy1ibGFjay83NScsXHJcbiAgICAgICdiYWNrZHJvcC1ibHVyLWxnJyxcclxuICAgIF1cIlxyXG4gICAgc2l6ZT1cInNtXCJcclxuICAgIDpleHBhbmQ9XCJmYWxzZVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTozOTk6M1wiXHJcbiAgPlxyXG4gICAgPEZpZWxkUmFuZ2VcclxuICAgICAgdi1tb2RlbD1cImxpdmUyZFJlbmRlclNjYWxlXCJcclxuICAgICAgYXM9XCJkaXZcIlxyXG4gICAgICA6bWluPVwiMC41XCJcclxuICAgICAgOm1heD1cIjJcIlxyXG4gICAgICA6c3RlcD1cIjAuMjVcIlxyXG4gICAgICA6bGFiZWw9XCJ0KCdzZXR0aW5ncy5saXZlMmQucGFyYW1ldGVycy5yZW5kZXItc2NhbGUudGl0bGUnKVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo0MTA6NVwiXHJcbiAgICAvPlxyXG5cclxuICAgIDxsYWJlbCBjbGFzcz1cImZsZXggZmxleC13cmFwIGdhcC00XCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjQxOTo1XCI+XHJcbiAgICAgIDxkaXYgY2xhc3M9XCJmbGV4LTFcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NDIwOjdcIj5cclxuICAgICAgICA8ZGl2IGNsYXNzPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEgdGV4dC1zbSBmb250LW1lZGl1bVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo0MjE6OVwiPlxyXG4gICAgICAgICAgPHNsb3QgbmFtZT1cImxhYmVsXCI+XHJcbiAgICAgICAgICAgIHt7IHQoJ3NldHRpbmdzLmxpdmUyZC5wYXJhbWV0ZXJzLmZwcy50aXRsZScpIH19XHJcbiAgICAgICAgICA8L3Nsb3Q+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgPGRpdiBjbGFzcz1cInRleHQteHMgdGV4dC1uZXV0cmFsLTUwMCBkYXJrOnRleHQtbmV1dHJhbC00MDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NDI2OjlcIj5cclxuICAgICAgICAgIDxzbG90IG5hbWU9XCJkZXNjcmlwdGlvblwiPlxyXG4gICAgICAgICAgICB7eyB0KCdzZXR0aW5ncy5saXZlMmQucGFyYW1ldGVycy5mcHMuZGVzY3JpcHRpb24nKSB9fVxyXG4gICAgICAgICAgPC9zbG90PlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L2Rpdj5cclxuICAgICAgPFNlbGVjdFRhYiB2LW1vZGVsPVwibGl2ZTJkTWF4RnBzXCIgOm9wdGlvbnM9XCJmcHNPcHRpb25zXCIgc2l6ZT1cInNtXCIgOmNsYXNzPVwiWydzaHJpbmstMCddXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjQzMjo3XCIgLz5cclxuICAgIDwvbGFiZWw+XHJcblxyXG4gICAgPGRpdiBtdC00IGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NDM1OjVcIj5cclxuICAgICAgPHNwYW4gdGV4dC1zbSBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NDM2OjdcIj57eyB0KCdzZXR0aW5ncy5saXZlMmQucGFyYW1ldGVycy5zaGFkb3cnKSB9fTwvc3Bhbj5cclxuICAgICAgPENoZWNrYm94IHYtbW9kZWw9XCJsaXZlMmRTaGFkb3dFbmFibGVkXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjQzNzo3XCIgLz5cclxuICAgIDwvZGl2PlxyXG5cclxuICAgIDxCdXR0b25cclxuICAgICAgdmFyaWFudD1cInNlY29uZGFyeVwiXHJcbiAgICAgIGNsYXNzPVwibXQtNCB3LWZ1bGxcIlxyXG4gICAgICBAY2xpY2s9XCJyZXNldFRvRGVmYXVsdFBhcmFtZXRlcnNcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NDQwOjVcIlxyXG4gICAgPlxyXG4gICAgICB7eyB0KCdzZXR0aW5ncy5saXZlMmQucGFyYW1ldGVycy5yZXNldC1wYXJhbWV0ZXJzJykgfX1cclxuICAgIDwvQnV0dG9uPlxyXG5cclxuICAgIDxCdXR0b25cclxuICAgICAgdmFyaWFudD1cInNlY29uZGFyeVwiXHJcbiAgICAgIGNsYXNzPVwibXQtMiB3LWZ1bGxcIlxyXG4gICAgICA6ZGlzYWJsZWQ9XCJjbGVhcmluZ0NhY2hlXCJcclxuICAgICAgOmxvYWRpbmc9XCJjbGVhcmluZ0NhY2hlXCJcclxuICAgICAgQGNsaWNrPVwiY2xlYXJNb2RlbENhY2hlXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjQ0ODo1XCJcclxuICAgID5cclxuICAgICAge3sgdCgnc2V0dGluZ3MubGl2ZTJkLmNsZWFyLW1vZGVsLWNhY2hlJykgfX1cclxuICAgIDwvQnV0dG9uPlxyXG5cclxuICAgIDwhLS0gSGVhZCBSb3RhdGlvbiAtLT5cclxuICAgIDxkaXYgbWItMiBtdC00IHRleHQteHMgdGV4dC1uZXV0cmFsLTUwMCBmb250LXNlbWlib2xkIGRhcms6dGV4dC1uZXV0cmFsLTQwMCBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NDU5OjVcIj5cclxuICAgICAgSGVhZCBSb3RhdGlvblxyXG4gICAgPC9kaXY+XHJcbiAgICA8RmllbGRSYW5nZSB2LW1vZGVsPVwibW9kZWxQYXJhbWV0ZXJzLmFuZ2xlWFwiIGFzPVwiZGl2XCIgOm1pbj1cIi0zMFwiIDptYXg9XCIzMFwiIDpzdGVwPVwiMC4xXCIgbGFiZWw9XCJBbmdsZSBYXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjQ2Mjo1XCI+XHJcbiAgICAgIDx0ZW1wbGF0ZSAjbGFiZWw+XHJcbiAgICAgICAgPGRpdiBmbGV4IGl0ZW1zLWNlbnRlciBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NDY0OjlcIj5cclxuICAgICAgICAgIDxkaXYgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjQ2NToxMVwiPkFuZ2xlIFg8L2Rpdj5cclxuICAgICAgICAgIDxidXR0b24gcHgtMiB0ZXh0LXhzIG91dGxpbmUtbm9uZSB0aXRsZT1cIlJlc2V0IHZhbHVlIHRvIGRlZmF1bHRcIiBAY2xpY2s9XCIoKSA9PiBtb2RlbFBhcmFtZXRlcnMuYW5nbGVYID0gMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo0NjY6MTFcIj5cclxuICAgICAgICAgICAgPGRpdiBpLXNvbGFyOmZvcndhcmQtbGluZWFyIHRyYW5zZm9ybS1zY2FsZS14LS0xMDAgdGV4dD1cIm5ldXRyYWwtNTAwIGRhcms6bmV1dHJhbC00MDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NDY3OjEzXCIgLz5cclxuICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L3RlbXBsYXRlPlxyXG4gICAgPC9GaWVsZFJhbmdlPlxyXG4gICAgPEZpZWxkUmFuZ2Ugdi1tb2RlbD1cIm1vZGVsUGFyYW1ldGVycy5hbmdsZVlcIiBhcz1cImRpdlwiIDptaW49XCItMzBcIiA6bWF4PVwiMzBcIiA6c3RlcD1cIjAuMVwiIGxhYmVsPVwiQW5nbGUgWVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo0NzI6NVwiPlxyXG4gICAgICA8dGVtcGxhdGUgI2xhYmVsPlxyXG4gICAgICAgIDxkaXYgZmxleCBpdGVtcy1jZW50ZXIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjQ3NDo5XCI+XHJcbiAgICAgICAgICA8ZGl2IGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo0NzU6MTFcIj5BbmdsZSBZPC9kaXY+XHJcbiAgICAgICAgICA8YnV0dG9uIHB4LTIgdGV4dC14cyBvdXRsaW5lLW5vbmUgdGl0bGU9XCJSZXNldCB2YWx1ZSB0byBkZWZhdWx0XCIgQGNsaWNrPVwiKCkgPT4gbW9kZWxQYXJhbWV0ZXJzLmFuZ2xlWSA9IDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NDc2OjExXCI+XHJcbiAgICAgICAgICAgIDxkaXYgaS1zb2xhcjpmb3J3YXJkLWxpbmVhciB0cmFuc2Zvcm0tc2NhbGUteC0tMTAwIHRleHQ9XCJuZXV0cmFsLTUwMCBkYXJrOm5ldXRyYWwtNDAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjQ3NzoxM1wiIC8+XHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC90ZW1wbGF0ZT5cclxuICAgIDwvRmllbGRSYW5nZT5cclxuICAgIDxGaWVsZFJhbmdlIHYtbW9kZWw9XCJtb2RlbFBhcmFtZXRlcnMuYW5nbGVaXCIgYXM9XCJkaXZcIiA6bWluPVwiLTMwXCIgOm1heD1cIjMwXCIgOnN0ZXA9XCIwLjFcIiBsYWJlbD1cIkFuZ2xlIFpcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NDgyOjVcIj5cclxuICAgICAgPHRlbXBsYXRlICNsYWJlbD5cclxuICAgICAgICA8ZGl2IGZsZXggaXRlbXMtY2VudGVyIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo0ODQ6OVwiPlxyXG4gICAgICAgICAgPGRpdiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NDg1OjExXCI+QW5nbGUgWjwvZGl2PlxyXG4gICAgICAgICAgPGJ1dHRvbiBweC0yIHRleHQteHMgb3V0bGluZS1ub25lIHRpdGxlPVwiUmVzZXQgdmFsdWUgdG8gZGVmYXVsdFwiIEBjbGljaz1cIigpID0+IG1vZGVsUGFyYW1ldGVycy5hbmdsZVogPSAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjQ4NjoxMVwiPlxyXG4gICAgICAgICAgICA8ZGl2IGktc29sYXI6Zm9yd2FyZC1saW5lYXIgdHJhbnNmb3JtLXNjYWxlLXgtLTEwMCB0ZXh0PVwibmV1dHJhbC01MDAgZGFyazpuZXV0cmFsLTQwMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo0ODc6MTNcIiAvPlxyXG4gICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgIDwvdGVtcGxhdGU+XHJcbiAgICA8L0ZpZWxkUmFuZ2U+XHJcblxyXG4gICAgPCEtLSBFeWVzIC0tPlxyXG4gICAgPGRpdiBtYi0yIG10LTQgdGV4dC14cyB0ZXh0LW5ldXRyYWwtNTAwIGZvbnQtc2VtaWJvbGQgZGFyazp0ZXh0LW5ldXRyYWwtNDAwIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo0OTQ6NVwiPlxyXG4gICAgICBFeWVzXHJcbiAgICA8L2Rpdj5cclxuICAgIDxGaWVsZFJhbmdlIHYtbW9kZWw9XCJtb2RlbFBhcmFtZXRlcnMubGVmdEV5ZU9wZW5cIiBhcz1cImRpdlwiIDptaW49XCIwXCIgOm1heD1cIjFcIiA6c3RlcD1cIjAuMDFcIiBsYWJlbD1cIkxlZnQgRXllIE9wZW4vQ2xvc2VcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NDk3OjVcIj5cclxuICAgICAgPHRlbXBsYXRlICNsYWJlbD5cclxuICAgICAgICA8ZGl2IGZsZXggaXRlbXMtY2VudGVyIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo0OTk6OVwiPlxyXG4gICAgICAgICAgPGRpdiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTAwOjExXCI+TGVmdCBFeWUgT3Blbi9DbG9zZTwvZGl2PlxyXG4gICAgICAgICAgPGJ1dHRvbiBweC0yIHRleHQteHMgb3V0bGluZS1ub25lIHRpdGxlPVwiUmVzZXQgdmFsdWUgdG8gZGVmYXVsdFwiIEBjbGljaz1cIigpID0+IG1vZGVsUGFyYW1ldGVycy5sZWZ0RXllT3BlbiA9IDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTAxOjExXCI+XHJcbiAgICAgICAgICAgIDxkaXYgaS1zb2xhcjpmb3J3YXJkLWxpbmVhciB0cmFuc2Zvcm0tc2NhbGUteC0tMTAwIHRleHQ9XCJuZXV0cmFsLTUwMCBkYXJrOm5ldXRyYWwtNDAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjUwMjoxM1wiIC8+XHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC90ZW1wbGF0ZT5cclxuICAgIDwvRmllbGRSYW5nZT5cclxuICAgIDxGaWVsZFJhbmdlIHYtbW9kZWw9XCJtb2RlbFBhcmFtZXRlcnMucmlnaHRFeWVPcGVuXCIgYXM9XCJkaXZcIiA6bWluPVwiMFwiIDptYXg9XCIxXCIgOnN0ZXA9XCIwLjAxXCIgbGFiZWw9XCJSaWdodCBFeWUgT3Blbi9DbG9zZVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1MDc6NVwiPlxyXG4gICAgICA8dGVtcGxhdGUgI2xhYmVsPlxyXG4gICAgICAgIDxkaXYgZmxleCBpdGVtcy1jZW50ZXIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjUwOTo5XCI+XHJcbiAgICAgICAgICA8ZGl2IGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1MTA6MTFcIj5SaWdodCBFeWUgT3Blbi9DbG9zZTwvZGl2PlxyXG4gICAgICAgICAgPGJ1dHRvbiBweC0yIHRleHQteHMgb3V0bGluZS1ub25lIHRpdGxlPVwiUmVzZXQgdmFsdWUgdG8gZGVmYXVsdFwiIEBjbGljaz1cIigpID0+IG1vZGVsUGFyYW1ldGVycy5yaWdodEV5ZU9wZW4gPSAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjUxMToxMVwiPlxyXG4gICAgICAgICAgICA8ZGl2IGktc29sYXI6Zm9yd2FyZC1saW5lYXIgdHJhbnNmb3JtLXNjYWxlLXgtLTEwMCB0ZXh0PVwibmV1dHJhbC01MDAgZGFyazpuZXV0cmFsLTQwMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1MTI6MTNcIiAvPlxyXG4gICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgIDwvdGVtcGxhdGU+XHJcbiAgICA8L0ZpZWxkUmFuZ2U+XHJcbiAgICA8RmllbGRSYW5nZSB2LW1vZGVsPVwibW9kZWxQYXJhbWV0ZXJzLmxlZnRFeWVTbWlsZVwiIGFzPVwiZGl2XCIgOm1pbj1cIjBcIiA6bWF4PVwiMVwiIDpzdGVwPVwiMC4wMVwiIGxhYmVsPVwiTGVmdCBFeWUgU21pbGluZ1wiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1MTc6NVwiPlxyXG4gICAgICA8dGVtcGxhdGUgI2xhYmVsPlxyXG4gICAgICAgIDxkaXYgZmxleCBpdGVtcy1jZW50ZXIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjUxOTo5XCI+XHJcbiAgICAgICAgICA8ZGl2IGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1MjA6MTFcIj5MZWZ0IEV5ZSBTbWlsaW5nPC9kaXY+XHJcbiAgICAgICAgICA8YnV0dG9uIHB4LTIgdGV4dC14cyBvdXRsaW5lLW5vbmUgdGl0bGU9XCJSZXNldCB2YWx1ZSB0byBkZWZhdWx0XCIgQGNsaWNrPVwiKCkgPT4gbW9kZWxQYXJhbWV0ZXJzLmxlZnRFeWVTbWlsZSA9IDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTIxOjExXCI+XHJcbiAgICAgICAgICAgIDxkaXYgaS1zb2xhcjpmb3J3YXJkLWxpbmVhciB0cmFuc2Zvcm0tc2NhbGUteC0tMTAwIHRleHQ9XCJuZXV0cmFsLTUwMCBkYXJrOm5ldXRyYWwtNDAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjUyMjoxM1wiIC8+XHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC90ZW1wbGF0ZT5cclxuICAgIDwvRmllbGRSYW5nZT5cclxuICAgIDxGaWVsZFJhbmdlIHYtbW9kZWw9XCJtb2RlbFBhcmFtZXRlcnMucmlnaHRFeWVTbWlsZVwiIGFzPVwiZGl2XCIgOm1pbj1cIjBcIiA6bWF4PVwiMVwiIDpzdGVwPVwiMC4wMVwiIGxhYmVsPVwiUmlnaHQgRXllIFNtaWxpbmdcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTI3OjVcIj5cclxuICAgICAgPHRlbXBsYXRlICNsYWJlbD5cclxuICAgICAgICA8ZGl2IGZsZXggaXRlbXMtY2VudGVyIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1Mjk6OVwiPlxyXG4gICAgICAgICAgPGRpdiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTMwOjExXCI+UmlnaHQgRXllIFNtaWxpbmc8L2Rpdj5cclxuICAgICAgICAgIDxidXR0b24gcHgtMiB0ZXh0LXhzIG91dGxpbmUtbm9uZSB0aXRsZT1cIlJlc2V0IHZhbHVlIHRvIGRlZmF1bHRcIiBAY2xpY2s9XCIoKSA9PiBtb2RlbFBhcmFtZXRlcnMucmlnaHRFeWVTbWlsZSA9IDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTMxOjExXCI+XHJcbiAgICAgICAgICAgIDxkaXYgaS1zb2xhcjpmb3J3YXJkLWxpbmVhciB0cmFuc2Zvcm0tc2NhbGUteC0tMTAwIHRleHQ9XCJuZXV0cmFsLTUwMCBkYXJrOm5ldXRyYWwtNDAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjUzMjoxM1wiIC8+XHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC90ZW1wbGF0ZT5cclxuICAgIDwvRmllbGRSYW5nZT5cclxuXHJcbiAgICA8IS0tIEV5ZWJyb3dzIC0tPlxyXG4gICAgPGRpdiBtYi0yIG10LTQgdGV4dC14cyB0ZXh0LW5ldXRyYWwtNTAwIGZvbnQtc2VtaWJvbGQgZGFyazp0ZXh0LW5ldXRyYWwtNDAwIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1Mzk6NVwiPlxyXG4gICAgICBFeWVicm93c1xyXG4gICAgPC9kaXY+XHJcbiAgICA8RmllbGRSYW5nZSB2LW1vZGVsPVwibW9kZWxQYXJhbWV0ZXJzLmxlZnRFeWVicm93TFJcIiBhcz1cImRpdlwiIDptaW49XCItMVwiIDptYXg9XCIxXCIgOnN0ZXA9XCIwLjAxXCIgbGFiZWw9XCJMZWZ0IGV5ZWJyb3cgTGVmdC9SaWdodFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1NDI6NVwiPlxyXG4gICAgICA8dGVtcGxhdGUgI2xhYmVsPlxyXG4gICAgICAgIDxkaXYgZmxleCBpdGVtcy1jZW50ZXIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjU0NDo5XCI+XHJcbiAgICAgICAgICA8ZGl2IGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1NDU6MTFcIj5MZWZ0IGV5ZWJyb3cgTGVmdC9SaWdodDwvZGl2PlxyXG4gICAgICAgICAgPGJ1dHRvbiBweC0yIHRleHQteHMgb3V0bGluZS1ub25lIHRpdGxlPVwiUmVzZXQgdmFsdWUgdG8gZGVmYXVsdFwiIEBjbGljaz1cIigpID0+IG1vZGVsUGFyYW1ldGVycy5sZWZ0RXllYnJvd0xSID0gMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1NDY6MTFcIj5cclxuICAgICAgICAgICAgPGRpdiBpLXNvbGFyOmZvcndhcmQtbGluZWFyIHRyYW5zZm9ybS1zY2FsZS14LS0xMDAgdGV4dD1cIm5ldXRyYWwtNTAwIGRhcms6bmV1dHJhbC00MDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTQ3OjEzXCIgLz5cclxuICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L3RlbXBsYXRlPlxyXG4gICAgPC9GaWVsZFJhbmdlPlxyXG4gICAgPEZpZWxkUmFuZ2Ugdi1tb2RlbD1cIm1vZGVsUGFyYW1ldGVycy5yaWdodEV5ZWJyb3dMUlwiIGFzPVwiZGl2XCIgOm1pbj1cIi0xXCIgOm1heD1cIjFcIiA6c3RlcD1cIjAuMDFcIiBsYWJlbD1cIlJpZ2h0IGV5ZWJyb3cgTGVmdC9SaWdodFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1NTI6NVwiPlxyXG4gICAgICA8dGVtcGxhdGUgI2xhYmVsPlxyXG4gICAgICAgIDxkaXYgZmxleCBpdGVtcy1jZW50ZXIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjU1NDo5XCI+XHJcbiAgICAgICAgICA8ZGl2IGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1NTU6MTFcIj5SaWdodCBleWVicm93IExlZnQvUmlnaHQ8L2Rpdj5cclxuICAgICAgICAgIDxidXR0b24gcHgtMiB0ZXh0LXhzIG91dGxpbmUtbm9uZSB0aXRsZT1cIlJlc2V0IHZhbHVlIHRvIGRlZmF1bHRcIiBAY2xpY2s9XCIoKSA9PiBtb2RlbFBhcmFtZXRlcnMucmlnaHRFeWVicm93TFIgPSAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjU1NjoxMVwiPlxyXG4gICAgICAgICAgICA8ZGl2IGktc29sYXI6Zm9yd2FyZC1saW5lYXIgdHJhbnNmb3JtLXNjYWxlLXgtLTEwMCB0ZXh0PVwibmV1dHJhbC01MDAgZGFyazpuZXV0cmFsLTQwMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1NTc6MTNcIiAvPlxyXG4gICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgIDwvdGVtcGxhdGU+XHJcbiAgICA8L0ZpZWxkUmFuZ2U+XHJcbiAgICA8RmllbGRSYW5nZSB2LW1vZGVsPVwibW9kZWxQYXJhbWV0ZXJzLmxlZnRFeWVicm93WVwiIGFzPVwiZGl2XCIgOm1pbj1cIi0xXCIgOm1heD1cIjFcIiA6c3RlcD1cIjAuMDFcIiBsYWJlbD1cIkxlZnQgRXllYnJvdyBZIChVcC9Eb3duKVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1NjI6NVwiPlxyXG4gICAgICA8dGVtcGxhdGUgI2xhYmVsPlxyXG4gICAgICAgIDxkaXYgZmxleCBpdGVtcy1jZW50ZXIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjU2NDo5XCI+XHJcbiAgICAgICAgICA8ZGl2IGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1NjU6MTFcIj5MZWZ0IEV5ZWJyb3cgWTwvZGl2PlxyXG4gICAgICAgICAgPGJ1dHRvbiBweC0yIHRleHQteHMgb3V0bGluZS1ub25lIHRpdGxlPVwiUmVzZXQgdmFsdWUgdG8gZGVmYXVsdFwiIEBjbGljaz1cIigpID0+IG1vZGVsUGFyYW1ldGVycy5sZWZ0RXllYnJvd1kgPSAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjU2NjoxMVwiPlxyXG4gICAgICAgICAgICA8ZGl2IGktc29sYXI6Zm9yd2FyZC1saW5lYXIgdHJhbnNmb3JtLXNjYWxlLXgtLTEwMCB0ZXh0PVwibmV1dHJhbC01MDAgZGFyazpuZXV0cmFsLTQwMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1Njc6MTNcIiAvPlxyXG4gICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgIDwvdGVtcGxhdGU+XHJcbiAgICA8L0ZpZWxkUmFuZ2U+XHJcbiAgICA8RmllbGRSYW5nZSB2LW1vZGVsPVwibW9kZWxQYXJhbWV0ZXJzLnJpZ2h0RXllYnJvd1lcIiBhcz1cImRpdlwiIDptaW49XCItMVwiIDptYXg9XCIxXCIgOnN0ZXA9XCIwLjAxXCIgbGFiZWw9XCJSaWdodCBFeWVicm93IFkgKFVwL0Rvd24pXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjU3Mjo1XCI+XHJcbiAgICAgIDx0ZW1wbGF0ZSAjbGFiZWw+XHJcbiAgICAgICAgPGRpdiBmbGV4IGl0ZW1zLWNlbnRlciBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTc0OjlcIj5cclxuICAgICAgICAgIDxkaXYgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjU3NToxMVwiPlJpZ2h0IEV5ZWJyb3cgWTwvZGl2PlxyXG4gICAgICAgICAgPGJ1dHRvbiBweC0yIHRleHQteHMgb3V0bGluZS1ub25lIHRpdGxlPVwiUmVzZXQgdmFsdWUgdG8gZGVmYXVsdFwiIEBjbGljaz1cIigpID0+IG1vZGVsUGFyYW1ldGVycy5yaWdodEV5ZWJyb3dZID0gMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1NzY6MTFcIj5cclxuICAgICAgICAgICAgPGRpdiBpLXNvbGFyOmZvcndhcmQtbGluZWFyIHRyYW5zZm9ybS1zY2FsZS14LS0xMDAgdGV4dD1cIm5ldXRyYWwtNTAwIGRhcms6bmV1dHJhbC00MDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTc3OjEzXCIgLz5cclxuICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L3RlbXBsYXRlPlxyXG4gICAgPC9GaWVsZFJhbmdlPlxyXG4gICAgPEZpZWxkUmFuZ2Ugdi1tb2RlbD1cIm1vZGVsUGFyYW1ldGVycy5sZWZ0RXllYnJvd0FuZ2xlXCIgYXM9XCJkaXZcIiA6bWluPVwiLTFcIiA6bWF4PVwiMVwiIDpzdGVwPVwiMC4wMVwiIGxhYmVsPVwiTGVmdCBFeWVicm93IEFuZ2xlXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjU4Mjo1XCI+XHJcbiAgICAgIDx0ZW1wbGF0ZSAjbGFiZWw+XHJcbiAgICAgICAgPGRpdiBmbGV4IGl0ZW1zLWNlbnRlciBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTg0OjlcIj5cclxuICAgICAgICAgIDxkaXYgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjU4NToxMVwiPkxlZnQgRXllYnJvdyBBbmdsZTwvZGl2PlxyXG4gICAgICAgICAgPGJ1dHRvbiBweC0yIHRleHQteHMgb3V0bGluZS1ub25lIHRpdGxlPVwiUmVzZXQgdmFsdWUgdG8gZGVmYXVsdFwiIEBjbGljaz1cIigpID0+IG1vZGVsUGFyYW1ldGVycy5sZWZ0RXllYnJvd0FuZ2xlID0gMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1ODY6MTFcIj5cclxuICAgICAgICAgICAgPGRpdiBpLXNvbGFyOmZvcndhcmQtbGluZWFyIHRyYW5zZm9ybS1zY2FsZS14LS0xMDAgdGV4dD1cIm5ldXRyYWwtNTAwIGRhcms6bmV1dHJhbC00MDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTg3OjEzXCIgLz5cclxuICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L3RlbXBsYXRlPlxyXG4gICAgPC9GaWVsZFJhbmdlPlxyXG4gICAgPEZpZWxkUmFuZ2Ugdi1tb2RlbD1cIm1vZGVsUGFyYW1ldGVycy5yaWdodEV5ZWJyb3dBbmdsZVwiIGFzPVwiZGl2XCIgOm1pbj1cIi0xXCIgOm1heD1cIjFcIiA6c3RlcD1cIjAuMDFcIiBsYWJlbD1cIlJpZ2h0IEV5ZWJyb3cgQW5nbGVcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTkyOjVcIj5cclxuICAgICAgPHRlbXBsYXRlICNsYWJlbD5cclxuICAgICAgICA8ZGl2IGZsZXggaXRlbXMtY2VudGVyIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo1OTQ6OVwiPlxyXG4gICAgICAgICAgPGRpdiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTk1OjExXCI+UmlnaHQgRXllYnJvdyBBbmdsZTwvZGl2PlxyXG4gICAgICAgICAgPGJ1dHRvbiBweC0yIHRleHQteHMgb3V0bGluZS1ub25lIHRpdGxlPVwiUmVzZXQgdmFsdWUgdG8gZGVmYXVsdFwiIEBjbGljaz1cIigpID0+IG1vZGVsUGFyYW1ldGVycy5yaWdodEV5ZWJyb3dBbmdsZSA9IDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NTk2OjExXCI+XHJcbiAgICAgICAgICAgIDxkaXYgaS1zb2xhcjpmb3J3YXJkLWxpbmVhciB0cmFuc2Zvcm0tc2NhbGUteC0tMTAwIHRleHQ9XCJuZXV0cmFsLTUwMCBkYXJrOm5ldXRyYWwtNDAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjU5NzoxM1wiIC8+XHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC90ZW1wbGF0ZT5cclxuICAgIDwvRmllbGRSYW5nZT5cclxuICAgIDxGaWVsZFJhbmdlIHYtbW9kZWw9XCJtb2RlbFBhcmFtZXRlcnMubGVmdEV5ZWJyb3dGb3JtXCIgYXM9XCJkaXZcIiA6bWluPVwiLTFcIiA6bWF4PVwiMVwiIDpzdGVwPVwiMC4wMVwiIGxhYmVsPVwiTGVmdCBFeWVicm93IEZvcm0gKERlZm9ybWF0aW9uKVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2MDI6NVwiPlxyXG4gICAgICA8dGVtcGxhdGUgI2xhYmVsPlxyXG4gICAgICAgIDxkaXYgZmxleCBpdGVtcy1jZW50ZXIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjYwNDo5XCI+XHJcbiAgICAgICAgICA8ZGl2IGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2MDU6MTFcIj5MZWZ0IEV5ZWJyb3cgRm9ybTwvZGl2PlxyXG4gICAgICAgICAgPGJ1dHRvbiBweC0yIHRleHQteHMgb3V0bGluZS1ub25lIHRpdGxlPVwiUmVzZXQgdmFsdWUgdG8gZGVmYXVsdFwiIEBjbGljaz1cIigpID0+IG1vZGVsUGFyYW1ldGVycy5sZWZ0RXllYnJvd0Zvcm0gPSAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjYwNjoxMVwiPlxyXG4gICAgICAgICAgICA8ZGl2IGktc29sYXI6Zm9yd2FyZC1saW5lYXIgdHJhbnNmb3JtLXNjYWxlLXgtLTEwMCB0ZXh0PVwibmV1dHJhbC01MDAgZGFyazpuZXV0cmFsLTQwMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2MDc6MTNcIiAvPlxyXG4gICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgIDwvdGVtcGxhdGU+XHJcbiAgICA8L0ZpZWxkUmFuZ2U+XHJcbiAgICA8RmllbGRSYW5nZSB2LW1vZGVsPVwibW9kZWxQYXJhbWV0ZXJzLnJpZ2h0RXllYnJvd0Zvcm1cIiBhcz1cImRpdlwiIDptaW49XCItMVwiIDptYXg9XCIxXCIgOnN0ZXA9XCIwLjAxXCIgbGFiZWw9XCJSaWdodCBFeWVicm93IEZvcm0gKERlZm9ybWF0aW9uKVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2MTI6NVwiPlxyXG4gICAgICA8dGVtcGxhdGUgI2xhYmVsPlxyXG4gICAgICAgIDxkaXYgZmxleCBpdGVtcy1jZW50ZXIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjYxNDo5XCI+XHJcbiAgICAgICAgICA8ZGl2IGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2MTU6MTFcIj5SaWdodCBFeWVicm93IEZvcm08L2Rpdj5cclxuICAgICAgICAgIDxidXR0b24gcHgtMiB0ZXh0LXhzIG91dGxpbmUtbm9uZSB0aXRsZT1cIlJlc2V0IHZhbHVlIHRvIGRlZmF1bHRcIiBAY2xpY2s9XCIoKSA9PiBtb2RlbFBhcmFtZXRlcnMucmlnaHRFeWVicm93Rm9ybSA9IDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NjE2OjExXCI+XHJcbiAgICAgICAgICAgIDxkaXYgaS1zb2xhcjpmb3J3YXJkLWxpbmVhciB0cmFuc2Zvcm0tc2NhbGUteC0tMTAwIHRleHQ9XCJuZXV0cmFsLTUwMCBkYXJrOm5ldXRyYWwtNDAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjYxNzoxM1wiIC8+XHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC90ZW1wbGF0ZT5cclxuICAgIDwvRmllbGRSYW5nZT5cclxuXHJcbiAgICA8IS0tIE1vdXRoIC0tPlxyXG4gICAgPGRpdiBtYi0yIG10LTQgdGV4dC14cyB0ZXh0LW5ldXRyYWwtNTAwIGZvbnQtc2VtaWJvbGQgZGFyazp0ZXh0LW5ldXRyYWwtNDAwIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2MjQ6NVwiPlxyXG4gICAgICBNb3V0aFxyXG4gICAgPC9kaXY+XHJcbiAgICA8RmllbGRSYW5nZSB2LW1vZGVsPVwibW9kZWxQYXJhbWV0ZXJzLm1vdXRoT3BlblwiIGFzPVwiZGl2XCIgOm1pbj1cIjBcIiA6bWF4PVwiMVwiIDpzdGVwPVwiMC4wMVwiIGxhYmVsPVwiTW91dGggT3Blbi9DbG9zZVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2Mjc6NVwiPlxyXG4gICAgICA8dGVtcGxhdGUgI2xhYmVsPlxyXG4gICAgICAgIDxkaXYgZmxleCBpdGVtcy1jZW50ZXIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjYyOTo5XCI+XHJcbiAgICAgICAgICA8ZGl2IGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2MzA6MTFcIj5Nb3V0aCBPcGVuL0Nsb3NlPC9kaXY+XHJcbiAgICAgICAgICA8YnV0dG9uIHB4LTIgdGV4dC14cyBvdXRsaW5lLW5vbmUgdGl0bGU9XCJSZXNldCB2YWx1ZSB0byBkZWZhdWx0XCIgQGNsaWNrPVwiKCkgPT4gbW9kZWxQYXJhbWV0ZXJzLm1vdXRoT3BlbiA9IDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NjMxOjExXCI+XHJcbiAgICAgICAgICAgIDxkaXYgaS1zb2xhcjpmb3J3YXJkLWxpbmVhciB0cmFuc2Zvcm0tc2NhbGUteC0tMTAwIHRleHQ9XCJuZXV0cmFsLTUwMCBkYXJrOm5ldXRyYWwtNDAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjYzMjoxM1wiIC8+XHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC90ZW1wbGF0ZT5cclxuICAgIDwvRmllbGRSYW5nZT5cclxuICAgIDxGaWVsZFJhbmdlIHYtbW9kZWw9XCJtb2RlbFBhcmFtZXRlcnMubW91dGhGb3JtXCIgYXM9XCJkaXZcIiA6bWluPVwiLTFcIiA6bWF4PVwiMVwiIDpzdGVwPVwiMC4wMVwiIGxhYmVsPVwiTW91dGggRm9ybSAoRGVmb3JtYXRpb24pXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjYzNzo1XCI+XHJcbiAgICAgIDx0ZW1wbGF0ZSAjbGFiZWw+XHJcbiAgICAgICAgPGRpdiBmbGV4IGl0ZW1zLWNlbnRlciBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NjM5OjlcIj5cclxuICAgICAgICAgIDxkaXYgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjY0MDoxMVwiPk1vdXRoIEZvcm08L2Rpdj5cclxuICAgICAgICAgIDxidXR0b24gcHgtMiB0ZXh0LXhzIG91dGxpbmUtbm9uZSB0aXRsZT1cIlJlc2V0IHZhbHVlIHRvIGRlZmF1bHRcIiBAY2xpY2s9XCIoKSA9PiBtb2RlbFBhcmFtZXRlcnMubW91dGhGb3JtID0gMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2NDE6MTFcIj5cclxuICAgICAgICAgICAgPGRpdiBpLXNvbGFyOmZvcndhcmQtbGluZWFyIHRyYW5zZm9ybS1zY2FsZS14LS0xMDAgdGV4dD1cIm5ldXRyYWwtNTAwIGRhcms6bmV1dHJhbC00MDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NjQyOjEzXCIgLz5cclxuICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L3RlbXBsYXRlPlxyXG4gICAgPC9GaWVsZFJhbmdlPlxyXG5cclxuICAgIDwhLS0gRmFjZSAtLT5cclxuICAgIDxkaXYgbWItMiBtdC00IHRleHQteHMgdGV4dC1uZXV0cmFsLTUwMCBmb250LXNlbWlib2xkIGRhcms6dGV4dC1uZXV0cmFsLTQwMCBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NjQ5OjVcIj5cclxuICAgICAgRmFjZVxyXG4gICAgPC9kaXY+XHJcbiAgICA8RmllbGRSYW5nZSB2LW1vZGVsPVwibW9kZWxQYXJhbWV0ZXJzLmNoZWVrXCIgYXM9XCJkaXZcIiA6bWluPVwiMFwiIDptYXg9XCIxXCIgOnN0ZXA9XCIwLjAxXCIgbGFiZWw9XCJDaGVla1wiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2NTI6NVwiPlxyXG4gICAgICA8dGVtcGxhdGUgI2xhYmVsPlxyXG4gICAgICAgIDxkaXYgZmxleCBpdGVtcy1jZW50ZXIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjY1NDo5XCI+XHJcbiAgICAgICAgICA8ZGl2IGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2NTU6MTFcIj5DaGVlazwvZGl2PlxyXG4gICAgICAgICAgPGJ1dHRvbiBweC0yIHRleHQteHMgb3V0bGluZS1ub25lIHRpdGxlPVwiUmVzZXQgdmFsdWUgdG8gZGVmYXVsdFwiIEBjbGljaz1cIigpID0+IG1vZGVsUGFyYW1ldGVycy5jaGVlayA9IDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NjU2OjExXCI+XHJcbiAgICAgICAgICAgIDxkaXYgaS1zb2xhcjpmb3J3YXJkLWxpbmVhciB0cmFuc2Zvcm0tc2NhbGUteC0tMTAwIHRleHQ9XCJuZXV0cmFsLTUwMCBkYXJrOm5ldXRyYWwtNDAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjY1NzoxM1wiIC8+XHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC90ZW1wbGF0ZT5cclxuICAgIDwvRmllbGRSYW5nZT5cclxuXHJcbiAgICA8IS0tIEJvZHkgLS0+XHJcbiAgICA8ZGl2IG1iLTIgbXQtNCB0ZXh0LXhzIHRleHQtbmV1dHJhbC01MDAgZm9udC1zZW1pYm9sZCBkYXJrOnRleHQtbmV1dHJhbC00MDAgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjY2NDo1XCI+XHJcbiAgICAgIEJvZHlcclxuICAgIDwvZGl2PlxyXG4gICAgPEZpZWxkUmFuZ2Ugdi1tb2RlbD1cIm1vZGVsUGFyYW1ldGVycy5ib2R5QW5nbGVYXCIgYXM9XCJkaXZcIiA6bWluPVwiLTEwXCIgOm1heD1cIjEwXCIgOnN0ZXA9XCIwLjFcIiBsYWJlbD1cIkJvZHkgcm90YXRpb24gWFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2Njc6NVwiPlxyXG4gICAgICA8dGVtcGxhdGUgI2xhYmVsPlxyXG4gICAgICAgIDxkaXYgZmxleCBpdGVtcy1jZW50ZXIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjY2OTo5XCI+XHJcbiAgICAgICAgICA8ZGl2IGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2NzA6MTFcIj5Cb2R5IHJvdGF0aW9uIFg8L2Rpdj5cclxuICAgICAgICAgIDxidXR0b24gcHgtMiB0ZXh0LXhzIG91dGxpbmUtbm9uZSB0aXRsZT1cIlJlc2V0IHZhbHVlIHRvIGRlZmF1bHRcIiBAY2xpY2s9XCIoKSA9PiBtb2RlbFBhcmFtZXRlcnMuYm9keUFuZ2xlWCA9IDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NjcxOjExXCI+XHJcbiAgICAgICAgICAgIDxkaXYgaS1zb2xhcjpmb3J3YXJkLWxpbmVhciB0cmFuc2Zvcm0tc2NhbGUteC0tMTAwIHRleHQ9XCJuZXV0cmFsLTUwMCBkYXJrOm5ldXRyYWwtNDAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjY3MjoxM1wiIC8+XHJcbiAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC90ZW1wbGF0ZT5cclxuICAgIDwvRmllbGRSYW5nZT5cclxuICAgIDxGaWVsZFJhbmdlIHYtbW9kZWw9XCJtb2RlbFBhcmFtZXRlcnMuYm9keUFuZ2xlWVwiIGFzPVwiZGl2XCIgOm1pbj1cIi0xMFwiIDptYXg9XCIxMFwiIDpzdGVwPVwiMC4xXCIgbGFiZWw9XCJCb2R5IHJvdGF0aW9uIFlcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6Njc3OjVcIj5cclxuICAgICAgPHRlbXBsYXRlICNsYWJlbD5cclxuICAgICAgICA8ZGl2IGZsZXggaXRlbXMtY2VudGVyIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2Nzk6OVwiPlxyXG4gICAgICAgICAgPGRpdiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NjgwOjExXCI+Qm9keSByb3RhdGlvbiBZPC9kaXY+XHJcbiAgICAgICAgICA8YnV0dG9uIHB4LTIgdGV4dC14cyBvdXRsaW5lLW5vbmUgdGl0bGU9XCJSZXNldCB2YWx1ZSB0byBkZWZhdWx0XCIgQGNsaWNrPVwiKCkgPT4gbW9kZWxQYXJhbWV0ZXJzLmJvZHlBbmdsZVkgPSAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjY4MToxMVwiPlxyXG4gICAgICAgICAgICA8ZGl2IGktc29sYXI6Zm9yd2FyZC1saW5lYXIgdHJhbnNmb3JtLXNjYWxlLXgtLTEwMCB0ZXh0PVwibmV1dHJhbC01MDAgZGFyazpuZXV0cmFsLTQwMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2ODI6MTNcIiAvPlxyXG4gICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgIDwvdGVtcGxhdGU+XHJcbiAgICA8L0ZpZWxkUmFuZ2U+XHJcbiAgICA8RmllbGRSYW5nZSB2LW1vZGVsPVwibW9kZWxQYXJhbWV0ZXJzLmJvZHlBbmdsZVpcIiBhcz1cImRpdlwiIDptaW49XCItMTBcIiA6bWF4PVwiMTBcIiA6c3RlcD1cIjAuMVwiIGxhYmVsPVwiQm9keSByb3RhdGlvbiBaXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjY4Nzo1XCI+XHJcbiAgICAgIDx0ZW1wbGF0ZSAjbGFiZWw+XHJcbiAgICAgICAgPGRpdiBmbGV4IGl0ZW1zLWNlbnRlciBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6Njg5OjlcIj5cclxuICAgICAgICAgIDxkaXYgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjY5MDoxMVwiPkJvZHkgcm90YXRpb24gWjwvZGl2PlxyXG4gICAgICAgICAgPGJ1dHRvbiBweC0yIHRleHQteHMgb3V0bGluZS1ub25lIHRpdGxlPVwiUmVzZXQgdmFsdWUgdG8gZGVmYXVsdFwiIEBjbGljaz1cIigpID0+IG1vZGVsUGFyYW1ldGVycy5ib2R5QW5nbGVaID0gMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2OTE6MTFcIj5cclxuICAgICAgICAgICAgPGRpdiBpLXNvbGFyOmZvcndhcmQtbGluZWFyIHRyYW5zZm9ybS1zY2FsZS14LS0xMDAgdGV4dD1cIm5ldXRyYWwtNTAwIGRhcms6bmV1dHJhbC00MDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NjkyOjEzXCIgLz5cclxuICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L3RlbXBsYXRlPlxyXG4gICAgPC9GaWVsZFJhbmdlPlxyXG4gICAgPEZpZWxkUmFuZ2Ugdi1tb2RlbD1cIm1vZGVsUGFyYW1ldGVycy5icmVhdGhcIiBhcz1cImRpdlwiIDptaW49XCIwXCIgOm1heD1cIjFcIiA6c3RlcD1cIjAuMDFcIiBsYWJlbD1cIkJyZWF0aFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo2OTc6NVwiPlxyXG4gICAgICA8dGVtcGxhdGUgI2xhYmVsPlxyXG4gICAgICAgIDxkaXYgZmxleCBpdGVtcy1jZW50ZXIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjY5OTo5XCI+XHJcbiAgICAgICAgICA8ZGl2IGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo3MDA6MTFcIj5CcmVhdGg8L2Rpdj5cclxuICAgICAgICAgIDxidXR0b24gcHgtMiB0ZXh0LXhzIG91dGxpbmUtbm9uZSB0aXRsZT1cIlJlc2V0IHZhbHVlIHRvIGRlZmF1bHRcIiBAY2xpY2s9XCIoKSA9PiBtb2RlbFBhcmFtZXRlcnMuYnJlYXRoID0gMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo3MDE6MTFcIj5cclxuICAgICAgICAgICAgPGRpdiBpLXNvbGFyOmZvcndhcmQtbGluZWFyIHRyYW5zZm9ybS1zY2FsZS14LS0xMDAgdGV4dD1cIm5ldXRyYWwtNTAwIGRhcms6bmV1dHJhbC00MDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NzAyOjEzXCIgLz5cclxuICAgICAgICAgIDwvYnV0dG9uPlxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L3RlbXBsYXRlPlxyXG4gICAgPC9GaWVsZFJhbmdlPlxyXG4gIDwvU2VjdGlvbj5cclxuICA8U2VjdGlvblxyXG4gICAgOnRpdGxlPVwidCgnc2V0dGluZ3MubGl2ZTJkLmV4cHJlc3Npb25zLnRpdGxlJylcIlxyXG4gICAgaWNvbj1cImktc29sYXI6ZmFjZS1zY2FuLWNpcmNsZS1ib2xkLWR1b3RvbmVcIlxyXG4gICAgOmNsYXNzPVwiW1xyXG4gICAgICAncm91bmRlZC14bCcsXHJcbiAgICAgICdiZy13aGl0ZS84MCAgZGFyazpiZy1ibGFjay83NScsXHJcbiAgICAgICdiYWNrZHJvcC1ibHVyLWxnJyxcclxuICAgIF1cIlxyXG4gICAgc2l6ZT1cInNtXCJcclxuICAgIDpleHBhbmQ9XCJmYWxzZVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo3MDg6M1wiXHJcbiAgPlxyXG4gICAgPGRpdiBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjcxOTo1XCI+XHJcbiAgICAgIDxzcGFuIHRleHQtc20gdGV4dC1uZXV0cmFsLTYwMCBkYXJrOnRleHQtbmV1dHJhbC00MDAgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjcyMDo3XCI+e3sgdCgnc2V0dGluZ3MubGl2ZTJkLmV4cHJlc3Npb25zLm92ZXJyaWRlLXRvZ2dsZScpIH19PC9zcGFuPlxyXG4gICAgICA8Q2hlY2tib3ggdi1tb2RlbD1cImxpdmUyZEV4cHJlc3Npb25FbmFibGVkXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjcyMTo3XCIgLz5cclxuICAgIDwvZGl2PlxyXG4gICAgPGRpdiB2LWlmPVwiIWxpdmUyZEV4cHJlc3Npb25FbmFibGVkXCIgcHktMiB0ZXh0LXhzIHRleHQtbmV1dHJhbC01MDAgZGFyazp0ZXh0LW5ldXRyYWwtNDAwIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo3MjM6NVwiPlxyXG4gICAgICB7eyB0KCdzZXR0aW5ncy5saXZlMmQuZXhwcmVzc2lvbnMuc2RrLXByZXNldC1wcmVzZXJ2ZWQtbm90aWNlJykgfX1cclxuICAgIDwvZGl2PlxyXG4gICAgPHRlbXBsYXRlIHYtZWxzZS1pZj1cImV4cHJlc3Npb25Hcm91cHMuc2l6ZSA9PT0gMFwiPlxyXG4gICAgICA8ZGl2IHB5LTIgdGV4dC1zbSB0ZXh0LW5ldXRyYWwtNTAwIGRhcms6dGV4dC1uZXV0cmFsLTQwMCBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NzI3OjdcIj5cclxuICAgICAgICB7eyB0KCdzZXR0aW5ncy5saXZlMmQuZXhwcmVzc2lvbnMubm8tZXhwcmVzc2lvbicpIH19XHJcbiAgICAgIDwvZGl2PlxyXG4gICAgPC90ZW1wbGF0ZT5cclxuICAgIDx0ZW1wbGF0ZSB2LWVsc2U+XHJcbiAgICAgIDwhLS0gRXhwcmVzc2lvbiBwcmV2aWV3IHRvZ2dsZXMgLS0+XHJcbiAgICAgIDxkaXYgZmxleCBmbGV4LWNvbCBnYXAtMiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NzMzOjdcIj5cclxuICAgICAgICA8ZGl2XHJcbiAgICAgICAgICB2LWZvcj1cIltncm91cE5hbWUsIGdyb3VwXSBpbiBleHByZXNzaW9uR3JvdXBzXCJcclxuICAgICAgICAgIDprZXk9XCJncm91cE5hbWVcIlxyXG4gICAgICAgICAgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo3MzQ6OVwiXHJcbiAgICAgICAgPlxyXG4gICAgICAgICAgPHNwYW4gdGV4dC1zbSB0ZXh0LW5ldXRyYWwtNzAwIGRhcms6dGV4dC1uZXV0cmFsLTMwMCBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NzM5OjExXCI+e3sgZ3JvdXBOYW1lIH19PC9zcGFuPlxyXG4gICAgICAgICAgPENoZWNrYm94XHJcbiAgICAgICAgICAgIDptb2RlbC12YWx1ZT1cImlzR3JvdXBBY3RpdmUoZ3JvdXApXCJcclxuICAgICAgICAgICAgQHVwZGF0ZTptb2RlbC12YWx1ZT1cImV4cHJlc3Npb25TdG9yZS50b2dnbGUoZ3JvdXBOYW1lKVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo3NDA6MTFcIlxyXG4gICAgICAgICAgLz5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC9kaXY+XHJcblxyXG4gICAgICA8ZGl2IG10LTQgZmxleCBmbGV4LXdyYXAgaXRlbXMtY2VudGVyIGdhcC0zIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo3NDc6N1wiPlxyXG4gICAgICAgIDxzcGFuIHdoaXRlc3BhY2Utbm93cmFwIHRleHQtc20gdGV4dC1uZXV0cmFsLTYwMCBkYXJrOnRleHQtbmV1dHJhbC00MDAgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjc0ODo5XCI+e3sgdCgnc2V0dGluZ3MubGl2ZTJkLmV4cHJlc3Npb25zLmV4cG9zZS10by1sbG0tdG9nZ2xlJykgfX08L3NwYW4+XHJcbiAgICAgICAgPFNlbGVjdFRhYlxyXG4gICAgICAgICAgOm1vZGVsLXZhbHVlPVwiZXhwcmVzc2lvblN0b3JlLmxsbU1vZGVcIlxyXG4gICAgICAgICAgOm9wdGlvbnM9XCJsbG1Nb2RlT3B0aW9uc1wiXHJcbiAgICAgICAgICBzaXplPVwic21cIlxyXG4gICAgICAgICAgQHVwZGF0ZTptb2RlbC12YWx1ZT1cIih2OiBzdHJpbmcpID0+IGV4cHJlc3Npb25TdG9yZS5zZXRMbG1Nb2RlKHYgYXMgJ2FsbCcgfCAnbm9uZScgfCAnY3VzdG9tJylcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NzQ5OjlcIlxyXG4gICAgICAgIC8+XHJcbiAgICAgIDwvZGl2PlxyXG4gICAgICA8c3BhbiB2LWlmPVwiZXhwcmVzc2lvblN0b3JlLmxsbU1vZGUgIT09ICdub25lJ1wiIHRleHQteHMgdGV4dC1uZXV0cmFsLTUwMCBkYXJrOnRleHQtbmV1dHJhbC00MDAgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjc1Njo3XCI+XHJcbiAgICAgICAge3sgdCgnc2V0dGluZ3MubGl2ZTJkLmV4cHJlc3Npb25zLmxsbS1pbnRlZ3JhdGlvbi13aXAnKSB9fVxyXG4gICAgICA8L3NwYW4+XHJcblxyXG4gICAgICA8IS0tIEN1c3RvbSBwZXItZXhwcmVzc2lvbiBMTE0gdG9nZ2xlcyAob25seSB3aGVuIG1vZGUgPSAnY3VzdG9tJykgLS0+XHJcbiAgICAgIDxkaXYgdi1pZj1cImV4cHJlc3Npb25TdG9yZS5sbG1Nb2RlID09PSAnY3VzdG9tJ1wiIG10LTIgZmxleCBmbGV4LWNvbCBnYXAtMiBib3JkZXItbC0yIGJvcmRlci1uZXV0cmFsLTIwMCBwbC0zIGRhcms6Ym9yZGVyLW5ldXRyYWwtNzAwIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo3NjE6N1wiPlxyXG4gICAgICAgIDxkaXZcclxuICAgICAgICAgIHYtZm9yPVwiW2dyb3VwTmFtZV0gaW4gZXhwcmVzc2lvbkdyb3Vwc1wiXHJcbiAgICAgICAgICA6a2V5PVwiYGxsbS0ke2dyb3VwTmFtZX1gXCJcclxuICAgICAgICAgIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6NzYyOjlcIlxyXG4gICAgICAgID5cclxuICAgICAgICAgIDxzcGFuIHRleHQteHMgdGV4dC1uZXV0cmFsLTYwMCBkYXJrOnRleHQtbmV1dHJhbC00MDAgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjc2NzoxMVwiPnt7IGdyb3VwTmFtZSB9fTwvc3Bhbj5cclxuICAgICAgICAgIDxDaGVja2JveFxyXG4gICAgICAgICAgICA6bW9kZWwtdmFsdWU9XCJleHByZXNzaW9uU3RvcmUubGxtRXhwb3NlZC5nZXQoZ3JvdXBOYW1lKSA/PyBmYWxzZVwiXHJcbiAgICAgICAgICAgIEB1cGRhdGU6bW9kZWwtdmFsdWU9XCIodjogYm9vbGVhbikgPT4gZXhwcmVzc2lvblN0b3JlLnNldExsbUV4cG9zZWQoZ3JvdXBOYW1lLCB2KVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvbGl2ZTJkLnZ1ZTo3Njg6MTFcIlxyXG4gICAgICAgICAgLz5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgPC9kaXY+XHJcblxyXG4gICAgICA8IS0tIEFjdGlvbiBidXR0b25zIC0tPlxyXG4gICAgICA8ZGl2IG10LTQgZmxleCBnYXAtMiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6Nzc2OjdcIj5cclxuICAgICAgICA8QnV0dG9uIHZhcmlhbnQ9XCJzZWNvbmRhcnlcIiBAY2xpY2s9XCJleHByZXNzaW9uU3RvcmUuc2F2ZURlZmF1bHRzKClcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWU6Nzc3OjlcIj5cclxuICAgICAgICAgIHt7IHQoJ3NldHRpbmdzLmxpdmUyZC5leHByZXNzaW9ucy5zYXZlLWRlZmF1bHQnKSB9fVxyXG4gICAgICAgIDwvQnV0dG9uPlxyXG4gICAgICAgIDxCdXR0b24gdmFyaWFudD1cInNlY29uZGFyeVwiIEBjbGljaz1cImV4cHJlc3Npb25TdG9yZS5yZXNldEFsbCgpXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9saXZlMmQudnVlOjc4MDo5XCI+XHJcbiAgICAgICAgICB7eyB0KCdzZXR0aW5ncy5saXZlMmQuZXhwcmVzc2lvbnMucmVzZXQnKSB9fVxyXG4gICAgICAgIDwvQnV0dG9uPlxyXG4gICAgICA8L2Rpdj5cclxuICAgIDwvdGVtcGxhdGU+XHJcbiAgPC9TZWN0aW9uPlxyXG48L3RlbXBsYXRlPlxyXG4iXSwiZmlsZSI6IkM6L1VzZXJzL0FkbWluaXN0cmF0b3IvYWlyaS1hcHAvcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2xpdmUyZC52dWUifQ==

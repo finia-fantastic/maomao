@@ -2,10 +2,11 @@ import type { createContext } from '@moeru/eventa/adapters/electron/main'
 
 import type { VocabStats } from '../../../../shared/eventa'
 
+import process from 'node:process'
+
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import process from 'node:process'
 import { DatabaseSync } from 'node:sqlite'
 
 import { useLogg } from '@guiiai/logg'
@@ -97,7 +98,28 @@ function readVocabStats(dbPath: string): VocabStats {
  * failure. `pythonw` (spawned via PATH) not being found surfaces asynchronously as a
  * logged `error` event, since a detached spawn returns before the OS resolves the binary.
  */
-function openVocabApp(): { ok: boolean, error?: string } {
+import { Socket } from 'node:net'
+
+function tryFocusVocabWindow(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const sock = new Socket()
+    sock.setTimeout(1000)
+    sock.connect(47631, '127.0.0.1', () => {
+      sock.write('{"command":"show"}\n')
+      sock.destroy()
+      resolve(true)
+    })
+    sock.on('error', () => resolve(false))
+    sock.on('timeout', () => { sock.destroy(); resolve(false) })
+  })
+}
+
+async function openVocabApp(): Promise<{ ok: boolean, error?: string }> {
+  // Try to focus existing window first via socket
+  if (await tryFocusVocabWindow()) {
+    return { ok: true }
+  }
+
   const appDir = dirname(WORDS_DB_PATH)
   const entry = join(appDir, VOCAB_APP_ENTRY)
   if (!existsSync(entry)) {
@@ -109,11 +131,6 @@ function openVocabApp(): { ok: boolean, error?: string } {
       cwd: appDir,
       detached: true,
       stdio: 'ignore',
-      // NOTICE: force Python UTF-8 mode. mainv10.py has a top-level `print("✅ …")`;
-      // under Node's spawn, Python's stdout defaults to the GBK codepage which cannot
-      // encode the emoji, raising UnicodeEncodeError and crashing the app at startup.
-      // PYTHONUTF8=1 makes stdout UTF-8 so the print (and the app) runs. Verified: without
-      // it the spawned process exits code 1 immediately; with it, it stays up.
       env: { ...process.env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' },
     })
     child.on('error', err => log.withError(err).error('Failed to launch vocab app'))

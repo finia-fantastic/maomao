@@ -1,9 +1,10 @@
 import type { VRM, VRMHumanBoneName } from '@pixiv/three-vrm'
-import type { Material, Object3D } from 'three'
-import { Euler, Group, Mesh, Vector3 } from 'three'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import type { Material, Mesh, Object3D } from 'three'
 
 import type { VrmHook } from './hooks'
+
+import { Euler, Group, Vector3 } from 'three'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
 export type HandPropType = 'none' | 'camera' | 'pencil' | 'tablet-pen'
 
@@ -16,14 +17,14 @@ interface PropConfig {
 }
 
 const PROP_CONFIGS: Record<Exclude<HandPropType, 'none'>, PropConfig> = {
-  camera: {
+  'camera': {
     glbUrl: new URL('../../assets/vrm/props/camera.glb', import.meta.url).href,
     bones: ['rightHand', 'leftHand'],
     position: new Vector3(0, -0.03, 0.03),
     rotation: new Euler(0, 0, 0),
     scale: 1,
   },
-  pencil: {
+  'pencil': {
     glbUrl: new URL('../../assets/vrm/props/pencil.glb', import.meta.url).href,
     bones: ['rightHand'],
     position: new Vector3(0.01, -0.01, 0.04),
@@ -40,8 +41,13 @@ const PROP_CONFIGS: Record<Exclude<HandPropType, 'none'>, PropConfig> = {
 }
 
 const TEXTURE_SLOTS = [
-  'map', 'normalMap', 'roughnessMap', 'metalnessMap',
-  'emissiveMap', 'aoMap', 'alphaMap',
+  'map',
+  'normalMap',
+  'roughnessMap',
+  'metalnessMap',
+  'emissiveMap',
+  'aoMap',
+  'alphaMap',
 ] as const
 
 interface HandPropHandle {
@@ -61,7 +67,8 @@ function disposeMaterial(material: Material) {
   const slots = material as unknown as Record<string, { isTexture?: boolean, dispose?: () => void } | undefined>
   for (const slot of TEXTURE_SLOTS) {
     const texture = slots[slot]
-    if (texture?.isTexture) texture.dispose?.()
+    if (texture?.isTexture)
+      texture.dispose?.()
   }
   material.dispose()
 }
@@ -69,10 +76,14 @@ function disposeMaterial(material: Material) {
 function disposeObjectTree(root: Object3D) {
   root.traverse((object) => {
     const mesh = object as Mesh
-    if (!mesh.isMesh) return
+    if (!mesh.isMesh)
+      return
     mesh.geometry?.dispose()
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-    for (const mat of materials) { if (mat) disposeMaterial(mat) }
+    for (const mat of materials) {
+      if (mat)
+        disposeMaterial(mat)
+    }
   })
 }
 
@@ -98,13 +109,15 @@ function attachToBone(handNode: Object3D, config: PropConfig): HandPropHandle {
   const handle: HandPropHandle = { root, disposed: false }
   handNode.add(root)
 
-  if (config.glbUrl) loadPropModel(config.glbUrl, handle)
+  if (config.glbUrl)
+    loadPropModel(config.glbUrl, handle)
   return handle
 }
 
 function attachForType(vrm: VRM, type: Exclude<HandPropType, 'none'>) {
   const humanoid = vrm.humanoid
-  if (!humanoid) return
+  if (!humanoid)
+    return
 
   const handles: HandPropHandle[] = []
 
@@ -128,7 +141,8 @@ function attachForType(vrm: VRM, type: Exclude<HandPropType, 'none'>) {
     for (const cfg of configs) {
       for (const bone of cfg.bones) {
         const node = humanoid.getNormalizedBoneNode(bone)
-        if (node) handles.push(attachToBone(node, cfg))
+        if (node)
+          handles.push(attachToBone(node, cfg))
       }
     }
   }
@@ -136,30 +150,37 @@ function attachForType(vrm: VRM, type: Exclude<HandPropType, 'none'>) {
     const config = PROP_CONFIGS[type]
     for (const bone of config.bones) {
       const node = humanoid.getNormalizedBoneNode(bone)
-      if (node) handles.push(attachToBone(node, config))
+      if (node)
+        handles.push(attachToBone(node, config))
     }
   }
 
-  if (handles.length) handPropRegistry.set(vrm, handles)
+  if (handles.length)
+    handPropRegistry.set(vrm, handles)
 }
 
 export function switchVrmHandProp(vrm: VRM, type: HandPropType) {
   disposeVrmHandProp(vrm)
-  if (type !== 'none') attachForType(vrm, type)
+  if (type !== 'none')
+    attachForType(vrm, type)
 }
 
 export function syncVrmHandProp(vrm: VRM) {
   const handles = handPropRegistry.get(vrm)
-  if (!handles) return
+  if (!handles)
+    return
   for (const h of handles) {
-    if (!h.disposed && h.root.parent) h.root.updateWorldMatrix(true, true)
+    if (!h.disposed && h.root.parent)
+      h.root.updateWorldMatrix(true, true)
   }
 }
 
 export function disposeVrmHandProp(vrm?: VRM) {
-  if (!vrm) return
+  if (!vrm)
+    return
   const handles = handPropRegistry.get(vrm)
-  if (!handles) return
+  if (!handles)
+    return
   for (const h of handles) {
     h.disposed = true
     h.root.removeFromParent()

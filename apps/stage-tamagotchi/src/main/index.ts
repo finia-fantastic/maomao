@@ -4,7 +4,8 @@ import type { FileLoggerHandle } from './app/file-logger'
 
 import process, { env, platform } from 'node:process'
 
-import { dirname } from 'node:path'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import messages from '@proj-airi/i18n/locales'
@@ -13,7 +14,7 @@ import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { Format, LogLevel, setGlobalFormat, setGlobalHookPostLog, setGlobalLogLevel, useLogg } from '@guiiai/logg'
 import { createContext } from '@moeru/eventa/adapters/electron/main'
 import { initScreenCaptureForMain } from '@proj-airi/electron-screen-capture/main'
-import { app, ipcMain, session } from 'electron'
+import { app, ipcMain, net, protocol, session } from 'electron'
 import { noop } from 'es-toolkit'
 import { createLoggLogger, injeca, lifecycle } from 'injeca'
 import { isLinux } from 'std-env'
@@ -30,6 +31,7 @@ import { setElectronMainDirname } from './libs/electron/location'
 import { createI18n } from './libs/i18n'
 import { createWindowAuthManagerService } from './services/airi/auth'
 import { setupServerChannel } from './services/airi/channel-server'
+import { setupGameControlService } from './services/airi/game-control'
 import { setupGodotStageManager } from './services/airi/godot-stage'
 import { setupBuiltInServer } from './services/airi/http-server'
 import { setupMcpStdioManager } from './services/airi/mcp-servers'
@@ -38,9 +40,9 @@ import { setupArtistryBridge } from './services/airi/widgets/artistry-bridge'
 import { setupAutoUpdater } from './services/electron/auto-updater'
 import { setupGlobalShortcutService } from './services/electron/global-shortcut'
 import { setupMediaPermissionHandlers } from './services/electron/media-permissions'
+import { closeMemoryDatabase, initMemoryDatabase } from './services/memory'
 import { setupTray } from './tray'
 import { setupAboutWindowReusable } from './windows/about'
-import { initMemoryDatabase, closeMemoryDatabase } from './services/memory'
 import { setupBeatSync } from './windows/beat-sync'
 import { setupCaptionWindowManager } from './windows/caption'
 import { setupChatWindowReusableFunc } from './windows/chat'
@@ -99,6 +101,12 @@ if (isLinux) {
 app.dock?.setIcon(icon)
 electronApp.setAppUserModelId('ai.moeru.airi')
 
+// Register custom protocol for serving temp images (bypasses CSP + DOMPurify file:// restrictions).
+// Must be called before app.whenReady().
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'airi-image', privileges: { bypassCSP: true, stream: true, supportFetchAPI: true } },
+])
+
 // Track the real user-facing AIRI window because the process also owns hidden utility windows.
 // The second-instance handler should restore the main UI instead of accidentally surfacing internals.
 let userFacingMainWindow: BrowserWindow | undefined
@@ -111,6 +119,13 @@ if (shouldStartMainProcess) {
 let fileLogger: FileLoggerHandle = nullFileLoggerHandle
 let skipFileLogging = false
 
+/**
+ * 3D Game Visual Control System service.
+ * Initialised inside app.whenReady after the eventa context is created;
+ * accessible here for cleanup in handleAppExit.
+ */
+let gameControlService: ReturnType<typeof setupGameControlService> | undefined
+
 app.whenReady().then(async () => {
   if (!shouldStartMainProcess) {
     return
@@ -118,6 +133,15 @@ app.whenReady().then(async () => {
 
   // Initialize the memory SQLite database (singleton; used by createMemoryService)
   initMemoryDatabase()
+
+  // Serve temp images via airi-image:// custom protocol.
+  // TEMP is read inside the handler so the directory can be created lazily.
+  protocol.handle('airi-image', (request) => {
+    // request.url = "airi-image://<filename>"
+    const fileName = decodeURIComponent(request.url.slice('airi-image://'.length))
+    const filePath = join(tmpdir(), 'airi-images', fileName)
+    return net.fetch(`file:///${filePath.replace(/\\/g, '/')}`)
+  })
 
   setupMediaPermissionHandlers(session.defaultSession)
 
@@ -273,6 +297,18 @@ app.whenReady().then(async () => {
     },
   })
 
+  // ── Game Control Service ────────────────────────────────────────
+  // System-wide 3D Game Visual Control System, wired to the shared eventa context.
+  // Registered in a standalone invoke so it is eagerly booted.
+  // gameControlService is declared at module level (around line 115) so handleAppExit can reach it.
+  injeca.invoke({
+    dependsOn: {},
+    callback: async () => {
+      const { context } = createContext(ipcMain)
+      gameControlService = setupGameControlService({ context })
+    },
+  })
+
   injeca.start().catch(err => console.error(err))
 
   // Lifecycle
@@ -332,6 +368,11 @@ async function handleAppExit() {
   await Promise.all([
     logIfError('execute onAppBeforeQuit hooks', () => emitAppBeforeQuit()),
     logIfError('stop injeca', () => injeca.stop()),
+    logIfError('stop game control service', () => {
+      if (gameControlService) {
+        gameControlService.stop()
+      }
+    }),
   ])
 
   // Close the memory database after all services stopped

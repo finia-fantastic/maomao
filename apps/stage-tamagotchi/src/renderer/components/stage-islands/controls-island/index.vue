@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { defineInvoke } from '@moeru/eventa'
 import { useElectronEventaContext, useElectronEventaInvoke, useElectronMouseInElement } from '@proj-airi/electron-vueuse'
+import { useCharacterOrchestratorStore } from '@proj-airi/stage-ui/stores/character'
+import { useChatSessionStore } from '@proj-airi/stage-ui/stores/chat/session-store'
+
+import { useVisionOrchestratorStore } from '@proj-airi/stage-ui/stores/modules/vision/orchestrator'
 import { useSettings } from '@proj-airi/stage-ui/stores/settings'
-import { useVisionStore } from '@proj-airi/stage-ui/stores/modules/vision/store'
 import { useTheme } from '@proj-airi/ui'
 import { refDebounced, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
@@ -130,26 +133,125 @@ const adjustStyleClasses = computed(() => {
  */
 const startDraggingWindow = !isLinux() ? defineInvoke(context.value, electronStartDraggingWindow) : undefined
 
-const visionStore = useVisionStore()
+const visionOrchestrator = useVisionOrchestratorStore()
+const characterOrchestrator = useCharacterOrchestratorStore()
+const chatSessionStore = useChatSessionStore()
 
-/**
- * Trigger a one-shot screen capture + vision analysis.
- * Increments manualLookRequest which is watched by
- * useVisionScreenWatch — same flow as saying "看看" in chat.
- */
-function takeScreenshot() {
-  console.info('[Controls] Screenshot button clicked')
-  if (!visionStore.screenWatchEnabled) {
-    visionStore.screenWatchEnabled = true
-    // Give the stream a moment to start before triggering capture.
-    // screenWatchEnabled watcher calls startLoop → ensureStream →
-    // getDisplayMedia (system dialog). We wait briefly then force a tick.
-    setTimeout(() => {
-      visionStore.manualLookRequest += 1
-    }, 2000)
+// ---- Screenshot pipeline: Capture → VLM → React -------------------------
+
+async function captureScreen(): Promise<string | null> {
+  const result = await window.electron.ipcRenderer.invoke('screen-capture:capture')
+  const dataUrl = result?.dataUrl
+  if (!dataUrl) {
+    console.warn('[Capture] IPC returned no data')
+    return null
+  }
+  console.info('[Capture] got data URL, length:', dataUrl.length)
+  return dataUrl
+}
+
+async function processCapture(dataUrl: string): Promise<string | null> {
+  const vlmResult = await visionOrchestrator.processCapture({
+    imageDataUrl: dataUrl,
+    workloadId: 'screen:commentary',
+    sourceId: 'screenshot-button',
+    capturedAt: Date.now(),
+    publishContext: false,
+  })
+  const text = vlmResult.text
+  if (!text) {
+    console.warn('[Vision] VLM returned empty text')
+    return null
+  }
+  console.info('[Vision] VLM response:', text.slice(0, 120))
+  return text
+}
+
+async function handleVisionResult(text: string): Promise<void> {
+  // 1. Generate character reaction via consciousness model
+  // Force Chinese output via system instructions override
+  const notifyEvent = {
+    type: 'spark:notify',
+    source: 'vision:screenshot-button',
+    data: {
+      id: `screenshot-${Date.now()}`,
+      eventId: `screenshot-${Date.now()}`,
+      kind: 'ping' as const,
+      urgency: 'immediate' as const,
+      headline: text,
+      note: 'You just saw this on the user\'s screen. React naturally, 1-2 short sentences.',
+      destinations: ['character'],
+      metadata: { module: 'vision', workload: 'screen:commentary' },
+    },
+  }
+  const reactionText = await characterOrchestrator.handleSparkNotifyWithReaction(
+    notifyEvent as any,
+    {
+      fallbackText: text,
+      forceTextResponse: true,
+      messageOverride: {
+        appendSystemInstructions: [
+          'IMPORTANT: You MUST output in Chinese (简体中文) only. No English, no Japanese.',
+        ],
+      },
+    },
+  )
+  console.info('[Reaction] spark notify done, reaction:', reactionText?.slice(0, 80))
+
+  // 2. Strip internal markup tags before writing to chat
+  const stripMarkup = (t: string) => t
+    .replace(/<\|ACT\s*\{[^}]+\}\s*\|>/g, '')
+    .replace(/<\|DELAY\s*\d+\|>/g, '')
+    .replace(/<\|[A-Z_]+(\s*\{[^}]*\})?\s*\|>/g, '')
+    .trim()
+
+  const sessionId = chatSessionStore.activeSessionId
+  const finalText = stripMarkup(reactionText?.trim() || text)
+  if (sessionId && finalText) {
+    chatSessionStore.appendSessionMessage(sessionId, {
+      role: 'assistant' as const,
+      content: '',
+      slices: [{ type: 'text' as const, text: finalText }],
+      tool_results: [],
+      createdAt: Date.now(),
+      id: `vision-${Date.now()}`,
+    })
+    console.info('[Reaction] written to chat:', finalText.slice(0, 80))
+  }
+}
+
+async function takeScreenshot() {
+  // Stage 1: Capture
+  let dataUrl: string | null = null
+  try {
+    dataUrl = await captureScreen()
+  }
+  catch (e) {
+    console.error('[Capture] screenshot failed:', e)
     return
   }
-  visionStore.manualLookRequest += 1
+  if (!dataUrl)
+    return
+
+  // Stage 2: Vision inference
+  let visionText: string | null = null
+  try {
+    visionText = await processCapture(dataUrl)
+  }
+  catch (e) {
+    console.error('[Vision] inference failed:', e)
+    return
+  }
+  if (!visionText)
+    return
+
+  // Stage 3: Character reaction
+  try {
+    await handleVisionResult(visionText)
+  }
+  catch (e) {
+    console.error('[Reaction] spark notify failed:', e)
+  }
 }
 
 function refreshWindow() {
@@ -157,12 +259,35 @@ function refreshWindow() {
 }
 
 /**
- * Launches the user's external Python vocab app (mainv10.py) via the main process;
- * see createVocabDbService in the main window's RPC setup.
+ * Auto-detect if the vocab app is running and show a switch button.
+ * Polls via IPC every 3 seconds; the main process checks for the
+ * pythonw process with "单词听写" in its window title.
  */
-function openVocabProgram() {
-  openVocabApp().catch(console.error)
+const vocabAppOpen = ref(false)
+
+async function checkVocabRunning() {
+  try {
+    const result = await window.electron.ipcRenderer.invoke('vocab:is-running')
+    vocabAppOpen.value = !!result?.running
+  }
+  catch {
+    vocabAppOpen.value = false
+  }
 }
+
+async function openVocabProgram() {
+  // If already running, send show command via socket. Otherwise launch.
+  if (vocabAppOpen.value) {
+    await window.electron.ipcRenderer.invoke('vocab:show')
+  }
+  else {
+    await openVocabApp().catch(() => {})
+  }
+  setTimeout(checkVocabRunning, 800)
+}
+
+// Poll for vocab app presence
+useIntervalFn(checkVocabRunning, 5000)
 </script>
 
 <template>
@@ -179,6 +304,7 @@ function openVocabProgram() {
           <ControlsIslandAuthButton
             :button-style="adjustStyleClasses.button"
             :icon-class="adjustStyleClasses.icon"
+            @open-profile-picker="setOverlay('profile-picker', true)"
           />
 
           <div grid grid-cols-3 gap-2>
@@ -256,15 +382,6 @@ function openVocabProgram() {
             <ControlsIslandFadeOnHover :icon-class="adjustStyleClasses.icon" :button-style="adjustStyleClasses.button" />
 
             <ControlButtonTooltip disable-hoverable-content>
-              <ControlButton :button-style="adjustStyleClasses.button" @click="takeScreenshot">
-                <div i-solar:camera-linear :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
-              </ControlButton>
-              <template #tooltip>
-                截图看看
-              </template>
-            </ControlButtonTooltip>
-
-            <ControlButtonTooltip disable-hoverable-content>
               <ControlButton :button-style="adjustStyleClasses.button" hover:bg-red-500 hover:text-white @click="closeWindow()">
                 <div i-solar:close-circle-outline :class="adjustStyleClasses.icon" />
               </ControlButton>
@@ -297,6 +414,24 @@ function openVocabProgram() {
           </ControlButton>
           <template #tooltip>
             {{ t('tamagotchi.stage.controls-island.open-chat') }}
+          </template>
+        </ControlButtonTooltip>
+
+        <ControlButtonTooltip v-if="vocabAppOpen" side="left">
+          <ControlButton :button-style="adjustStyleClasses.button" @click="openVocabProgram">
+            <div i-solar:notebook-linear :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
+          </ControlButton>
+          <template #tooltip>
+            切换到单词本
+          </template>
+        </ControlButtonTooltip>
+
+        <ControlButtonTooltip side="left">
+          <ControlButton :button-style="adjustStyleClasses.button" @click="takeScreenshot">
+            <div i-solar:camera-linear :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
+          </ControlButton>
+          <template #tooltip>
+            截图看看
           </template>
         </ControlButtonTooltip>
 

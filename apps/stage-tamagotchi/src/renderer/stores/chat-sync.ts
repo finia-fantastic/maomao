@@ -5,7 +5,10 @@ import type { ChatSessionMeta } from '@proj-airi/stage-ui/types/chat-session'
 import type { ChatProvider } from '@xsai-ext/providers/utils'
 
 import { errorMessageFrom } from '@moeru/std'
+import { ContextUpdateStrategy } from '@proj-airi/server-sdk'
 import { errorMessageFromValue } from '@proj-airi/stage-shared'
+import { useModelStore } from '@proj-airi/stage-ui-three'
+import { vrmGestureAnimations } from '@proj-airi/stage-ui-three/assets/vrm'
 import { extractMessageText } from '@proj-airi/stage-ui/libs/chat-sync/wire-message'
 import { useChatOrchestratorStore } from '@proj-airi/stage-ui/stores/chat'
 import { useChatContextStore } from '@proj-airi/stage-ui/stores/chat/context-store'
@@ -13,19 +16,18 @@ import { useChatMaintenanceStore } from '@proj-airi/stage-ui/stores/chat/mainten
 import { useChatSessionStore } from '@proj-airi/stage-ui/stores/chat/session-store'
 import { useChatStreamStore } from '@proj-airi/stage-ui/stores/chat/stream-store'
 import { resolveLlmTools } from '@proj-airi/stage-ui/stores/llm-tool-resolver'
-import { useConsciousnessStore } from '@proj-airi/stage-ui/stores/modules/consciousness'
-import { useVisionStore } from '@proj-airi/stage-ui/stores/modules/vision/store'
 import { useMemoryStore } from '@proj-airi/stage-ui/stores/memory'
+import { useConsciousnessStore } from '@proj-airi/stage-ui/stores/modules/consciousness'
 import { useWorkingMemoryStore } from '@proj-airi/stage-ui/stores/modules/memory'
+import { useVisionStore } from '@proj-airi/stage-ui/stores/modules/vision/store'
 import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
 import { executeToolCallRerun } from '@proj-airi/stage-ui/stores/tool-call-rerun'
-import { useModelStore } from '@proj-airi/stage-ui-three'
-import { vrmGestureAnimations } from '@proj-airi/stage-ui-three/assets/vrm'
-import { ContextUpdateStrategy } from '@proj-airi/server-sdk'
 import { defineStore, storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
 
 import { drawImageTools } from './tools/builtin/drawImage'
+import { fetchUrlTools } from './tools/builtin/fetchUrl'
+import { storeMemoryTools } from './tools/builtin/storeMemory'
 import { imageJournalTools } from './tools/builtin/image-journal'
 import { vocabularyTools } from './tools/builtin/vocabulary'
 import { vrmAnimationTools } from './tools/builtin/vrmAnimation'
@@ -307,11 +309,11 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
   function resolveTools(toolset?: ToolsetId) {
     const toolsetRegistry: Record<string, () => Promise<any[]>> = {
       widgets: async () => {
-        const [w, we, vo, wp, va, dr] = await Promise.all([widgetsTools(), weatherTools(), vocabularyTools(), webpageTools(), vrmAnimationTools(), drawImageTools()])
-        return [...w, ...we, ...vo, ...wp, ...va, ...dr]
+        const [w, we, vo, wp, va, dr, fu, sm] = await Promise.all([widgetsTools(), weatherTools(), vocabularyTools(), webpageTools(), vrmAnimationTools(), drawImageTools(), fetchUrlTools(), storeMemoryTools()])
+        return [...w, ...we, ...vo, ...wp, ...va, ...dr, ...fu, ...sm]
       },
       artistry: async () => {
-        const [ai, wi, we, vo, wp, va, dr] = await Promise.all([
+        const [ai, wi, we, vo, wp, va, dr, fu, sm] = await Promise.all([
           imageJournalTools(),
           widgetsTools(),
           weatherTools(),
@@ -319,8 +321,10 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
           webpageTools(),
           vrmAnimationTools(),
           drawImageTools(),
+          fetchUrlTools(),
+          storeMemoryTools(),
         ])
-        return [...ai, ...wi, ...we, ...vo, ...wp, ...va, ...dr]
+        return [...ai, ...wi, ...we, ...vo, ...wp, ...va, ...dr, ...fu, ...sm]
       },
     }
 
@@ -429,12 +433,13 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
       const base = named.replace(/\d+$/, '') // strip trailing number
       const variants = names
         .filter(n => n !== named && n.startsWith(base) && /\d+$/.test(n))
-        .sort((a, b) => (parseInt(a.match(/(\d+)$/)?.[1] || '0')) - (parseInt(b.match(/(\d+)$/)?.[1] || '0')))
+        .sort((a, b) => (Number.parseInt(a.match(/(\d+)$/)?.[1] || '0')) - (Number.parseInt(b.match(/(\d+)$/)?.[1] || '0')))
 
       const queue = [vrmGestureAnimations[named]]
       for (const v of variants) {
         const u = vrmGestureAnimations[v]
-        if (u) queue.push(u)
+        if (u)
+          queue.push(u)
       }
 
       // Play first, chain the rest with delays
@@ -504,16 +509,20 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
    */
   function maybeTriggerProp(text: string): void {
     const store = useModelStore()
-    if (/拿相机|拍照|照相|camera/i.test(text))
+    if (/拿相机|拍照|照相|camera/i.test(text)) {
       store.requestHandProp('camera')
-    else if (/拿数位板|拿平板|tablet/i.test(text))
+    }
+    else if (/拿数位板|拿平板|tablet/i.test(text)) {
       store.requestHandProp('tablet-pen')
-    else if (/拿笔|握笔|铅笔|pencil/i.test(text))
+    }
+    else if (/拿笔|握笔|铅笔|pencil/i.test(text)) {
       store.requestHandProp('pencil')
+    }
     else if (/放下|收起来|不拿了|拿掉|remove.*prop/i.test(text)) {
       store.requestHandProp('none')
       // Also hide workstation when putting props away
-      if (store.workstationVisible) store.requestWorkstation(false)
+      if (store.workstationVisible)
+        store.requestWorkstation(false)
     }
   }
 
@@ -524,11 +533,11 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
    */
   function maybeTriggerWorkstation(text: string): void {
     const store = useModelStore()
-    if (/画画工作台|开始画画|打开工作台/i.test(text)) {
+    if (/画画工作台|开始画画|打开工作台/.test(text)) {
       store.requestWorkstation(true)
       store.requestHandProp('pencil')
     }
-    else if (/收起工作台|关闭工作台|停止画画/i.test(text)) {
+    else if (/收起工作台|关闭工作台|停止画画/.test(text)) {
       store.requestWorkstation(false)
       store.requestHandProp('none')
     }

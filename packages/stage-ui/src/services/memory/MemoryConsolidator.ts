@@ -27,7 +27,8 @@ export async function consolidateMemory(
     ttlSeconds?: number | null
   },
 ): Promise<MemoryRecord | null> {
-  if (!extraction.shouldStore) return null
+  if (!extraction.shouldStore)
+    return null
 
   const payload: StoreMemoryPayload = {
     userId,
@@ -67,14 +68,17 @@ export async function consolidateMemories(
 
   // Sort: corrections last (highest priority)
   const sorted = [...extractions].sort((a, b) => {
-    if (a.type === 'correction' && b.type !== 'correction') return 1
-    if (a.type !== 'correction' && b.type === 'correction') return -1
+    if (a.type === 'correction' && b.type !== 'correction')
+      return 1
+    if (a.type !== 'correction' && b.type === 'correction')
+      return -1
     return 0
   })
 
   for (const extraction of sorted) {
     const record = await consolidateMemory(service, extraction, userId, options)
-    if (record) results.push(record)
+    if (record)
+      results.push(record)
   }
 
   return results

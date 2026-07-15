@@ -1,0 +1,341 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue");/* Injection by vite-plugin-vue-inspector Start */
+import { createElementBlock as __createElementBlock,createBlock as __createBlock,createElementVNode as __createElementVNode,createVNode as __createVNode } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d"
+function _interopVNode(vnode) {
+  if (vnode && vnode.props && 'data-v-inspector' in vnode.props) {
+    const data = vnode.props['data-v-inspector']
+    delete vnode.props['data-v-inspector']
+    Object.defineProperty(vnode.props, '__v_inspector', { value: data, enumerable: false })
+  }
+  return vnode
+}
+function _createElementBlock(...args) { return _interopVNode(__createElementBlock(...args)) }
+function _createBlock(...args) { return _interopVNode(__createBlock(...args)) }
+function _createElementVNode(...args) { return _interopVNode(__createElementVNode(...args)) }
+function _createVNode(...args) { return _interopVNode(__createVNode(...args)) }
+/* Injection by vite-plugin-vue-inspector End */
+import { defineComponent as _defineComponent } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import { Callout } from "/@fs/C:/Users/Administrator/airi-app/packages/ui/src/index.ts";
+import { computed, ref, shallowRef, watch } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import { Container, PropertyNumber } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/data-pane/index.ts";
+import { cloneStageViewStateForDraft, resolveGodotCameraPositionRange } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/settings/model-settings/runtime.ts";
+const _sfc_main = /* @__PURE__ */ _defineComponent({
+	__name: "godot",
+	props: {
+		runtimeSnapshot: {
+			type: Object,
+			required: true
+		},
+		viewSnapshot: {
+			type: [Object, null],
+			required: true
+		},
+		viewError: {
+			type: Object,
+			required: false
+		},
+		viewControlsLocked: {
+			type: Boolean,
+			required: true
+		}
+	},
+	emits: ["patchViewState"],
+	setup(__props, { expose: __expose, emit: __emit }) {
+		__expose();
+		const props = __props;
+		const emit = __emit;
+		const statusText = computed(() => {
+			if (props.runtimeSnapshot.phase === "no-model") return "Select a VRM model before adjusting Godot stage view controls.";
+			if (!props.viewSnapshot) return "Godot stage view snapshot has not been received. Check the Electron/Godot bridge and Godot view-state payload parsing.";
+			return undefined;
+		});
+		const statusTheme = computed(() => {
+			if (props.viewError || !props.viewSnapshot && props.runtimeSnapshot.phase !== "no-model") return "orange";
+			return "primary";
+		});
+		const draftState = ref(null);
+		const cameraPositionRange = shallowRef(4);
+		const cameraPositionRangeLocked = shallowRef(false);
+		const controlsLocked = computed(() => props.viewControlsLocked || !draftState.value);
+		const settingsLockClass = computed(() => {
+			return controlsLocked.value ? ["pointer-events-none", "opacity-60"] : [];
+		});
+		const snapshotMeta = computed(() => {
+			const snapshot = props.viewSnapshot;
+			if (!snapshot) return undefined;
+			return `Revision ${snapshot.state.revision} · ${snapshot.reason}`;
+		});
+		const cameraPositionConfig = computed(() => ({
+			min: -cameraPositionRange.value,
+			max: cameraPositionRange.value,
+			step: .01,
+			formatValue: formatDecimalValue,
+			disabled: controlsLocked.value
+		}));
+		const cameraYawConfig = computed(() => ({
+			min: -180,
+			max: 180,
+			step: 1,
+			formatValue: formatIntegerValue,
+			disabled: controlsLocked.value
+		}));
+		const cameraPitchConfig = computed(() => ({
+			min: -80,
+			max: 80,
+			step: 1,
+			formatValue: formatIntegerValue,
+			disabled: controlsLocked.value
+		}));
+		const cameraFovConfig = computed(() => ({
+			min: 10,
+			max: 120,
+			step: 1,
+			formatValue: formatIntegerValue,
+			disabled: controlsLocked.value
+		}));
+		watch(() => props.viewSnapshot, (snapshot) => {
+			if (!snapshot) {
+				draftState.value = null;
+				cameraPositionRange.value = 4;
+				cameraPositionRangeLocked.value = false;
+				return;
+			}
+			draftState.value = cloneSnapshotForDraft(snapshot);
+			lockCameraPositionRangeFromSnapshot(snapshot);
+		}, { immediate: true });
+		function formatDecimalValue(value) {
+			return value.toFixed(2);
+		}
+		function formatIntegerValue(value) {
+			return value.toFixed(0);
+		}
+		function cloneSnapshotForDraft(snapshot) {
+			if (snapshot.reason === "loaded") return cloneStageViewStateForDraft(snapshot.state);
+			// FOV is settings-owned for now, so local slider edits should not be overwritten by camera snapshots from Godot.
+			const fovDeg = draftState.value?.camera.fovDeg;
+			return cloneStageViewStateForDraft(snapshot.state, { fovDeg });
+		}
+		function lockCameraPositionRangeFromSnapshot(snapshot) {
+			if (!snapshot.avatarBounds) return;
+			if (snapshot.reason !== "loaded" && cameraPositionRangeLocked.value) return;
+			// NOTICE:
+			// The position slider range is a load-time affordance. It includes the
+			// bootstrap camera position so bad bounds cannot make the initial camera
+			// unreachable, but later camera movement must not keep expanding the range.
+			cameraPositionRange.value = resolveGodotCameraPositionRange({
+				loadTimeState: snapshot.state,
+				avatarBounds: snapshot.avatarBounds
+			});
+			cameraPositionRangeLocked.value = true;
+		}
+		function createNumberModel(getter, applyDraft, patcher) {
+			return computed({
+				get: () => {
+					if (!draftState.value) return 0;
+					return getter(draftState.value);
+				},
+				set: (value) => {
+					if (!Number.isFinite(value) || !draftState.value) return;
+					applyDraft(draftState.value, value);
+					emit("patchViewState", patcher(value));
+				}
+			});
+		}
+		const cameraPositionX = createNumberModel((state) => state.camera.position.x, (state, value) => {
+			state.camera.position.x = value;
+		}, (value) => ({ camera: { position: { x: value } } }));
+		const cameraPositionY = createNumberModel((state) => state.camera.position.y, (state, value) => {
+			state.camera.position.y = value;
+		}, (value) => ({ camera: { position: { y: value } } }));
+		const cameraPositionZ = createNumberModel((state) => state.camera.position.z, (state, value) => {
+			state.camera.position.z = value;
+		}, (value) => ({ camera: { position: { z: value } } }));
+		const cameraYaw = createNumberModel((state) => state.camera.yawDeg, (state, value) => {
+			state.camera.yawDeg = value;
+		}, (value) => ({ camera: { yawDeg: value } }));
+		const cameraPitch = createNumberModel((state) => state.camera.pitchDeg, (state, value) => {
+			state.camera.pitchDeg = value;
+		}, (value) => ({ camera: { pitchDeg: value } }));
+		const cameraFov = createNumberModel((state) => state.camera.fovDeg, (state, value) => {
+			state.camera.fovDeg = value;
+		}, (value) => ({ camera: { fovDeg: value } }));
+		const __returned__ = {
+			props,
+			emit,
+			statusText,
+			statusTheme,
+			draftState,
+			cameraPositionRange,
+			cameraPositionRangeLocked,
+			controlsLocked,
+			settingsLockClass,
+			snapshotMeta,
+			cameraPositionConfig,
+			cameraYawConfig,
+			cameraPitchConfig,
+			cameraFovConfig,
+			formatDecimalValue,
+			formatIntegerValue,
+			cloneSnapshotForDraft,
+			lockCameraPositionRangeFromSnapshot,
+			createNumberModel,
+			cameraPositionX,
+			cameraPositionY,
+			cameraPositionZ,
+			cameraYaw,
+			cameraPitch,
+			cameraFov,
+			get Callout() {
+				return Callout;
+			},
+			get Container() {
+				return Container;
+			},
+			get PropertyNumber() {
+				return PropertyNumber;
+			}
+		};
+		Object.defineProperty(__returned__, "__isScriptSetup", {
+			enumerable: false,
+			value: true
+		});
+		return __returned__;
+	}
+});
+import { toDisplayString as _toDisplayString, openBlock as _openBlock,  createCommentVNode as _createCommentVNode, withCtx as _withCtx,  normalizeClass as _normalizeClass,   Fragment as _Fragment } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+const _hoisted_1 = {
+	key: 0,
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue:209:5"
+};
+const _hoisted_2 = {
+	key: 1,
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue:212:5"
+};
+const _hoisted_3 = {
+	class: /* @__PURE__ */ _normalizeClass(["flex items-center justify-between gap-2 px-2 pb-2"]),
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue:226:5"
+};
+const _hoisted_4 = {
+	class: /* @__PURE__ */ _normalizeClass(["text-xs text-neutral-500 dark:text-neutral-400"]),
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue:227:7"
+};
+function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+	return _openBlock(), _createElementBlock(
+		_Fragment,
+		null,
+		[$setup.statusText || $props.viewError ? (_openBlock(), _createBlock($setup["Callout"], {
+			key: 0,
+			label: "Godot Stage (Experimental)",
+			theme: $setup.statusTheme,
+			"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue:204:3"
+		}, {
+			default: _withCtx(() => [$props.viewError ? (_openBlock(), _createElementBlock(
+				"p",
+				_hoisted_1,
+				_toDisplayString($props.viewError.message),
+				1
+				/* TEXT */
+			)) : _createCommentVNode("v-if", true), $setup.statusText ? (_openBlock(), _createElementBlock(
+				"p",
+				_hoisted_2,
+				_toDisplayString($setup.statusText),
+				1
+				/* TEXT */
+			)) : _createCommentVNode("v-if", true)]),
+			_: 1
+		}, 8, ["theme"])) : _createCommentVNode("v-if", true), _createVNode($setup["Container"], {
+			title: "Godot View",
+			icon: "i-solar:camera-bold-duotone",
+			class: _normalizeClass([
+				"rounded-xl",
+				"bg-white/80 dark:bg-black/75",
+				"backdrop-blur-lg"
+			]),
+			"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue:217:3"
+		}, {
+			default: _withCtx(() => [_createElementVNode("div", _hoisted_3, [_createElementVNode(
+				"div",
+				_hoisted_4,
+				_toDisplayString($setup.snapshotMeta ?? "No Godot stage view snapshot received"),
+				1
+				/* TEXT */
+			)]), _createElementVNode(
+				"div",
+				{
+					class: _normalizeClass([
+						"grid grid-cols-5",
+						"gap-1 p-2",
+						...$setup.settingsLockClass
+					]),
+					"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue:232:5"
+				},
+				[
+					_createVNode($setup["PropertyNumber"], {
+						modelValue: $setup.cameraPositionX,
+						"onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => $setup.cameraPositionX = $event),
+						config: $setup.cameraPositionConfig,
+						label: "Camera X",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue:239:7"
+					}, null, 8, ["modelValue", "config"]),
+					_createVNode($setup["PropertyNumber"], {
+						modelValue: $setup.cameraPositionY,
+						"onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => $setup.cameraPositionY = $event),
+						config: $setup.cameraPositionConfig,
+						label: "Camera Y",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue:244:7"
+					}, null, 8, ["modelValue", "config"]),
+					_createVNode($setup["PropertyNumber"], {
+						modelValue: $setup.cameraPositionZ,
+						"onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => $setup.cameraPositionZ = $event),
+						config: $setup.cameraPositionConfig,
+						label: "Camera Z",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue:249:7"
+					}, null, 8, ["modelValue", "config"]),
+					_createVNode($setup["PropertyNumber"], {
+						modelValue: $setup.cameraYaw,
+						"onUpdate:modelValue": _cache[3] || (_cache[3] = ($event) => $setup.cameraYaw = $event),
+						config: $setup.cameraYawConfig,
+						label: "Camera Yaw",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue:254:7"
+					}, null, 8, ["modelValue", "config"]),
+					_createVNode($setup["PropertyNumber"], {
+						modelValue: $setup.cameraPitch,
+						"onUpdate:modelValue": _cache[4] || (_cache[4] = ($event) => $setup.cameraPitch = $event),
+						config: $setup.cameraPitchConfig,
+						label: "Camera Pitch",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue:259:7"
+					}, null, 8, ["modelValue", "config"]),
+					_createVNode($setup["PropertyNumber"], {
+						modelValue: $setup.cameraFov,
+						"onUpdate:modelValue": _cache[5] || (_cache[5] = ($event) => $setup.cameraFov = $event),
+						config: $setup.cameraFovConfig,
+						label: "Camera FOV",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue:264:7"
+					}, null, 8, ["modelValue", "config"])
+				],
+				2
+				/* CLASS */
+			)]),
+			_: 1
+		})],
+		64
+		/* STABLE_FRAGMENT */
+	);
+}
+_sfc_main.__hmrId = "f065541e";
+typeof __VUE_HMR_RUNTIME__ !== "undefined" && __VUE_HMR_RUNTIME__.createRecord(_sfc_main.__hmrId, _sfc_main);
+import.meta.hot.on("file-changed", ({ file }) => {
+	__VUE_HMR_RUNTIME__.CHANGED_FILE = file;
+});
+import.meta.hot.accept((mod) => {
+	if (!mod) return;
+	const { default: updated, _rerender_only } = mod;
+	if (_rerender_only) {
+		__VUE_HMR_RUNTIME__.rerender(updated.__hmrId, updated.render);
+	} else {
+		__VUE_HMR_RUNTIME__.reload(updated.__hmrId, updated);
+	}
+});
+import _export_sfc from "/@id/__x00__plugin-vue:export-helper";
+export default /* @__PURE__ */ _export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/settings/model-settings/godot.vue"]]);
+
+//# sourceMappingURL=data:application/json;base64,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QUFpQjs7S0FFeEMsYUFJRTtrQkFIUzttRUFBQSxtQkFBUztNQUNqQixRQUFRO01BQ1QsT0FBTTtNQUFhLG9CQUFpQiIsIm5hbWVzIjpbXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiZ29kb3QudnVlIl0sInNvdXJjZXNDb250ZW50IjpbIjxzY3JpcHQgc2V0dXAgbGFuZz1cInRzXCI+XHJcbmltcG9ydCB0eXBlIHtcclxuICBTdGFnZVZpZXdFcnJvclBheWxvYWQsXHJcbiAgU3RhZ2VWaWV3UGF0Y2gsXHJcbiAgU3RhZ2VWaWV3U25hcHNob3RQYXlsb2FkLFxyXG4gIFN0YWdlVmlld1N0YXRlLFxyXG59IGZyb20gJ0Bwcm9qLWFpcmkvc3RhZ2Utc2hhcmVkL2dvZG90LXN0YWdlJ1xyXG5cclxuaW1wb3J0IHR5cGUgeyBNb2RlbFNldHRpbmdzUnVudGltZVNuYXBzaG90IH0gZnJvbSAnLi9ydW50aW1lJ1xyXG5cclxuaW1wb3J0IHsgQ2FsbG91dCB9IGZyb20gJ0Bwcm9qLWFpcmkvdWknXHJcbmltcG9ydCB7IGNvbXB1dGVkLCByZWYsIHNoYWxsb3dSZWYsIHdhdGNoIH0gZnJvbSAndnVlJ1xyXG5cclxuaW1wb3J0IHsgQ29udGFpbmVyLCBQcm9wZXJ0eU51bWJlciB9IGZyb20gJy4uLy4uLy4uL2RhdGEtcGFuZSdcclxuaW1wb3J0IHsgY2xvbmVTdGFnZVZpZXdTdGF0ZUZvckRyYWZ0LCByZXNvbHZlR29kb3RDYW1lcmFQb3NpdGlvblJhbmdlIH0gZnJvbSAnLi9ydW50aW1lJ1xyXG5cclxuaW50ZXJmYWNlIEdvZG90TW9kZWxTZXR0aW5nc1Byb3BzIHtcclxuICBydW50aW1lU25hcHNob3Q6IE1vZGVsU2V0dGluZ3NSdW50aW1lU25hcHNob3RcclxuICB2aWV3U25hcHNob3Q6IFN0YWdlVmlld1NuYXBzaG90UGF5bG9hZCB8IG51bGxcclxuICB2aWV3RXJyb3I/OiBTdGFnZVZpZXdFcnJvclBheWxvYWRcclxuICB2aWV3Q29udHJvbHNMb2NrZWQ6IGJvb2xlYW5cclxufVxyXG5cclxuaW50ZXJmYWNlIEdvZG90TW9kZWxTZXR0aW5nc0VtaXRzIHtcclxuICBwYXRjaFZpZXdTdGF0ZTogW3BhdGNoOiBTdGFnZVZpZXdQYXRjaF1cclxufVxyXG5cclxuY29uc3QgcHJvcHMgPSBkZWZpbmVQcm9wczxHb2RvdE1vZGVsU2V0dGluZ3NQcm9wcz4oKVxyXG5jb25zdCBlbWl0ID0gZGVmaW5lRW1pdHM8R29kb3RNb2RlbFNldHRpbmdzRW1pdHM+KClcclxuXHJcbmNvbnN0IHN0YXR1c1RleHQgPSBjb21wdXRlZCgoKSA9PiB7XHJcbiAgaWYgKHByb3BzLnJ1bnRpbWVTbmFwc2hvdC5waGFzZSA9PT0gJ25vLW1vZGVsJylcclxuICAgIHJldHVybiAnU2VsZWN0IGEgVlJNIG1vZGVsIGJlZm9yZSBhZGp1c3RpbmcgR29kb3Qgc3RhZ2UgdmlldyBjb250cm9scy4nXHJcblxyXG4gIGlmICghcHJvcHMudmlld1NuYXBzaG90KVxyXG4gICAgcmV0dXJuICdHb2RvdCBzdGFnZSB2aWV3IHNuYXBzaG90IGhhcyBub3QgYmVlbiByZWNlaXZlZC4gQ2hlY2sgdGhlIEVsZWN0cm9uL0dvZG90IGJyaWRnZSBhbmQgR29kb3Qgdmlldy1zdGF0ZSBwYXlsb2FkIHBhcnNpbmcuJ1xyXG5cclxuICByZXR1cm4gdW5kZWZpbmVkXHJcbn0pXHJcbmNvbnN0IHN0YXR1c1RoZW1lID0gY29tcHV0ZWQoKCkgPT4ge1xyXG4gIGlmIChwcm9wcy52aWV3RXJyb3IgfHwgKCFwcm9wcy52aWV3U25hcHNob3QgJiYgcHJvcHMucnVudGltZVNuYXBzaG90LnBoYXNlICE9PSAnbm8tbW9kZWwnKSlcclxuICAgIHJldHVybiAnb3JhbmdlJ1xyXG5cclxuICByZXR1cm4gJ3ByaW1hcnknXHJcbn0pXHJcblxyXG5jb25zdCBkcmFmdFN0YXRlID0gcmVmPFN0YWdlVmlld1N0YXRlIHwgbnVsbD4obnVsbClcclxuY29uc3QgY2FtZXJhUG9zaXRpb25SYW5nZSA9IHNoYWxsb3dSZWYoNClcclxuY29uc3QgY2FtZXJhUG9zaXRpb25SYW5nZUxvY2tlZCA9IHNoYWxsb3dSZWYoZmFsc2UpXHJcbmNvbnN0IGNvbnRyb2xzTG9ja2VkID0gY29tcHV0ZWQoKCkgPT4gcHJvcHMudmlld0NvbnRyb2xzTG9ja2VkIHx8ICFkcmFmdFN0YXRlLnZhbHVlKVxyXG5jb25zdCBzZXR0aW5nc0xvY2tDbGFzcyA9IGNvbXB1dGVkKCgpID0+IHtcclxuICByZXR1cm4gY29udHJvbHNMb2NrZWQudmFsdWUgPyBbJ3BvaW50ZXItZXZlbnRzLW5vbmUnLCAnb3BhY2l0eS02MCddIDogW11cclxufSlcclxuY29uc3Qgc25hcHNob3RNZXRhID0gY29tcHV0ZWQoKCkgPT4ge1xyXG4gIGNvbnN0IHNuYXBzaG90ID0gcHJvcHMudmlld1NuYXBzaG90XHJcbiAgaWYgKCFzbmFwc2hvdClcclxuICAgIHJldHVybiB1bmRlZmluZWRcclxuXHJcbiAgcmV0dXJuIGBSZXZpc2lvbiAke3NuYXBzaG90LnN0YXRlLnJldmlzaW9ufSDCtyAke3NuYXBzaG90LnJlYXNvbn1gXHJcbn0pXHJcbmNvbnN0IGNhbWVyYVBvc2l0aW9uQ29uZmlnID0gY29tcHV0ZWQoKCkgPT4gKHtcclxuICBtaW46IC1jYW1lcmFQb3NpdGlvblJhbmdlLnZhbHVlLFxyXG4gIG1heDogY2FtZXJhUG9zaXRpb25SYW5nZS52YWx1ZSxcclxuICBzdGVwOiAwLjAxLFxyXG4gIGZvcm1hdFZhbHVlOiBmb3JtYXREZWNpbWFsVmFsdWUsXHJcbiAgZGlzYWJsZWQ6IGNvbnRyb2xzTG9ja2VkLnZhbHVlLFxyXG59KSlcclxuY29uc3QgY2FtZXJhWWF3Q29uZmlnID0gY29tcHV0ZWQoKCkgPT4gKHtcclxuICBtaW46IC0xODAsXHJcbiAgbWF4OiAxODAsXHJcbiAgc3RlcDogMSxcclxuICBmb3JtYXRWYWx1ZTogZm9ybWF0SW50ZWdlclZhbHVlLFxyXG4gIGRpc2FibGVkOiBjb250cm9sc0xvY2tlZC52YWx1ZSxcclxufSkpXHJcbmNvbnN0IGNhbWVyYVBpdGNoQ29uZmlnID0gY29tcHV0ZWQoKCkgPT4gKHtcclxuICBtaW46IC04MCxcclxuICBtYXg6IDgwLFxyXG4gIHN0ZXA6IDEsXHJcbiAgZm9ybWF0VmFsdWU6IGZvcm1hdEludGVnZXJWYWx1ZSxcclxuICBkaXNhYmxlZDogY29udHJvbHNMb2NrZWQudmFsdWUsXHJcbn0pKVxyXG5jb25zdCBjYW1lcmFGb3ZDb25maWcgPSBjb21wdXRlZCgoKSA9PiAoe1xyXG4gIG1pbjogMTAsXHJcbiAgbWF4OiAxMjAsXHJcbiAgc3RlcDogMSxcclxuICBmb3JtYXRWYWx1ZTogZm9ybWF0SW50ZWdlclZhbHVlLFxyXG4gIGRpc2FibGVkOiBjb250cm9sc0xvY2tlZC52YWx1ZSxcclxufSkpXHJcblxyXG53YXRjaCgoKSA9PiBwcm9wcy52aWV3U25hcHNob3QsIChzbmFwc2hvdCkgPT4ge1xyXG4gIGlmICghc25hcHNob3QpIHtcclxuICAgIGRyYWZ0U3RhdGUudmFsdWUgPSBudWxsXHJcbiAgICBjYW1lcmFQb3NpdGlvblJhbmdlLnZhbHVlID0gNFxyXG4gICAgY2FtZXJhUG9zaXRpb25SYW5nZUxvY2tlZC52YWx1ZSA9IGZhbHNlXHJcbiAgICByZXR1cm5cclxuICB9XHJcblxyXG4gIGRyYWZ0U3RhdGUudmFsdWUgPSBjbG9uZVNuYXBzaG90Rm9yRHJhZnQoc25hcHNob3QpXHJcbiAgbG9ja0NhbWVyYVBvc2l0aW9uUmFuZ2VGcm9tU25hcHNob3Qoc25hcHNob3QpXHJcbn0sIHsgaW1tZWRpYXRlOiB0cnVlIH0pXHJcblxyXG5mdW5jdGlvbiBmb3JtYXREZWNpbWFsVmFsdWUodmFsdWU6IG51bWJlcikge1xyXG4gIHJldHVybiB2YWx1ZS50b0ZpeGVkKDIpXHJcbn1cclxuXHJcbmZ1bmN0aW9uIGZvcm1hdEludGVnZXJWYWx1ZSh2YWx1ZTogbnVtYmVyKSB7XHJcbiAgcmV0dXJuIHZhbHVlLnRvRml4ZWQoMClcclxufVxyXG5cclxuZnVuY3Rpb24gY2xvbmVTbmFwc2hvdEZvckRyYWZ0KHNuYXBzaG90OiBTdGFnZVZpZXdTbmFwc2hvdFBheWxvYWQpIHtcclxuICBpZiAoc25hcHNob3QucmVhc29uID09PSAnbG9hZGVkJylcclxuICAgIHJldHVybiBjbG9uZVN0YWdlVmlld1N0YXRlRm9yRHJhZnQoc25hcHNob3Quc3RhdGUpXHJcblxyXG4gIC8vIEZPViBpcyBzZXR0aW5ncy1vd25lZCBmb3Igbm93LCBzbyBsb2NhbCBzbGlkZXIgZWRpdHMgc2hvdWxkIG5vdCBiZSBvdmVyd3JpdHRlbiBieSBjYW1lcmEgc25hcHNob3RzIGZyb20gR29kb3QuXHJcbiAgY29uc3QgZm92RGVnID0gZHJhZnRTdGF0ZS52YWx1ZT8uY2FtZXJhLmZvdkRlZ1xyXG4gIHJldHVybiBjbG9uZVN0YWdlVmlld1N0YXRlRm9yRHJhZnQoc25hcHNob3Quc3RhdGUsIHsgZm92RGVnIH0pXHJcbn1cclxuXHJcbmZ1bmN0aW9uIGxvY2tDYW1lcmFQb3NpdGlvblJhbmdlRnJvbVNuYXBzaG90KHNuYXBzaG90OiBTdGFnZVZpZXdTbmFwc2hvdFBheWxvYWQpIHtcclxuICBpZiAoIXNuYXBzaG90LmF2YXRhckJvdW5kcylcclxuICAgIHJldHVyblxyXG5cclxuICBpZiAoc25hcHNob3QucmVhc29uICE9PSAnbG9hZGVkJyAmJiBjYW1lcmFQb3NpdGlvblJhbmdlTG9ja2VkLnZhbHVlKVxyXG4gICAgcmV0dXJuXHJcblxyXG4gIC8vIE5PVElDRTpcclxuICAvLyBUaGUgcG9zaXRpb24gc2xpZGVyIHJhbmdlIGlzIGEgbG9hZC10aW1lIGFmZm9yZGFuY2UuIEl0IGluY2x1ZGVzIHRoZVxyXG4gIC8vIGJvb3RzdHJhcCBjYW1lcmEgcG9zaXRpb24gc28gYmFkIGJvdW5kcyBjYW5ub3QgbWFrZSB0aGUgaW5pdGlhbCBjYW1lcmFcclxuICAvLyB1bnJlYWNoYWJsZSwgYnV0IGxhdGVyIGNhbWVyYSBtb3ZlbWVudCBtdXN0IG5vdCBrZWVwIGV4cGFuZGluZyB0aGUgcmFuZ2UuXHJcbiAgY2FtZXJhUG9zaXRpb25SYW5nZS52YWx1ZSA9IHJlc29sdmVHb2RvdENhbWVyYVBvc2l0aW9uUmFuZ2Uoe1xyXG4gICAgbG9hZFRpbWVTdGF0ZTogc25hcHNob3Quc3RhdGUsXHJcbiAgICBhdmF0YXJCb3VuZHM6IHNuYXBzaG90LmF2YXRhckJvdW5kcyxcclxuICB9KVxyXG4gIGNhbWVyYVBvc2l0aW9uUmFuZ2VMb2NrZWQudmFsdWUgPSB0cnVlXHJcbn1cclxuXHJcbmZ1bmN0aW9uIGNyZWF0ZU51bWJlck1vZGVsKFxyXG4gIGdldHRlcjogKHN0YXRlOiBTdGFnZVZpZXdTdGF0ZSkgPT4gbnVtYmVyLFxyXG4gIGFwcGx5RHJhZnQ6IChzdGF0ZTogU3RhZ2VWaWV3U3RhdGUsIHZhbHVlOiBudW1iZXIpID0+IHZvaWQsXHJcbiAgcGF0Y2hlcjogKHZhbHVlOiBudW1iZXIpID0+IFN0YWdlVmlld1BhdGNoLFxyXG4pIHtcclxuICByZXR1cm4gY29tcHV0ZWQoe1xyXG4gICAgZ2V0OiAoKSA9PiB7XHJcbiAgICAgIGlmICghZHJhZnRTdGF0ZS52YWx1ZSlcclxuICAgICAgICByZXR1cm4gMFxyXG5cclxuICAgICAgcmV0dXJuIGdldHRlcihkcmFmdFN0YXRlLnZhbHVlKVxyXG4gICAgfSxcclxuICAgIHNldDogKHZhbHVlKSA9PiB7XHJcbiAgICAgIGlmICghTnVtYmVyLmlzRmluaXRlKHZhbHVlKSB8fCAhZHJhZnRTdGF0ZS52YWx1ZSlcclxuICAgICAgICByZXR1cm5cclxuXHJcbiAgICAgIGFwcGx5RHJhZnQoZHJhZnRTdGF0ZS52YWx1ZSwgdmFsdWUpXHJcbiAgICAgIGVtaXQoJ3BhdGNoVmlld1N0YXRlJywgcGF0Y2hlcih2YWx1ZSkpXHJcbiAgICB9LFxyXG4gIH0pXHJcbn1cclxuXHJcbmNvbnN0IGNhbWVyYVBvc2l0aW9uWCA9IGNyZWF0ZU51bWJlck1vZGVsKFxyXG4gIHN0YXRlID0+IHN0YXRlLmNhbWVyYS5wb3NpdGlvbi54LFxyXG4gIChzdGF0ZSwgdmFsdWUpID0+IHtcclxuICAgIHN0YXRlLmNhbWVyYS5wb3NpdGlvbi54ID0gdmFsdWVcclxuICB9LFxyXG4gIHZhbHVlID0+ICh7IGNhbWVyYTogeyBwb3NpdGlvbjogeyB4OiB2YWx1ZSB9IH0gfSksXHJcbilcclxuY29uc3QgY2FtZXJhUG9zaXRpb25ZID0gY3JlYXRlTnVtYmVyTW9kZWwoXHJcbiAgc3RhdGUgPT4gc3RhdGUuY2FtZXJhLnBvc2l0aW9uLnksXHJcbiAgKHN0YXRlLCB2YWx1ZSkgPT4ge1xyXG4gICAgc3RhdGUuY2FtZXJhLnBvc2l0aW9uLnkgPSB2YWx1ZVxyXG4gIH0sXHJcbiAgdmFsdWUgPT4gKHsgY2FtZXJhOiB7IHBvc2l0aW9uOiB7IHk6IHZhbHVlIH0gfSB9KSxcclxuKVxyXG5jb25zdCBjYW1lcmFQb3NpdGlvblogPSBjcmVhdGVOdW1iZXJNb2RlbChcclxuICBzdGF0ZSA9PiBzdGF0ZS5jYW1lcmEucG9zaXRpb24ueixcclxuICAoc3RhdGUsIHZhbHVlKSA9PiB7XHJcbiAgICBzdGF0ZS5jYW1lcmEucG9zaXRpb24ueiA9IHZhbHVlXHJcbiAgfSxcclxuICB2YWx1ZSA9PiAoeyBjYW1lcmE6IHsgcG9zaXRpb246IHsgejogdmFsdWUgfSB9IH0pLFxyXG4pXHJcbmNvbnN0IGNhbWVyYVlhdyA9IGNyZWF0ZU51bWJlck1vZGVsKFxyXG4gIHN0YXRlID0+IHN0YXRlLmNhbWVyYS55YXdEZWcsXHJcbiAgKHN0YXRlLCB2YWx1ZSkgPT4ge1xyXG4gICAgc3RhdGUuY2FtZXJhLnlhd0RlZyA9IHZhbHVlXHJcbiAgfSxcclxuICB2YWx1ZSA9PiAoeyBjYW1lcmE6IHsgeWF3RGVnOiB2YWx1ZSB9IH0pLFxyXG4pXHJcbmNvbnN0IGNhbWVyYVBpdGNoID0gY3JlYXRlTnVtYmVyTW9kZWwoXHJcbiAgc3RhdGUgPT4gc3RhdGUuY2FtZXJhLnBpdGNoRGVnLFxyXG4gIChzdGF0ZSwgdmFsdWUpID0+IHtcclxuICAgIHN0YXRlLmNhbWVyYS5waXRjaERlZyA9IHZhbHVlXHJcbiAgfSxcclxuICB2YWx1ZSA9PiAoeyBjYW1lcmE6IHsgcGl0Y2hEZWc6IHZhbHVlIH0gfSksXHJcbilcclxuY29uc3QgY2FtZXJhRm92ID0gY3JlYXRlTnVtYmVyTW9kZWwoXHJcbiAgc3RhdGUgPT4gc3RhdGUuY2FtZXJhLmZvdkRlZyxcclxuICAoc3RhdGUsIHZhbHVlKSA9PiB7XHJcbiAgICBzdGF0ZS5jYW1lcmEuZm92RGVnID0gdmFsdWVcclxuICB9LFxyXG4gIHZhbHVlID0+ICh7IGNhbWVyYTogeyBmb3ZEZWc6IHZhbHVlIH0gfSksXHJcbilcclxuPC9zY3JpcHQ+XHJcblxyXG48dGVtcGxhdGU+XHJcbiAgPENhbGxvdXRcclxuICAgIHYtaWY9XCJzdGF0dXNUZXh0IHx8IHZpZXdFcnJvclwiXHJcbiAgICBsYWJlbD1cIkdvZG90IFN0YWdlIChFeHBlcmltZW50YWwpXCJcclxuICAgIDp0aGVtZT1cInN0YXR1c1RoZW1lXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9nb2RvdC52dWU6MjA0OjNcIlxyXG4gID5cclxuICAgIDxwIHYtaWY9XCJ2aWV3RXJyb3JcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2dvZG90LnZ1ZToyMDk6NVwiPlxyXG4gICAgICB7eyB2aWV3RXJyb3IubWVzc2FnZSB9fVxyXG4gICAgPC9wPlxyXG4gICAgPHAgdi1pZj1cInN0YXR1c1RleHRcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2dvZG90LnZ1ZToyMTI6NVwiPlxyXG4gICAgICB7eyBzdGF0dXNUZXh0IH19XHJcbiAgICA8L3A+XHJcbiAgPC9DYWxsb3V0PlxyXG5cclxuICA8Q29udGFpbmVyXHJcbiAgICB0aXRsZT1cIkdvZG90IFZpZXdcIlxyXG4gICAgaWNvbj1cImktc29sYXI6Y2FtZXJhLWJvbGQtZHVvdG9uZVwiXHJcbiAgICA6Y2xhc3M9XCJbXHJcbiAgICAgICdyb3VuZGVkLXhsJyxcclxuICAgICAgJ2JnLXdoaXRlLzgwIGRhcms6YmctYmxhY2svNzUnLFxyXG4gICAgICAnYmFja2Ryb3AtYmx1ci1sZycsXHJcbiAgICBdXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9nb2RvdC52dWU6MjE3OjNcIlxyXG4gID5cclxuICAgIDxkaXYgOmNsYXNzPVwiWydmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gZ2FwLTIgcHgtMiBwYi0yJ11cIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2dvZG90LnZ1ZToyMjY6NVwiPlxyXG4gICAgICA8ZGl2IDpjbGFzcz1cIlsndGV4dC14cyB0ZXh0LW5ldXRyYWwtNTAwIGRhcms6dGV4dC1uZXV0cmFsLTQwMCddXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9nb2RvdC52dWU6MjI3OjdcIj5cclxuICAgICAgICB7eyBzbmFwc2hvdE1ldGEgPz8gJ05vIEdvZG90IHN0YWdlIHZpZXcgc25hcHNob3QgcmVjZWl2ZWQnIH19XHJcbiAgICAgIDwvZGl2PlxyXG4gICAgPC9kaXY+XHJcblxyXG4gICAgPGRpdlxyXG4gICAgICA6Y2xhc3M9XCJbXHJcbiAgICAgICAgJ2dyaWQgZ3JpZC1jb2xzLTUnLFxyXG4gICAgICAgICdnYXAtMSBwLTInLFxyXG4gICAgICAgIC4uLnNldHRpbmdzTG9ja0NsYXNzLFxyXG4gICAgICBdXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9nb2RvdC52dWU6MjMyOjVcIlxyXG4gICAgPlxyXG4gICAgICA8UHJvcGVydHlOdW1iZXJcclxuICAgICAgICB2LW1vZGVsPVwiY2FtZXJhUG9zaXRpb25YXCJcclxuICAgICAgICA6Y29uZmlnPVwiY2FtZXJhUG9zaXRpb25Db25maWdcIlxyXG4gICAgICAgIGxhYmVsPVwiQ2FtZXJhIFhcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2dvZG90LnZ1ZToyMzk6N1wiXHJcbiAgICAgIC8+XHJcbiAgICAgIDxQcm9wZXJ0eU51bWJlclxyXG4gICAgICAgIHYtbW9kZWw9XCJjYW1lcmFQb3NpdGlvbllcIlxyXG4gICAgICAgIDpjb25maWc9XCJjYW1lcmFQb3NpdGlvbkNvbmZpZ1wiXHJcbiAgICAgICAgbGFiZWw9XCJDYW1lcmEgWVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvZ29kb3QudnVlOjI0NDo3XCJcclxuICAgICAgLz5cclxuICAgICAgPFByb3BlcnR5TnVtYmVyXHJcbiAgICAgICAgdi1tb2RlbD1cImNhbWVyYVBvc2l0aW9uWlwiXHJcbiAgICAgICAgOmNvbmZpZz1cImNhbWVyYVBvc2l0aW9uQ29uZmlnXCJcclxuICAgICAgICBsYWJlbD1cIkNhbWVyYSBaXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9nb2RvdC52dWU6MjQ5OjdcIlxyXG4gICAgICAvPlxyXG4gICAgICA8UHJvcGVydHlOdW1iZXJcclxuICAgICAgICB2LW1vZGVsPVwiY2FtZXJhWWF3XCJcclxuICAgICAgICA6Y29uZmlnPVwiY2FtZXJhWWF3Q29uZmlnXCJcclxuICAgICAgICBsYWJlbD1cIkNhbWVyYSBZYXdcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL2dvZG90LnZ1ZToyNTQ6N1wiXHJcbiAgICAgIC8+XHJcbiAgICAgIDxQcm9wZXJ0eU51bWJlclxyXG4gICAgICAgIHYtbW9kZWw9XCJjYW1lcmFQaXRjaFwiXHJcbiAgICAgICAgOmNvbmZpZz1cImNhbWVyYVBpdGNoQ29uZmlnXCJcclxuICAgICAgICBsYWJlbD1cIkNhbWVyYSBQaXRjaFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvZ29kb3QudnVlOjI1OTo3XCJcclxuICAgICAgLz5cclxuICAgICAgPFByb3BlcnR5TnVtYmVyXHJcbiAgICAgICAgdi1tb2RlbD1cImNhbWVyYUZvdlwiXHJcbiAgICAgICAgOmNvbmZpZz1cImNhbWVyYUZvdkNvbmZpZ1wiXHJcbiAgICAgICAgbGFiZWw9XCJDYW1lcmEgRk9WXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9nb2RvdC52dWU6MjY0OjdcIlxyXG4gICAgICAvPlxyXG4gICAgPC9kaXY+XHJcbiAgPC9Db250YWluZXI+XHJcbjwvdGVtcGxhdGU+XHJcbiJdLCJmaWxlIjoiQzovVXNlcnMvQWRtaW5pc3RyYXRvci9haXJpLWFwcC9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvZ29kb3QudnVlIn0=

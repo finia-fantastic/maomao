@@ -15,6 +15,11 @@ const props = defineProps<Props>()
 const processedContent = ref('')
 const { process, processSync } = useMarkdown()
 
+// DOMPurify default allowed URI patterns plus airi-image custom protocol.
+// NOTICE: airi-image:// is used for AI-generated images saved to temp directory.
+// Without this, DOMPurify strips the src attribute from <img> tags using this scheme.
+const ALLOWED_URIS = /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|airi-image):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i
+
 async function processContent() {
   if (!props.content) {
     processedContent.value = ''
@@ -22,11 +27,11 @@ async function processContent() {
   }
 
   try {
-    processedContent.value = DOMPurify.sanitize(await process(props.content))
+    processedContent.value = DOMPurify.sanitize(await process(props.content), { ALLOWED_URI_REGEXP: ALLOWED_URIS })
   }
   catch (error) {
     console.warn('Failed to process markdown with syntax highlighting, using fallback:', error)
-    processedContent.value = DOMPurify.sanitize(processSync(props.content))
+    processedContent.value = DOMPurify.sanitize(processSync(props.content), { ALLOWED_URI_REGEXP: ALLOWED_URIS })
   }
 }
 

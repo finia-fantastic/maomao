@@ -277,40 +277,56 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
    * 6. Fire a spark:notify so the pet reacts and speaks.
    */
   async function tick(force = false) {
-    if (isInferring.value)
+    if (isInferring.value) {
+      console.info('[Vision] skipped: previous inference still running')
       return
+    }
 
     // Re-acquire stream if needed; silent no-op if stream is already live.
+    console.info('[Vision] acquiring stream...')
     const stream = await ensureStream()
-    if (!stream)
+    if (!stream) {
+      console.warn('[Vision] no stream available (check screen capture permission)')
       return
+    }
+    console.info('[Vision] stream acquired')
 
     const video = videoRef.value
-    if (!video)
+    if (!video) {
+      console.warn('[Vision] no video element')
       return
+    }
 
     const signature = captureSignature(video)
-    if (!signature)
+    if (!signature) {
+      console.warn('[Vision] video not ready (readyState < 2)')
       return
+    }
 
     // ---- dedup gate: has the screen changed enough? --------------------
     if (!force && lastSpokeSignature.value) {
       const diff = signatureDifference(signature, lastSpokeSignature.value)
-      if (diff < SIGNATURE_SIMILARITY_THRESHOLD)
+      if (diff < SIGNATURE_SIMILARITY_THRESHOLD) {
+        console.info('[Vision] screen unchanged, skipped')
         return
+      }
     }
 
     // ---- throttle gate: minimum spacing between comments ---------------
     const now = Date.now()
     const elapsedSinceLastSpoke = now - lastSpokeAt.value
-    if (!force && elapsedSinceLastSpoke < screenCommentIntervalMs.value)
+    if (!force && elapsedSinceLastSpoke < screenCommentIntervalMs.value) {
+      console.info('[Vision] throttled, next comment in ' + (screenCommentIntervalMs.value - elapsedSinceLastSpoke) + 'ms')
       return
+    }
 
     // ---- capture frame for VLM -----------------------------------------
-    // The vision model needs a higher-quality frame than our 16×16 signature.
     const dataUrl = captureFrame(video, 0.82, 1280, 720)
-    if (!dataUrl)
+    if (!dataUrl) {
+      console.warn('[Vision] frame capture failed')
       return
+    }
+    console.info('[Vision] frame captured, sending to VLM...')
 
     isInferring.value = true
 
@@ -321,12 +337,15 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
         workloadId: SCREEN_WATCH_WORKLOAD,
         sourceId: activeSourceId.value,
         capturedAt: now,
-        publishContext: false, // We don't send context updates — we let the character speak.
+        publishContext: false,
       })
 
       const text = result.text
-      if (!text || text.length === 0)
+      console.info('[Vision] VLM response received: ' + (text ? text.slice(0, 100) + '...' : 'EMPTY'))
+      if (!text || text.length === 0) {
+        console.warn('[Vision] VLM returned empty text — no reaction')
         return
+      }
 
       // Update dedup baseline BEFORE speaking so concurrent ticks don't slip through.
       lastSpokeSignature.value = signature
@@ -358,8 +377,11 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
    * in settings first.
    */
   async function triggerManualLook() {
-    if (!screenWatchEnabled.value)
+    console.info('[Vision] manual look triggered, screenWatchEnabled=' + screenWatchEnabled.value)
+    if (!screenWatchEnabled.value) {
+      console.warn('[Vision] screen watch not enabled — enable it in Settings > Vision')
       return
+    }
     await tick(true)
   }
 
@@ -379,13 +401,16 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
       return
 
     const stream = await ensureStream()
-    if (!stream) return
+    if (!stream)
+      return
 
     const video = videoRef.value
-    if (!video) return
+    if (!video)
+      return
 
     const dataUrl = captureFrame(video, 0.82, 1280, 720)
-    if (!dataUrl) return
+    if (!dataUrl)
+      return
 
     isInferring.value = true
     try {
@@ -398,7 +423,8 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
       })
 
       const text = result.text
-      if (!text || text.length === 0) return
+      if (!text || text.length === 0)
+        return
 
       // Speak the recognized English directly via TTS, no character reaction.
       characterOrchestratorStore.handleSparkNotifyWithReaction(

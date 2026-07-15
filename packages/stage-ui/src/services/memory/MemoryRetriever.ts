@@ -1,5 +1,5 @@
-import type { MemoryRecord, MemorySettings } from './types'
 import type { LongTermMemoryService } from './LongTermMemoryService'
+import type { MemoryRecord, MemorySettings } from './types'
 
 /**
  * Retrieves relevant long-term memories before each chat model call.
@@ -53,21 +53,22 @@ export function createMemoryRetriever(memoryService: LongTermMemoryService) {
       options.maxResults,
     )
 
-    if (records.length === 0) return []
+    if (records.length === 0)
+      return []
 
     // Score and rank (server-side scoring already applied, but we re-score
     // on the client for cross-validation and token budget enforcement)
-    const scored: RetrievedMemory[] = records.map(record => {
+    const scored: RetrievedMemory[] = records.map((record) => {
       const recencyDays = daysSinceUpdate(record.updatedAt)
       const recencyScore = Math.exp(-recencyDays / 30)
       const textRelScore = 0.5 // FTS5 match confirms relevance
 
-      const score =
-        textRelScore * 0.45 +
-        record.importance * 0.20 +
-        recencyScore * 0.15 +
-        record.confidence * 0.10 +
-        0.5 * 0.10 // access frequency approximated
+      const score
+        = textRelScore * 0.45
+          + record.importance * 0.20
+          + recencyScore * 0.15
+          + record.confidence * 0.10
+          + 0.5 * 0.10 // access frequency approximated
 
       return { record, score }
     })
@@ -104,6 +105,6 @@ export function createMemoryRetriever(memoryService: LongTermMemoryService) {
 export type MemoryRetriever = ReturnType<typeof createMemoryRetriever>
 
 function daysSinceUpdate(updatedAt: string): number {
-  const updated = new Date(updatedAt.replace(' ', 'T') + 'Z').getTime()
+  const updated = new Date(`${updatedAt.replace(' ', 'T')}Z`).getTime()
   return (Date.now() - updated) / (1000 * 60 * 60 * 24)
 }

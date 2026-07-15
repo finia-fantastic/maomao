@@ -1,13 +1,6 @@
 import type { VRM } from '@pixiv/three-vrm'
-import { Object3D } from 'three'
-import {
-  BoxGeometry,
-  Euler,
-  Group,
-  Mesh,
-  MeshStandardMaterial,
-  Vector3,
-} from 'three'
+
+import { BoxGeometry, Euler, Group, Mesh, MeshStandardMaterial, Object3D, Vector3 } from 'three'
 
 /**
  * Drawing workstation — simple geometric desk + tilted screen placed in
@@ -47,6 +40,8 @@ let workstationGroup: Group | null = null
 let deskMesh: Mesh | null = null
 let screenMesh: Mesh | null = null
 let lookTarget: Object3D | null = null
+/** VRM whose lookAt is pointed at the screen — cleared on hide. */
+let trackedVrm: VRM | null = null
 
 // ---- Public API ---------------------------------------------------------
 
@@ -60,7 +55,8 @@ export function showDrawingWorkstation(
   vrm: VRM,
   vrmGroup: Object3D,
 ) {
-  if (workstationGroup) return // already shown
+  if (workstationGroup)
+    return // already shown
 
   // --- Build workstation group ---
   workstationGroup = new Group()
@@ -104,18 +100,28 @@ export function showDrawingWorkstation(
     vrm.lookAt.target = lookTarget
     vrm.lookAt.autoUpdate = true
   }
+  trackedVrm = vrm
 
   console.log('[DrawingWorkstation] shown')
 }
 
 /** Remove the workstation from the scene and reset gaze. */
 export function hideDrawingWorkstation() {
+  // Reset VRM lookAt BEFORE removing the target from the scene,
+  // otherwise the VRM continues tracking a detached Object3D with
+  // a stale world matrix, which locks the head in a wrong pose.
+  if (trackedVrm?.lookAt) {
+    trackedVrm.lookAt.target = null
+  }
+  trackedVrm = null
+
   if (lookTarget) {
     lookTarget.removeFromParent()
     lookTarget = null
   }
 
-  if (!workstationGroup) return
+  if (!workstationGroup)
+    return
 
   workstationGroup.removeFromParent()
   disposeMesh(deskMesh)
@@ -133,7 +139,8 @@ export function toggleDrawingWorkstation(
   vrm: VRM,
   vrmGroup: Object3D,
 ) {
-  if (workstationGroup) hideDrawingWorkstation()
+  if (workstationGroup)
+    hideDrawingWorkstation()
   else showDrawingWorkstation(scene, vrm, vrmGroup)
 }
 
@@ -144,7 +151,8 @@ export function isDrawingWorkstationVisible(): boolean {
 // ---- Dispose ------------------------------------------------------------
 
 function disposeMesh(mesh: Mesh | null) {
-  if (!mesh) return
+  if (!mesh)
+    return
   mesh.geometry?.dispose()
   const mat = mesh.material as MeshStandardMaterial
   mat?.dispose()

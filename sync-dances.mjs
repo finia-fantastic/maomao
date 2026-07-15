@@ -9,9 +9,10 @@
 // Flat packs (e.g. vrchat100个动作) that contain .vrma files directly at the top level
 // are synced file-by-file with name normalization (prefix stripping + known mappings).
 
+import process from 'node:process'
+
 import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
-import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 const root = dirname(fileURLToPath(import.meta.url))
@@ -53,17 +54,17 @@ const NAME_OVERRIDES = {
 
 // Folder name → dance name prefix for multi-file packs or renamed folders.
 const FOLDER_NAME_MAP = {
-  'AnimationPack_vol_01': '',     // special: sync all .vrma with individual names
+  'AnimationPack_vol_01': '', // special: sync all .vrma with individual names
   'ムリムリ進化論（进化论）': '进化论',
-  '質問、恋って何でしょうか？（质问恋爱是什么？）': '质问恋爱',  // appends 1/2/3
+  '質問、恋って何でしょうか？（质问恋爱是什么？）': '质问恋爱', // appends 1/2/3
 }
 
 // Known multi-file packs with name mappings (base name → renamed output).
 // Drawing poses are character animations, not dances.
 const DRAWING_NAME_MAP = {
-  'anim_anim_drawing_float': '飘着画画',
-  'anim_anim_drawing_prone': '趴着画画',
-  'anim_anim_drawing_sit': '坐着画画',
+  anim_anim_drawing_float: '飘着画画',
+  anim_anim_drawing_prone: '趴着画画',
+  anim_anim_drawing_sit: '坐着画画',
 }
 
 /**
@@ -95,7 +96,8 @@ function findVrma(dir) {
     const p = join(dir, name)
     if (statSync(p).isDirectory()) {
       const found = findVrma(p)
-      if (found) return found
+      if (found)
+        return found
     }
     else if (name.toLowerCase().endsWith('.vrma')) {
       return p
@@ -127,7 +129,8 @@ function isFlatPack(dir) {
     const p = join(dir, name)
     if (!statSync(p).isDirectory() && name.toLowerCase().endsWith('.vrma')) {
       vrmaCount++
-      if (vrmaCount >= 2) return true
+      if (vrmaCount >= 2)
+        return true
     }
   }
   return false
@@ -157,15 +160,18 @@ const produced = new Set()
 
 for (const pack of readdirSync(packsDir)) {
   const packPath = join(packsDir, pack)
-  if (!statSync(packPath).isDirectory()) continue
+  if (!statSync(packPath).isDirectory())
+    continue
 
   // Flat pack: .vrma files directly at top level (e.g. vrchat100个动作).
   if (isFlatPack(packPath)) {
     console.info(`[sync-dances] "${pack}": flat pack, syncing individual files`)
     for (const file of readdirSync(packPath)) {
-      if (!file.toLowerCase().endsWith('.vrma')) continue
+      if (!file.toLowerCase().endsWith('.vrma'))
+        continue
       const filePath = join(packPath, file)
-      if (!statSync(filePath).isFile()) continue
+      if (!statSync(filePath).isFile())
+        continue
       if (shouldSkipInFlatPack(file)) {
         produced.add(file)
         continue
@@ -208,27 +214,32 @@ for (const pack of readdirSync(packsDir)) {
           const nameFromSize = SIZE_TO_NAME[size]
           if (nameFromSize) {
             fileName = `${nameFromSize}.vrma`
-          } else {
+          }
+          else {
             // Fallback to filename
             const raw = basename(vrmaPath, extname(vrmaPath))
             fileName = `${normalizeDanceName(raw)}.vrma`
           }
-        } else {
+        }
+        else {
           // Use mapped name with number suffix
           fileName = allVrma.length > 1 ? `${folderBase}${idx}.vrma` : `${folderBase}.vrma`
         }
-      } else if (pack === 'Drawing_v01_01') {
+      }
+      else if (pack === 'Drawing_v01_01') {
         // Drawing poses — use DRAWING_NAME_MAP, skip tablet/pen/empty animations
         const raw = basename(vrmaPath, extname(vrmaPath))
         const mapped = DRAWING_NAME_MAP[raw]
         if (mapped) {
           fileName = `${mapped}.vrma`
-        } else {
+        }
+        else {
           // Skip non-character animations (tablet, pen, empty)
           console.info(`[sync-dances]   skipping "${raw}.vrma" (not a character pose)`)
           continue
         }
-      } else {
+      }
+      else {
         // Unknown pack — use filename from vrma/
         const raw = basename(vrmaPath, extname(vrmaPath))
         fileName = `${normalizeDanceName(raw)}.vrma`

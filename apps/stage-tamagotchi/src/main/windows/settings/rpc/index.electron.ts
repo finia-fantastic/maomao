@@ -25,9 +25,9 @@ import {
 import { createAuthService } from '../../../services/airi/auth'
 import { createGodotStageService } from '../../../services/airi/godot-stage'
 import { createMcpServersService } from '../../../services/airi/mcp-servers'
-import { createMemoryService } from '../../../services/memory'
 import { createWidgetsService } from '../../../services/airi/widgets'
 import { createAutoUpdaterService } from '../../../services/electron'
+import { createMemoryService } from '../../../services/memory'
 import { centerWindowOnDisplay } from '../../shared/display'
 import { setupBaseWindowElectronInvokes } from '../../shared/window'
 

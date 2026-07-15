@@ -133,7 +133,8 @@ function cancelEdit(): void {
 }
 
 async function saveEdit(): Promise<void> {
-  if (!editMemory.value) return
+  if (!editMemory.value)
+    return
   // NOTICE: Full in-place editing requires the updateMemory IPC handler;
   // for now, inline edits refresh the list after save.
   // Future: wire up memoryUpdate for partial field edits on each record.
@@ -154,8 +155,12 @@ watch([searchQuery, filterType, filterProject], () => {
 <template>
   <div :class="['flex flex-col gap-6 p-4']">
     <div v-if="!store.enabled" text="neutral-400 p-8 text-center">
-      <div text="lg">Memory</div>
-      <div text="sm mt-2">记忆系统仅支持桌面应用。Memory system is only available on the desktop app.</div>
+      <div text="lg">
+        Memory
+      </div>
+      <div text="sm mt-2">
+        记忆系统仅支持桌面应用。Memory system is only available on the desktop app.
+      </div>
     </div>
 
     <template v-else>
@@ -167,28 +172,42 @@ watch([searchQuery, filterType, filterProject], () => {
       <!-- Stats -->
       <div :class="['flex gap-4']">
         <div :class="['flex-1 px-4 py-3 rounded-lg bg-white/5 border border-white/10']">
-          <div text="xs neutral-400">总记忆数</div>
-          <div text="lg font-bold">{{ stats.totalMemories }}</div>
+          <div text="xs neutral-400">
+            总记忆数
+          </div>
+          <div text="lg font-bold">
+            {{ stats.totalMemories }}
+          </div>
         </div>
         <div :class="['flex-1 px-4 py-3 rounded-lg bg-white/5 border border-white/10']">
-          <div text="xs neutral-400">活跃记忆</div>
-          <div text="lg font-bold">{{ stats.activeMemories }}</div>
+          <div text="xs neutral-400">
+            活跃记忆
+          </div>
+          <div text="lg font-bold">
+            {{ stats.activeMemories }}
+          </div>
         </div>
         <div :class="['flex-1 px-4 py-3 rounded-lg bg-white/5 border border-white/10']">
-          <div text="xs neutral-400">已过期/删除</div>
-          <div text="lg font-bold">{{ stats.expiredMemories }}</div>
+          <div text="xs neutral-400">
+            已过期/删除
+          </div>
+          <div text="lg font-bold">
+            {{ stats.expiredMemories }}
+          </div>
         </div>
       </div>
 
       <!-- Settings toggles -->
       <div :class="['flex flex-col gap-3 p-4 rounded-lg bg-white/5 border border-white/10']">
-        <div text="sm font-medium mb-1">记忆设置</div>
+        <div text="sm font-medium mb-1">
+          记忆设置
+        </div>
 
         <label :class="['flex items-center gap-3 cursor-pointer']">
           <input
             type="checkbox"
             :checked="settings.enableLongTermMemory"
-            class="w-4 h-4"
+            class="h-4 w-4"
             @change="handleUpdateSetting('enableLongTermMemory', ($event.target as HTMLInputElement).checked)"
           >
           <div :class="['flex flex-col']">
@@ -201,7 +220,7 @@ watch([searchQuery, filterType, filterProject], () => {
           <input
             type="checkbox"
             :checked="settings.enableSessionSummary"
-            class="w-4 h-4"
+            class="h-4 w-4"
             @change="handleUpdateSetting('enableSessionSummary', ($event.target as HTMLInputElement).checked)"
           >
           <div :class="['flex flex-col']">
@@ -214,7 +233,7 @@ watch([searchQuery, filterType, filterProject], () => {
           <input
             type="checkbox"
             :checked="settings.enableSensitiveMemory"
-            class="w-4 h-4"
+            class="h-4 w-4"
             @change="handleUpdateSetting('enableSensitiveMemory', ($event.target as HTMLInputElement).checked)"
           >
           <div :class="['flex flex-col']">
@@ -230,11 +249,21 @@ watch([searchQuery, filterType, filterProject], () => {
             :class="['bg-white/10 rounded px-3 py-1.5 text-sm border border-white/10']"
             @change="handleUpdateSetting('maxRetrievedMemories', Number(($event.target as HTMLSelectElement).value))"
           >
-            <option :value="3">3</option>
-            <option :value="5">5</option>
-            <option :value="8">8</option>
-            <option :value="10">10</option>
-            <option :value="15">15</option>
+            <option :value="3">
+              3
+            </option>
+            <option :value="5">
+              5
+            </option>
+            <option :value="8">
+              8
+            </option>
+            <option :value="10">
+              10
+            </option>
+            <option :value="15">
+              15
+            </option>
           </select>
         </div>
       </div>
@@ -295,8 +324,12 @@ watch([searchQuery, filterType, filterProject], () => {
                   :class="['px-1 py-0.5 rounded text-xs bg-neutral-500/15 text-neutral-400']"
                 >{{ memory.status }}</span>
               </div>
-              <div text="sm font-medium truncate">{{ memory.subject }}</div>
-              <div text="xs neutral-400 mt-1 line-clamp-2">{{ memory.content }}</div>
+              <div text="sm font-medium truncate">
+                {{ memory.subject }}
+              </div>
+              <div text="xs neutral-400 mt-1 line-clamp-2">
+                {{ memory.content }}
+              </div>
               <div :class="['flex items-center gap-3 mt-2 text-xs text-neutral-500']">
                 <span>重要性 {{ Math.round(memory.importance * 100) }}%</span>
                 <span>置信度 {{ Math.round(memory.confidence * 100) }}%</span>
@@ -305,8 +338,12 @@ watch([searchQuery, filterType, filterProject], () => {
               </div>
             </div>
             <div :class="['flex gap-1 shrink-0']">
-              <Button size="sm" variant="ghost" @click="openEdit(memory)">查看</Button>
-              <Button size="sm" variant="ghost" @click="handleDelete(memory.id)">删除</Button>
+              <Button size="sm" variant="ghost" @click="openEdit(memory)">
+                查看
+              </Button>
+              <Button size="sm" variant="ghost" @click="handleDelete(memory.id)">
+                删除
+              </Button>
             </div>
           </div>
 
@@ -317,8 +354,12 @@ watch([searchQuery, filterType, filterProject], () => {
               :class="['w-full min-h-20 px-3 py-2 rounded bg-white/5 border border-white/10 text-sm resize-y outline-none']"
             />
             <div :class="['flex gap-2 mt-2']">
-              <Button size="sm" @click="saveEdit">保存</Button>
-              <Button size="sm" variant="outline" @click="cancelEdit">取消</Button>
+              <Button size="sm" @click="saveEdit">
+                保存
+              </Button>
+              <Button size="sm" variant="outline" @click="cancelEdit">
+                取消
+              </Button>
             </div>
           </div>
         </div>

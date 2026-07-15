@@ -31,6 +31,13 @@ const availableProviders = computed(() => [
     ? []
     : [
         {
+          id: 'doubao-seedream',
+          name: 'Doubao Seedream (豆包画图)',
+          description: '火山方舟 Seedream-4.5 文生图',
+          icon: 'i-lobe-icons:volcengine',
+          configRoute: '/settings/providers/artistry/doubao-seedream',
+        },
+        {
           id: 'replicate',
           name: t('settings.pages.modules.artistry.providers.replicate.name'),
           description: t('settings.pages.modules.artistry.providers.replicate.description'),

@@ -1,0 +1,298 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/Users/Administrator/airi-app/packages/stage-pages/src/pages/settings/providers/speech/openai-compatible-audio-speech.vue");/* Injection by vite-plugin-vue-inspector Start */
+import { createVNode as __createVNode,createElementVNode as __createElementVNode,createBlock as __createBlock } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=91557531"
+function _interopVNode(vnode) {
+  if (vnode && vnode.props && 'data-v-inspector' in vnode.props) {
+    const data = vnode.props['data-v-inspector']
+    delete vnode.props['data-v-inspector']
+    Object.defineProperty(vnode.props, '__v_inspector', { value: data, enumerable: false })
+  }
+  return vnode
+}
+function _createVNode(...args) { return _interopVNode(__createVNode(...args)) }
+function _createElementVNode(...args) { return _interopVNode(__createElementVNode(...args)) }
+function _createBlock(...args) { return _interopVNode(__createBlock(...args)) }
+/* Injection by vite-plugin-vue-inspector End */
+import { defineComponent as _defineComponent } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=91557531";
+import { Alert, SpeechPlaygroundOpenAICompatible, SpeechProviderSettings } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/index.ts";
+import { useProviderValidation } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/composables/use-provider-validation.ts";
+import { getDefinedProvider } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/libs/index.ts";
+import { useSpeechStore } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/stores/modules/speech.ts";
+import { useProvidersStore } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/stores/providers.ts";
+import { FieldInput, FieldRange } from "/@fs/C:/Users/Administrator/airi-app/packages/ui/src/index.ts";
+import { storeToRefs } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/pinia.js?v=91557531";
+import { computed, onMounted, ref, watch } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=91557531";
+import { useI18n } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue-i18n.js?v=91557531";
+const providerId = "openai-compatible-audio-speech";
+const defaultModel = "tts-1";
+const defaultVoice = "alloy";
+const _sfc_main = /* @__PURE__ */ _defineComponent({
+	__name: "openai-compatible-audio-speech",
+	setup(__props, { expose: __expose }) {
+		__expose();
+		const speechStore = useSpeechStore();
+		const providersStore = useProvidersStore();
+		const { providers } = storeToRefs(providersStore);
+		const { t } = useI18n();
+		const defaultVoiceSettings = { speed: 1 };
+		// Get provider metadata
+		// Initialize speed from provider config or default
+		const speed = ref(providers.value[providerId]?.voiceSettings?.speed || providers.value[providerId]?.speed || defaultVoiceSettings.speed);
+		// Model selection (store raw string; empty string is valid while editing — default is applied only at API call)
+		const model = computed({
+			get: () => {
+				const raw = providers.value[providerId]?.model;
+				return raw ?? "";
+			},
+			set: (value) => {
+				if (!providers.value[providerId]) providers.value[providerId] = {};
+				providers.value[providerId].model = value;
+			}
+		});
+		const voice = computed({
+			get: () => {
+				const raw = providers.value[providerId]?.voice;
+				return raw ?? "";
+			},
+			set: (value) => {
+				if (!providers.value[providerId]) providers.value[providerId] = {};
+				providers.value[providerId].voice = value;
+			}
+		});
+		// TODO: use `useRefHistory` for this
+		// Watch provider config changes to sync local refs (for reset functionality)
+		watch(() => providers.value[providerId], (newConfig) => {
+			if (newConfig) {
+				// Sync speed from voiceSettings or direct speed property
+				const config = newConfig;
+				const newSpeed = config.voiceSettings?.speed || config.speed || defaultVoiceSettings.speed;
+				if (Math.abs(speed.value - newSpeed) > .001) speed.value = newSpeed;
+				// Sync model if property was cleared externally (undefined/null), not when user sets empty string
+				if (config.model == null && model.value !== defaultModel) model.value = defaultModel;
+				// Sync voice if property was cleared externally (undefined/null), not when user sets empty string
+				if (config.voice == null && voice.value !== defaultVoice) voice.value = defaultVoice;
+			} else {
+				// Provider config was reset, reset our local refs to defaults
+				speed.value = defaultVoiceSettings.speed;
+				model.value = defaultModel;
+				voice.value = defaultVoice;
+			}
+		}, {
+			deep: true,
+			immediate: true
+		});
+		// Check if API key is configured
+		const apiKeyConfigured = computed(() => !!providers.value[providerId]?.apiKey);
+		// Ensure provider config is initialized on mount
+		onMounted(() => {
+			providers.value[providerId] ??= {};
+			// Defaults only when unset (null/undefined); empty strings are kept intentionally
+			providers.value[providerId].model ??= defaultModel;
+			providers.value[providerId].voice ??= defaultVoice;
+		});
+		// Generate speech with OpenAI-compatible parameters
+		async function handleGenerateSpeech(input, voiceId, _useSSML, modelId) {
+			const provider = await providersStore.getProviderInstance(providerId);
+			if (!provider) {
+				throw new Error("Failed to initialize speech provider");
+			}
+			// Get provider configuration
+			const providerConfig = providersStore.getProviderConfig(providerId);
+			// Use the reactive model computed property (not a local variable)
+			const modelToUse = modelId || model.value || defaultModel;
+			return await speechStore.speech(provider, modelToUse, input, voiceId || voice.value || defaultVoice, {
+				...providerConfig,
+				...defaultVoiceSettings,
+				speed: speed.value
+			});
+		}
+		watch(speed, async () => {
+			if (!providers.value[providerId]) providers.value[providerId] = {};
+			providers.value[providerId].speed = speed.value;
+		});
+		// Use the composable to get validation logic and state
+		const { isValidating, isValid, validationMessage, forceValid } = useProviderValidation(providerId);
+		const apiKeyPlaceholder = computed(() => {
+			const definition = getDefinedProvider(providerId);
+			if (!definition?.createProviderConfig) return "sk-...";
+			const schema = definition.createProviderConfig({ t });
+			const shape = typeof schema?.shape === "function" ? schema.shape() : schema?.shape;
+			const apiKeySchema = shape?.apiKey;
+			if (!apiKeySchema) return "sk-...";
+			const meta = typeof apiKeySchema.meta === "function" ? apiKeySchema.meta() : undefined;
+			return typeof meta?.placeholderLocalized === "string" ? meta.placeholderLocalized : "sk-...";
+		});
+		const __returned__ = {
+			providerId,
+			defaultModel,
+			defaultVoice,
+			speechStore,
+			providersStore,
+			providers,
+			t,
+			defaultVoiceSettings,
+			speed,
+			model,
+			voice,
+			apiKeyConfigured,
+			handleGenerateSpeech,
+			isValidating,
+			isValid,
+			validationMessage,
+			forceValid,
+			apiKeyPlaceholder,
+			get Alert() {
+				return Alert;
+			},
+			get SpeechPlaygroundOpenAICompatible() {
+				return SpeechPlaygroundOpenAICompatible;
+			},
+			get SpeechProviderSettings() {
+				return SpeechProviderSettings;
+			},
+			get FieldInput() {
+				return FieldInput;
+			},
+			get FieldRange() {
+				return FieldRange;
+			}
+		};
+		Object.defineProperty(__returned__, "__isScriptSetup", {
+			enumerable: false,
+			value: true
+		});
+		return __returned__;
+	}
+});
+import { createCommentVNode as _createCommentVNode,  toDisplayString as _toDisplayString,  withCtx as _withCtx, createSlots as _createSlots, openBlock as _openBlock,  createTextVNode as _createTextVNode } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=91557531";
+const _hoisted_1 = {
+	class: "w-full flex items-center justify-between",
+	"data-v-inspector": "../../packages/stage-pages/src/pages/settings/providers/speech/openai-compatible-audio-speech.vue:206:11"
+};
+const _hoisted_2 = { "data-v-inspector": "../../packages/stage-pages/src/pages/settings/providers/speech/openai-compatible-audio-speech.vue:207:13" };
+const _hoisted_3 = {
+	class: "whitespace-pre-wrap break-all",
+	"data-v-inspector": "../../packages/stage-pages/src/pages/settings/providers/speech/openai-compatible-audio-speech.vue:218:11"
+};
+function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+	return _openBlock(), _createBlock($setup["SpeechProviderSettings"], {
+		"provider-id": $setup.providerId,
+		"default-model": $setup.defaultModel,
+		"additional-settings": $setup.defaultVoiceSettings,
+		placeholder: $setup.apiKeyPlaceholder,
+		"data-v-inspector": "../../packages/stage-pages/src/pages/settings/providers/speech/openai-compatible-audio-speech.vue:167:3"
+	}, {
+		"voice-settings": _withCtx(() => [
+			_createCommentVNode(" Model input "),
+			_createVNode($setup["FieldInput"], {
+				modelValue: $setup.model,
+				"onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => $setup.model = $event),
+				label: "Model",
+				description: "Enter the TTS model to use for speech generation",
+				placeholder: "tts-1",
+				"data-v-inspector": "../../packages/stage-pages/src/pages/settings/providers/speech/openai-compatible-audio-speech.vue:176:7"
+			}, null, 8, ["modelValue"]),
+			_createCommentVNode(" Speed control - common to most providers "),
+			_createVNode($setup["FieldRange"], {
+				modelValue: $setup.speed,
+				"onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => $setup.speed = $event),
+				label: $setup.t("settings.pages.providers.provider.common.fields.field.speed.label"),
+				description: $setup.t("settings.pages.providers.provider.common.fields.field.speed.description"),
+				min: .5,
+				max: 2,
+				step: .01,
+				"data-v-inspector": "../../packages/stage-pages/src/pages/settings/providers/speech/openai-compatible-audio-speech.vue:183:7"
+			}, null, 8, [
+				"modelValue",
+				"label",
+				"description"
+			])
+		]),
+		playground: _withCtx(() => [_createVNode($setup["SpeechPlaygroundOpenAICompatible"], {
+			"model-value": $setup.model,
+			"onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => $setup.model = $event),
+			voice: $setup.voice,
+			"onUpdate:voice": _cache[3] || (_cache[3] = ($event) => $setup.voice = $event),
+			"generate-speech": $setup.handleGenerateSpeech,
+			"api-key-configured": $setup.apiKeyConfigured,
+			"default-text": "Hello! This is a test of the OpenAI Compatible Speech.",
+			"data-v-inspector": "../../packages/stage-pages/src/pages/settings/providers/speech/openai-compatible-audio-speech.vue:193:7"
+		}, null, 8, [
+			"model-value",
+			"voice",
+			"api-key-configured"
+		])]),
+		"advanced-settings": _withCtx(() => [!$setup.isValid && $setup.isValidating === 0 && $setup.validationMessage ? (_openBlock(), _createBlock(
+			$setup["Alert"],
+			{
+				key: 0,
+				type: "error",
+				"data-v-inspector": "../../packages/stage-pages/src/pages/settings/providers/speech/openai-compatible-audio-speech.vue:204:7"
+			},
+			_createSlots({
+				title: _withCtx(() => [_createElementVNode("div", _hoisted_1, [_createElementVNode(
+					"span",
+					_hoisted_2,
+					_toDisplayString($setup.t("settings.dialogs.onboarding.validationFailed")),
+					1
+					/* TEXT */
+				), _createElementVNode(
+					"button",
+					{
+						type: "button",
+						class: "ml-2 rounded bg-red-100 px-2 py-0.5 text-xs text-red-600 font-medium transition-colors dark:bg-red-800/30 hover:bg-red-200 dark:text-red-300 dark:hover:bg-red-700/40",
+						onClick: _cache[4] || (_cache[4] = (...args) => $setup.forceValid && $setup.forceValid(...args)),
+						"data-v-inspector": "../../packages/stage-pages/src/pages/settings/providers/speech/openai-compatible-audio-speech.vue:208:13"
+					},
+					_toDisplayString($setup.t("settings.pages.providers.common.continueAnyway")),
+					1
+					/* TEXT */
+				)])]),
+				_: 2
+			}, [$setup.validationMessage ? {
+				name: "content",
+				fn: _withCtx(() => [_createElementVNode(
+					"div",
+					_hoisted_3,
+					_toDisplayString($setup.validationMessage),
+					1
+					/* TEXT */
+				)]),
+				key: "0"
+			} : undefined]),
+			1024
+			/* DYNAMIC_SLOTS */
+		)) : _createCommentVNode("v-if", true), $setup.isValid && $setup.isValidating === 0 ? (_openBlock(), _createBlock($setup["Alert"], {
+			key: 1,
+			type: "success",
+			"data-v-inspector": "../../packages/stage-pages/src/pages/settings/providers/speech/openai-compatible-audio-speech.vue:223:7"
+		}, {
+			title: _withCtx(() => [_createTextVNode(
+				_toDisplayString($setup.t("settings.dialogs.onboarding.validationSuccess")),
+				1
+				/* TEXT */
+			)]),
+			_: 1
+		})) : _createCommentVNode("v-if", true)]),
+		_: 1
+	}, 8, ["placeholder"]);
+}
+import block0 from "/@id/__x00__vue-router/auto/route-block";
+if (typeof block0 === "function") block0(_sfc_main);
+_sfc_main.__hmrId = "d138984b";
+typeof __VUE_HMR_RUNTIME__ !== "undefined" && __VUE_HMR_RUNTIME__.createRecord(_sfc_main.__hmrId, _sfc_main);
+import.meta.hot.on("file-changed", ({ file }) => {
+	__VUE_HMR_RUNTIME__.CHANGED_FILE = file;
+});
+import.meta.hot.accept((mod) => {
+	if (!mod) return;
+	const { default: updated, _rerender_only } = mod;
+	if (_rerender_only) {
+		__VUE_HMR_RUNTIME__.rerender(updated.__hmrId, updated.render);
+	} else {
+		__VUE_HMR_RUNTIME__.reload(updated.__hmrId, updated);
+	}
+});
+import _export_sfc from "/@id/__x00__plugin-vue:export-helper";
+export default /* @__PURE__ */ _export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/Administrator/airi-app/packages/stage-pages/src/pages/settings/providers/speech/openai-compatible-audio-speech.vue"]]);
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7O0FBR0EsU0FDRSxPQUNBLGtDQUNBLDhCQUNLO0FBQ1AsU0FBUyw2QkFBNkI7QUFDdEMsU0FBUywwQkFBMEI7QUFDbkMsU0FBUyxzQkFBc0I7QUFDL0IsU0FBUyx5QkFBeUI7QUFDbEMsU0FBUyxZQUFZLGtCQUFrQjtBQUN2QyxTQUFTLG1CQUFtQjtBQUM1QixTQUFTLFVBQVUsV0FBVyxLQUFLLGFBQWE7QUFDaEQsU0FBUyxlQUFlOzs7Ozs7OztFQUV4QixNQUFNLGNBQWMsZ0JBQWdCO0VBQ3BDLE1BQU0saUJBQWlCLG1CQUFtQjtFQUMxQyxNQUFNLEVBQUUsY0FBYyxZQUFZLGVBQWU7RUFDakQsTUFBTSxFQUFFLE1BQU0sU0FBUztFQUV2QixNQUFNLHVCQUF1QixFQUMzQixPQUFPLEdBQ1I7OztFQVFELE1BQU0sUUFBUSxJQUNYLFVBQVUsTUFBTSxhQUFxQixlQUFlLFNBQ2pELFVBQVUsTUFBTSxhQUFxQixTQUN0QyxxQkFBcUIsTUFDekI7O0VBR0QsTUFBTSxRQUFRLFNBQVM7R0FDckIsV0FBVztJQUNULE1BQU0sTUFBTSxVQUFVLE1BQU0sYUFBYTtBQUN6QyxXQUFPLE9BQU87O0dBRWhCLE1BQU0sVUFBVTtBQUNkLFFBQUksQ0FBQyxVQUFVLE1BQU0sWUFDbkIsV0FBVSxNQUFNLGNBQWMsRUFBRTtBQUNsQyxjQUFVLE1BQU0sWUFBWSxRQUFROztHQUV2QyxDQUFDO0VBRUYsTUFBTSxRQUFRLFNBQVM7R0FDckIsV0FBVztJQUNULE1BQU0sTUFBTSxVQUFVLE1BQU0sYUFBYTtBQUN6QyxXQUFPLE9BQU87O0dBRWhCLE1BQU0sVUFBVTtBQUNkLFFBQUksQ0FBQyxVQUFVLE1BQU0sWUFDbkIsV0FBVSxNQUFNLGNBQWMsRUFBRTtBQUNsQyxjQUFVLE1BQU0sWUFBWSxRQUFROztHQUV2QyxDQUFDOzs7QUFJRixjQUNRLFVBQVUsTUFBTSxjQUNyQixjQUFjO0FBQ2IsT0FBSSxXQUFXOztJQUViLE1BQU0sU0FBUztJQUNmLE1BQU0sV0FBVyxPQUFPLGVBQWUsU0FBUyxPQUFPLFNBQVMscUJBQXFCO0FBQ3JGLFFBQUksS0FBSyxJQUFJLE1BQU0sUUFBUSxTQUFTLEdBQUcsS0FDckMsT0FBTSxRQUFROztBQUdoQixRQUFJLE9BQU8sU0FBUyxRQUFRLE1BQU0sVUFBVSxhQUMxQyxPQUFNLFFBQVE7O0FBR2hCLFFBQUksT0FBTyxTQUFTLFFBQVEsTUFBTSxVQUFVLGFBQzFDLE9BQU0sUUFBUTtVQUViOztBQUVILFVBQU0sUUFBUSxxQkFBcUI7QUFDbkMsVUFBTSxRQUFRO0FBQ2QsVUFBTSxRQUFROztLQUdsQjtHQUFFLE1BQU07R0FBTSxXQUFXO0dBQU0sQ0FDaEM7O0VBR0QsTUFBTSxtQkFBbUIsZUFBZSxDQUFDLENBQUMsVUFBVSxNQUFNLGFBQWEsT0FBTzs7QUFHOUUsa0JBQWdCO0FBQ2QsYUFBVSxNQUFNLGdCQUFnQixFQUFFOztBQUVsQyxhQUFVLE1BQU0sWUFBWSxVQUFVO0FBQ3RDLGFBQVUsTUFBTSxZQUFZLFVBQVU7SUFDdEM7O0VBR0YsZUFBZSxxQkFBcUIsT0FBZSxTQUFpQixVQUFtQixTQUFrQjtHQUN2RyxNQUFNLFdBQVcsTUFBTSxlQUFlLG9CQUE0QyxXQUFXO0FBQzdGLE9BQUksQ0FBQyxVQUFVO0FBQ2IsVUFBTSxJQUFJLE1BQU0sdUNBQXVDOzs7R0FJekQsTUFBTSxpQkFBaUIsZUFBZSxrQkFBa0IsV0FBVzs7R0FHbkUsTUFBTSxhQUFhLFdBQVcsTUFBTSxTQUFTO0FBRTdDLFVBQU8sTUFBTSxZQUFZLE9BQ3ZCLFVBQ0EsWUFDQSxPQUNBLFdBQVcsTUFBTSxTQUFTLGNBQzFCO0lBQ0UsR0FBRztJQUNILEdBQUc7SUFDSCxPQUFPLE1BQU07SUFDZCxDQUNGOztBQUdILFFBQU0sT0FBTyxZQUFZO0FBQ3ZCLE9BQUksQ0FBQyxVQUFVLE1BQU0sWUFDbkIsV0FBVSxNQUFNLGNBQWMsRUFBRTtBQUNsQyxhQUFVLE1BQU0sWUFBWSxRQUFRLE1BQU07SUFDMUM7O0VBR0YsTUFBTSxFQUNKLGNBQ0EsU0FDQSxtQkFDQSxlQUNFLHNCQUFzQixXQUFXO0VBRXJDLE1BQU0sb0JBQW9CLGVBQWU7R0FDdkMsTUFBTSxhQUFhLG1CQUFtQixXQUFXO0FBQ2pELE9BQUksQ0FBQyxZQUFZLHFCQUNmLFFBQU87R0FFVCxNQUFNLFNBQVMsV0FBVyxxQkFBcUIsRUFBRSxHQUFHLENBQUM7R0FDckQsTUFBTSxRQUFRLE9BQU8sUUFBUSxVQUFVLGFBQWEsT0FBTyxPQUFPLEdBQUcsUUFBUTtHQUM3RSxNQUFNLGVBQWUsT0FBTztBQUM1QixPQUFJLENBQUMsYUFDSCxRQUFPO0dBRVQsTUFBTSxPQUFPLE9BQU8sYUFBYSxTQUFTLGFBQWEsYUFBYSxNQUFNLEdBQUc7QUFDN0UsVUFBTyxPQUFPLE1BQU0seUJBQXlCLFdBQVcsS0FBSyx1QkFBdUI7SUFDcEY7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztDQTJDYSxPQUFNO0NBQTJDOztxQkFDOUMsb0JBQWUsNEdBQStDOztDQVdqRSxPQUFNO0NBQWdDOzs7c0JBbkRuRCxhQThEeUI7RUE3RHRCLGVBQWE7RUFDYixpQkFBZTtFQUNmLHVCQUFxQjtFQUNyQixhQUFhO0VBQWtCOztFQUdyQixrQkFBYyxlQUNIO0dBQXBCLG9DQUFvQjtHQUNwQixhQUtFO2dCQUpTO2lFQUFBLGVBQUs7SUFDZCxPQUFNO0lBQ04sYUFBWTtJQUNaLGFBQVk7SUFBTzs7R0FFckIsaUVBQWlEO0dBQ2pELGFBTUU7Z0JBTFM7aUVBQUEsZUFBSztJQUNiLE9BQU8sU0FBQztJQUNSLGFBQWEsU0FBQztJQUNkLEtBQUs7SUFDTCxLQUFLO0lBQU0sTUFBTTtJQUFLOzs7Ozs7O0VBSWhCLFlBQVUsZUFPakIsQ0FORixhQU1FO0dBTFEsZUFBYTtnRUFBQSxlQUFLO0dBQ2xCLE9BQU87MkRBQUEsZUFBSztHQUNuQixtQkFBaUI7R0FDakIsc0JBQW9CO0dBQ3JCLGdCQUFhO0dBQXdEOzs7Ozs7RUFLOUQscUJBQWlCLGVBOEIzQixFQTdCZSxrQkFBVyx3QkFBWSxLQUFVLDBDQUEvQztHQWtCUTtHQUFBOztJQWxCMEQsTUFBSztJQUFROzs7SUFDbEUsT0FBSyxlQVVSLENBVE4sb0JBU00sT0FUTixZQVNNLENBUko7S0FBb0U7S0FBcEU7S0FBb0U7S0FBQTs7S0FBQSxFQUNwRTtLQU1TO0tBQUE7TUFMUCxNQUFLO01BQ0wsT0FBTTtNQUNMLFNBQUssdUNBQUUsK0NBQVU7TUFBQzs7c0JBRWhCLFNBQUM7S0FBQTs7S0FBQTs7T0FJTTtVQUFvQjt1QkFHNUIsQ0FGTjtLQUVNO0tBRk47S0FFTSxpQkFERCx5QkFBaUI7S0FBQTs7S0FBQTs7Ozs7MENBSWIsa0JBQVcsd0JBQVksbUJBQXBDLGFBSVE7O0dBSm9DLE1BQUs7R0FBVTs7R0FDOUMsT0FBSyxlQUMwQztxQkFBckQsU0FBQztJQUFBOztJQUFBIiwibmFtZXMiOltdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJvcGVuYWktY29tcGF0aWJsZS1hdWRpby1zcGVlY2gudnVlIl0sInNvdXJjZXNDb250ZW50IjpbIjxzY3JpcHQgc2V0dXAgbGFuZz1cInRzXCI+XHJcbmltcG9ydCB0eXBlIHsgU3BlZWNoUHJvdmlkZXIgfSBmcm9tICdAeHNhaS1leHQvcHJvdmlkZXJzL3V0aWxzJ1xyXG5cclxuaW1wb3J0IHtcclxuICBBbGVydCxcclxuICBTcGVlY2hQbGF5Z3JvdW5kT3BlbkFJQ29tcGF0aWJsZSxcclxuICBTcGVlY2hQcm92aWRlclNldHRpbmdzLFxyXG59IGZyb20gJ0Bwcm9qLWFpcmkvc3RhZ2UtdWkvY29tcG9uZW50cydcclxuaW1wb3J0IHsgdXNlUHJvdmlkZXJWYWxpZGF0aW9uIH0gZnJvbSAnQHByb2otYWlyaS9zdGFnZS11aS9jb21wb3NhYmxlcy91c2UtcHJvdmlkZXItdmFsaWRhdGlvbidcclxuaW1wb3J0IHsgZ2V0RGVmaW5lZFByb3ZpZGVyIH0gZnJvbSAnQHByb2otYWlyaS9zdGFnZS11aS9saWJzJ1xyXG5pbXBvcnQgeyB1c2VTcGVlY2hTdG9yZSB9IGZyb20gJ0Bwcm9qLWFpcmkvc3RhZ2UtdWkvc3RvcmVzL21vZHVsZXMvc3BlZWNoJ1xyXG5pbXBvcnQgeyB1c2VQcm92aWRlcnNTdG9yZSB9IGZyb20gJ0Bwcm9qLWFpcmkvc3RhZ2UtdWkvc3RvcmVzL3Byb3ZpZGVycydcclxuaW1wb3J0IHsgRmllbGRJbnB1dCwgRmllbGRSYW5nZSB9IGZyb20gJ0Bwcm9qLWFpcmkvdWknXHJcbmltcG9ydCB7IHN0b3JlVG9SZWZzIH0gZnJvbSAncGluaWEnXHJcbmltcG9ydCB7IGNvbXB1dGVkLCBvbk1vdW50ZWQsIHJlZiwgd2F0Y2ggfSBmcm9tICd2dWUnXHJcbmltcG9ydCB7IHVzZUkxOG4gfSBmcm9tICd2dWUtaTE4bidcclxuXHJcbmNvbnN0IHNwZWVjaFN0b3JlID0gdXNlU3BlZWNoU3RvcmUoKVxyXG5jb25zdCBwcm92aWRlcnNTdG9yZSA9IHVzZVByb3ZpZGVyc1N0b3JlKClcclxuY29uc3QgeyBwcm92aWRlcnMgfSA9IHN0b3JlVG9SZWZzKHByb3ZpZGVyc1N0b3JlKVxyXG5jb25zdCB7IHQgfSA9IHVzZUkxOG4oKVxyXG5cclxuY29uc3QgZGVmYXVsdFZvaWNlU2V0dGluZ3MgPSB7XHJcbiAgc3BlZWQ6IDEuMCxcclxufVxyXG5cclxuLy8gR2V0IHByb3ZpZGVyIG1ldGFkYXRhXHJcbmNvbnN0IHByb3ZpZGVySWQgPSAnb3BlbmFpLWNvbXBhdGlibGUtYXVkaW8tc3BlZWNoJ1xyXG5jb25zdCBkZWZhdWx0TW9kZWwgPSAndHRzLTEnXHJcbmNvbnN0IGRlZmF1bHRWb2ljZSA9ICdhbGxveSdcclxuXHJcbi8vIEluaXRpYWxpemUgc3BlZWQgZnJvbSBwcm92aWRlciBjb25maWcgb3IgZGVmYXVsdFxyXG5jb25zdCBzcGVlZCA9IHJlZjxudW1iZXI+KFxyXG4gIChwcm92aWRlcnMudmFsdWVbcHJvdmlkZXJJZF0gYXMgYW55KT8udm9pY2VTZXR0aW5ncz8uc3BlZWRcclxuICB8fCAocHJvdmlkZXJzLnZhbHVlW3Byb3ZpZGVySWRdIGFzIGFueSk/LnNwZWVkXHJcbiAgfHwgZGVmYXVsdFZvaWNlU2V0dGluZ3Muc3BlZWQsXHJcbilcclxuXHJcbi8vIE1vZGVsIHNlbGVjdGlvbiAoc3RvcmUgcmF3IHN0cmluZzsgZW1wdHkgc3RyaW5nIGlzIHZhbGlkIHdoaWxlIGVkaXRpbmcg4oCUIGRlZmF1bHQgaXMgYXBwbGllZCBvbmx5IGF0IEFQSSBjYWxsKVxyXG5jb25zdCBtb2RlbCA9IGNvbXB1dGVkKHtcclxuICBnZXQ6ICgpID0+IHtcclxuICAgIGNvbnN0IHJhdyA9IHByb3ZpZGVycy52YWx1ZVtwcm92aWRlcklkXT8ubW9kZWwgYXMgc3RyaW5nIHwgdW5kZWZpbmVkIHwgbnVsbFxyXG4gICAgcmV0dXJuIHJhdyA/PyAnJ1xyXG4gIH0sXHJcbiAgc2V0OiAodmFsdWUpID0+IHtcclxuICAgIGlmICghcHJvdmlkZXJzLnZhbHVlW3Byb3ZpZGVySWRdKVxyXG4gICAgICBwcm92aWRlcnMudmFsdWVbcHJvdmlkZXJJZF0gPSB7fVxyXG4gICAgcHJvdmlkZXJzLnZhbHVlW3Byb3ZpZGVySWRdLm1vZGVsID0gdmFsdWVcclxuICB9LFxyXG59KVxyXG5cclxuY29uc3Qgdm9pY2UgPSBjb21wdXRlZCh7XHJcbiAgZ2V0OiAoKSA9PiB7XHJcbiAgICBjb25zdCByYXcgPSBwcm92aWRlcnMudmFsdWVbcHJvdmlkZXJJZF0/LnZvaWNlIGFzIHN0cmluZyB8IHVuZGVmaW5lZCB8IG51bGxcclxuICAgIHJldHVybiByYXcgPz8gJydcclxuICB9LFxyXG4gIHNldDogKHZhbHVlKSA9PiB7XHJcbiAgICBpZiAoIXByb3ZpZGVycy52YWx1ZVtwcm92aWRlcklkXSlcclxuICAgICAgcHJvdmlkZXJzLnZhbHVlW3Byb3ZpZGVySWRdID0ge31cclxuICAgIHByb3ZpZGVycy52YWx1ZVtwcm92aWRlcklkXS52b2ljZSA9IHZhbHVlXHJcbiAgfSxcclxufSlcclxuXHJcbi8vIFRPRE86IHVzZSBgdXNlUmVmSGlzdG9yeWAgZm9yIHRoaXNcclxuLy8gV2F0Y2ggcHJvdmlkZXIgY29uZmlnIGNoYW5nZXMgdG8gc3luYyBsb2NhbCByZWZzIChmb3IgcmVzZXQgZnVuY3Rpb25hbGl0eSlcclxud2F0Y2goXHJcbiAgKCkgPT4gcHJvdmlkZXJzLnZhbHVlW3Byb3ZpZGVySWRdLFxyXG4gIChuZXdDb25maWcpID0+IHtcclxuICAgIGlmIChuZXdDb25maWcpIHtcclxuICAgICAgLy8gU3luYyBzcGVlZCBmcm9tIHZvaWNlU2V0dGluZ3Mgb3IgZGlyZWN0IHNwZWVkIHByb3BlcnR5XHJcbiAgICAgIGNvbnN0IGNvbmZpZyA9IG5ld0NvbmZpZyBhcyBhbnlcclxuICAgICAgY29uc3QgbmV3U3BlZWQgPSBjb25maWcudm9pY2VTZXR0aW5ncz8uc3BlZWQgfHwgY29uZmlnLnNwZWVkIHx8IGRlZmF1bHRWb2ljZVNldHRpbmdzLnNwZWVkXHJcbiAgICAgIGlmIChNYXRoLmFicyhzcGVlZC52YWx1ZSAtIG5ld1NwZWVkKSA+IDAuMDAxKSAvLyBVc2Ugc21hbGwgZXBzaWxvbiBmb3IgZmxvYXQgY29tcGFyaXNvblxyXG4gICAgICAgIHNwZWVkLnZhbHVlID0gbmV3U3BlZWRcclxuXHJcbiAgICAgIC8vIFN5bmMgbW9kZWwgaWYgcHJvcGVydHkgd2FzIGNsZWFyZWQgZXh0ZXJuYWxseSAodW5kZWZpbmVkL251bGwpLCBub3Qgd2hlbiB1c2VyIHNldHMgZW1wdHkgc3RyaW5nXHJcbiAgICAgIGlmIChjb25maWcubW9kZWwgPT0gbnVsbCAmJiBtb2RlbC52YWx1ZSAhPT0gZGVmYXVsdE1vZGVsKVxyXG4gICAgICAgIG1vZGVsLnZhbHVlID0gZGVmYXVsdE1vZGVsXHJcblxyXG4gICAgICAvLyBTeW5jIHZvaWNlIGlmIHByb3BlcnR5IHdhcyBjbGVhcmVkIGV4dGVybmFsbHkgKHVuZGVmaW5lZC9udWxsKSwgbm90IHdoZW4gdXNlciBzZXRzIGVtcHR5IHN0cmluZ1xyXG4gICAgICBpZiAoY29uZmlnLnZvaWNlID09IG51bGwgJiYgdm9pY2UudmFsdWUgIT09IGRlZmF1bHRWb2ljZSlcclxuICAgICAgICB2b2ljZS52YWx1ZSA9IGRlZmF1bHRWb2ljZVxyXG4gICAgfVxyXG4gICAgZWxzZSB7XHJcbiAgICAgIC8vIFByb3ZpZGVyIGNvbmZpZyB3YXMgcmVzZXQsIHJlc2V0IG91ciBsb2NhbCByZWZzIHRvIGRlZmF1bHRzXHJcbiAgICAgIHNwZWVkLnZhbHVlID0gZGVmYXVsdFZvaWNlU2V0dGluZ3Muc3BlZWRcclxuICAgICAgbW9kZWwudmFsdWUgPSBkZWZhdWx0TW9kZWxcclxuICAgICAgdm9pY2UudmFsdWUgPSBkZWZhdWx0Vm9pY2VcclxuICAgIH1cclxuICB9LFxyXG4gIHsgZGVlcDogdHJ1ZSwgaW1tZWRpYXRlOiB0cnVlIH0sXHJcbilcclxuXHJcbi8vIENoZWNrIGlmIEFQSSBrZXkgaXMgY29uZmlndXJlZFxyXG5jb25zdCBhcGlLZXlDb25maWd1cmVkID0gY29tcHV0ZWQoKCkgPT4gISFwcm92aWRlcnMudmFsdWVbcHJvdmlkZXJJZF0/LmFwaUtleSlcclxuXHJcbi8vIEVuc3VyZSBwcm92aWRlciBjb25maWcgaXMgaW5pdGlhbGl6ZWQgb24gbW91bnRcclxub25Nb3VudGVkKCgpID0+IHtcclxuICBwcm92aWRlcnMudmFsdWVbcHJvdmlkZXJJZF0gPz89IHt9XHJcbiAgLy8gRGVmYXVsdHMgb25seSB3aGVuIHVuc2V0IChudWxsL3VuZGVmaW5lZCk7IGVtcHR5IHN0cmluZ3MgYXJlIGtlcHQgaW50ZW50aW9uYWxseVxyXG4gIHByb3ZpZGVycy52YWx1ZVtwcm92aWRlcklkXS5tb2RlbCA/Pz0gZGVmYXVsdE1vZGVsXHJcbiAgcHJvdmlkZXJzLnZhbHVlW3Byb3ZpZGVySWRdLnZvaWNlID8/PSBkZWZhdWx0Vm9pY2VcclxufSlcclxuXHJcbi8vIEdlbmVyYXRlIHNwZWVjaCB3aXRoIE9wZW5BSS1jb21wYXRpYmxlIHBhcmFtZXRlcnNcclxuYXN5bmMgZnVuY3Rpb24gaGFuZGxlR2VuZXJhdGVTcGVlY2goaW5wdXQ6IHN0cmluZywgdm9pY2VJZDogc3RyaW5nLCBfdXNlU1NNTDogYm9vbGVhbiwgbW9kZWxJZD86IHN0cmluZykge1xyXG4gIGNvbnN0IHByb3ZpZGVyID0gYXdhaXQgcHJvdmlkZXJzU3RvcmUuZ2V0UHJvdmlkZXJJbnN0YW5jZTxTcGVlY2hQcm92aWRlcjxzdHJpbmc+Pihwcm92aWRlcklkKVxyXG4gIGlmICghcHJvdmlkZXIpIHtcclxuICAgIHRocm93IG5ldyBFcnJvcignRmFpbGVkIHRvIGluaXRpYWxpemUgc3BlZWNoIHByb3ZpZGVyJylcclxuICB9XHJcblxyXG4gIC8vIEdldCBwcm92aWRlciBjb25maWd1cmF0aW9uXHJcbiAgY29uc3QgcHJvdmlkZXJDb25maWcgPSBwcm92aWRlcnNTdG9yZS5nZXRQcm92aWRlckNvbmZpZyhwcm92aWRlcklkKVxyXG5cclxuICAvLyBVc2UgdGhlIHJlYWN0aXZlIG1vZGVsIGNvbXB1dGVkIHByb3BlcnR5IChub3QgYSBsb2NhbCB2YXJpYWJsZSlcclxuICBjb25zdCBtb2RlbFRvVXNlID0gbW9kZWxJZCB8fCBtb2RlbC52YWx1ZSB8fCBkZWZhdWx0TW9kZWxcclxuXHJcbiAgcmV0dXJuIGF3YWl0IHNwZWVjaFN0b3JlLnNwZWVjaChcclxuICAgIHByb3ZpZGVyLFxyXG4gICAgbW9kZWxUb1VzZSxcclxuICAgIGlucHV0LFxyXG4gICAgdm9pY2VJZCB8fCB2b2ljZS52YWx1ZSB8fCBkZWZhdWx0Vm9pY2UsXHJcbiAgICB7XHJcbiAgICAgIC4uLnByb3ZpZGVyQ29uZmlnLFxyXG4gICAgICAuLi5kZWZhdWx0Vm9pY2VTZXR0aW5ncyxcclxuICAgICAgc3BlZWQ6IHNwZWVkLnZhbHVlLFxyXG4gICAgfSxcclxuICApXHJcbn1cclxuXHJcbndhdGNoKHNwZWVkLCBhc3luYyAoKSA9PiB7XHJcbiAgaWYgKCFwcm92aWRlcnMudmFsdWVbcHJvdmlkZXJJZF0pXHJcbiAgICBwcm92aWRlcnMudmFsdWVbcHJvdmlkZXJJZF0gPSB7fVxyXG4gIHByb3ZpZGVycy52YWx1ZVtwcm92aWRlcklkXS5zcGVlZCA9IHNwZWVkLnZhbHVlXHJcbn0pXHJcblxyXG4vLyBVc2UgdGhlIGNvbXBvc2FibGUgdG8gZ2V0IHZhbGlkYXRpb24gbG9naWMgYW5kIHN0YXRlXHJcbmNvbnN0IHtcclxuICBpc1ZhbGlkYXRpbmcsXHJcbiAgaXNWYWxpZCxcclxuICB2YWxpZGF0aW9uTWVzc2FnZSxcclxuICBmb3JjZVZhbGlkLFxyXG59ID0gdXNlUHJvdmlkZXJWYWxpZGF0aW9uKHByb3ZpZGVySWQpXHJcblxyXG5jb25zdCBhcGlLZXlQbGFjZWhvbGRlciA9IGNvbXB1dGVkKCgpID0+IHtcclxuICBjb25zdCBkZWZpbml0aW9uID0gZ2V0RGVmaW5lZFByb3ZpZGVyKHByb3ZpZGVySWQpXHJcbiAgaWYgKCFkZWZpbml0aW9uPy5jcmVhdGVQcm92aWRlckNvbmZpZylcclxuICAgIHJldHVybiAnc2stLi4uJ1xyXG5cclxuICBjb25zdCBzY2hlbWEgPSBkZWZpbml0aW9uLmNyZWF0ZVByb3ZpZGVyQ29uZmlnKHsgdCB9KSBhcyBhbnlcclxuICBjb25zdCBzaGFwZSA9IHR5cGVvZiBzY2hlbWE/LnNoYXBlID09PSAnZnVuY3Rpb24nID8gc2NoZW1hLnNoYXBlKCkgOiBzY2hlbWE/LnNoYXBlXHJcbiAgY29uc3QgYXBpS2V5U2NoZW1hID0gc2hhcGU/LmFwaUtleVxyXG4gIGlmICghYXBpS2V5U2NoZW1hKVxyXG4gICAgcmV0dXJuICdzay0uLi4nXHJcblxyXG4gIGNvbnN0IG1ldGEgPSB0eXBlb2YgYXBpS2V5U2NoZW1hLm1ldGEgPT09ICdmdW5jdGlvbicgPyBhcGlLZXlTY2hlbWEubWV0YSgpIDogdW5kZWZpbmVkXHJcbiAgcmV0dXJuIHR5cGVvZiBtZXRhPy5wbGFjZWhvbGRlckxvY2FsaXplZCA9PT0gJ3N0cmluZycgPyBtZXRhLnBsYWNlaG9sZGVyTG9jYWxpemVkIDogJ3NrLS4uLidcclxufSlcclxuPC9zY3JpcHQ+XHJcblxyXG48dGVtcGxhdGU+XHJcbiAgPFNwZWVjaFByb3ZpZGVyU2V0dGluZ3NcclxuICAgIDpwcm92aWRlci1pZD1cInByb3ZpZGVySWRcIlxyXG4gICAgOmRlZmF1bHQtbW9kZWw9XCJkZWZhdWx0TW9kZWxcIlxyXG4gICAgOmFkZGl0aW9uYWwtc2V0dGluZ3M9XCJkZWZhdWx0Vm9pY2VTZXR0aW5nc1wiXHJcbiAgICA6cGxhY2Vob2xkZXI9XCJhcGlLZXlQbGFjZWhvbGRlclwiXHJcbiAgPlxyXG4gICAgPCEtLSBWb2ljZSBzZXR0aW5ncyBzcGVjaWZpYyB0byBPcGVuQUkgQ29tcGF0aWJsZSAtLT5cclxuICAgIDx0ZW1wbGF0ZSAjdm9pY2Utc2V0dGluZ3M+XHJcbiAgICAgIDwhLS0gTW9kZWwgaW5wdXQgLS0+XHJcbiAgICAgIDxGaWVsZElucHV0XHJcbiAgICAgICAgdi1tb2RlbD1cIm1vZGVsXCJcclxuICAgICAgICBsYWJlbD1cIk1vZGVsXCJcclxuICAgICAgICBkZXNjcmlwdGlvbj1cIkVudGVyIHRoZSBUVFMgbW9kZWwgdG8gdXNlIGZvciBzcGVlY2ggZ2VuZXJhdGlvblwiXHJcbiAgICAgICAgcGxhY2Vob2xkZXI9XCJ0dHMtMVwiXHJcbiAgICAgIC8+XHJcbiAgICAgIDwhLS0gU3BlZWQgY29udHJvbCAtIGNvbW1vbiB0byBtb3N0IHByb3ZpZGVycyAtLT5cclxuICAgICAgPEZpZWxkUmFuZ2VcclxuICAgICAgICB2LW1vZGVsPVwic3BlZWRcIlxyXG4gICAgICAgIDpsYWJlbD1cInQoJ3NldHRpbmdzLnBhZ2VzLnByb3ZpZGVycy5wcm92aWRlci5jb21tb24uZmllbGRzLmZpZWxkLnNwZWVkLmxhYmVsJylcIlxyXG4gICAgICAgIDpkZXNjcmlwdGlvbj1cInQoJ3NldHRpbmdzLnBhZ2VzLnByb3ZpZGVycy5wcm92aWRlci5jb21tb24uZmllbGRzLmZpZWxkLnNwZWVkLmRlc2NyaXB0aW9uJylcIlxyXG4gICAgICAgIDptaW49XCIwLjVcIlxyXG4gICAgICAgIDptYXg9XCIyLjBcIiA6c3RlcD1cIjAuMDFcIlxyXG4gICAgICAvPlxyXG4gICAgPC90ZW1wbGF0ZT5cclxuXHJcbiAgICA8dGVtcGxhdGUgI3BsYXlncm91bmQ+XHJcbiAgICAgIDxTcGVlY2hQbGF5Z3JvdW5kT3BlbkFJQ29tcGF0aWJsZVxyXG4gICAgICAgIHYtbW9kZWw6bW9kZWwtdmFsdWU9XCJtb2RlbFwiXHJcbiAgICAgICAgdi1tb2RlbDp2b2ljZT1cInZvaWNlIGFzIGFueVwiXHJcbiAgICAgICAgOmdlbmVyYXRlLXNwZWVjaD1cImhhbmRsZUdlbmVyYXRlU3BlZWNoXCJcclxuICAgICAgICA6YXBpLWtleS1jb25maWd1cmVkPVwiYXBpS2V5Q29uZmlndXJlZFwiXHJcbiAgICAgICAgZGVmYXVsdC10ZXh0PVwiSGVsbG8hIFRoaXMgaXMgYSB0ZXN0IG9mIHRoZSBPcGVuQUkgQ29tcGF0aWJsZSBTcGVlY2guXCJcclxuICAgICAgLz5cclxuICAgIDwvdGVtcGxhdGU+XHJcblxyXG4gICAgPCEtLSBWYWxpZGF0aW9uIFN0YXR1cyAtLT5cclxuICAgIDx0ZW1wbGF0ZSAjYWR2YW5jZWQtc2V0dGluZ3M+XHJcbiAgICAgIDxBbGVydCB2LWlmPVwiIWlzVmFsaWQgJiYgaXNWYWxpZGF0aW5nID09PSAwICYmIHZhbGlkYXRpb25NZXNzYWdlXCIgdHlwZT1cImVycm9yXCI+XHJcbiAgICAgICAgPHRlbXBsYXRlICN0aXRsZT5cclxuICAgICAgICAgIDxkaXYgY2xhc3M9XCJ3LWZ1bGwgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuXCI+XHJcbiAgICAgICAgICAgIDxzcGFuPnt7IHQoJ3NldHRpbmdzLmRpYWxvZ3Mub25ib2FyZGluZy52YWxpZGF0aW9uRmFpbGVkJykgfX08L3NwYW4+XHJcbiAgICAgICAgICAgIDxidXR0b25cclxuICAgICAgICAgICAgICB0eXBlPVwiYnV0dG9uXCJcclxuICAgICAgICAgICAgICBjbGFzcz1cIm1sLTIgcm91bmRlZCBiZy1yZWQtMTAwIHB4LTIgcHktMC41IHRleHQteHMgdGV4dC1yZWQtNjAwIGZvbnQtbWVkaXVtIHRyYW5zaXRpb24tY29sb3JzIGRhcms6YmctcmVkLTgwMC8zMCBob3ZlcjpiZy1yZWQtMjAwIGRhcms6dGV4dC1yZWQtMzAwIGRhcms6aG92ZXI6YmctcmVkLTcwMC80MFwiXHJcbiAgICAgICAgICAgICAgQGNsaWNrPVwiZm9yY2VWYWxpZFwiXHJcbiAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICB7eyB0KCdzZXR0aW5ncy5wYWdlcy5wcm92aWRlcnMuY29tbW9uLmNvbnRpbnVlQW55d2F5JykgfX1cclxuICAgICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICA8L3RlbXBsYXRlPlxyXG4gICAgICAgIDx0ZW1wbGF0ZSB2LWlmPVwidmFsaWRhdGlvbk1lc3NhZ2VcIiAjY29udGVudD5cclxuICAgICAgICAgIDxkaXYgY2xhc3M9XCJ3aGl0ZXNwYWNlLXByZS13cmFwIGJyZWFrLWFsbFwiPlxyXG4gICAgICAgICAgICB7eyB2YWxpZGF0aW9uTWVzc2FnZSB9fVxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgPC90ZW1wbGF0ZT5cclxuICAgICAgPC9BbGVydD5cclxuICAgICAgPEFsZXJ0IHYtaWY9XCJpc1ZhbGlkICYmIGlzVmFsaWRhdGluZyA9PT0gMFwiIHR5cGU9XCJzdWNjZXNzXCI+XHJcbiAgICAgICAgPHRlbXBsYXRlICN0aXRsZT5cclxuICAgICAgICAgIHt7IHQoJ3NldHRpbmdzLmRpYWxvZ3Mub25ib2FyZGluZy52YWxpZGF0aW9uU3VjY2VzcycpIH19XHJcbiAgICAgICAgPC90ZW1wbGF0ZT5cclxuICAgICAgPC9BbGVydD5cclxuICAgIDwvdGVtcGxhdGU+XHJcbiAgPC9TcGVlY2hQcm92aWRlclNldHRpbmdzPlxyXG48L3RlbXBsYXRlPlxyXG5cclxuPHJvdXRlIGxhbmc9XCJ5YW1sXCI+XHJcbm1ldGE6XHJcbiAgbGF5b3V0OiBzZXR0aW5nc1xyXG4gIHN0YWdlVHJhbnNpdGlvbjpcclxuICAgIG5hbWU6IHNsaWRlXHJcbjwvcm91dGU+XHJcbiJdLCJmaWxlIjoiQzovVXNlcnMvQWRtaW5pc3RyYXRvci9haXJpLWFwcC9wYWNrYWdlcy9zdGFnZS1wYWdlcy9zcmMvcGFnZXMvc2V0dGluZ3MvcHJvdmlkZXJzL3NwZWVjaC9vcGVuYWktY29tcGF0aWJsZS1hdWRpby1zcGVlY2gudnVlIn0=

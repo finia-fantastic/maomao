@@ -1,0 +1,1338 @@
+import { i as __toESM } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/chunk-YKewjYmz.js?v=afbac73f";
+import { n as require_picomatch, t as customAlphabet } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/non-secure-BGuF25xv.js?v=afbac73f";
+//#region ../../node_modules/.pnpm/@moeru+eventa@1.0.0-beta.8__f63f98377152a18feef24fa5d48038b5/node_modules/@moeru/eventa/dist/context-SiKOMx8N.mjs
+var import_picomatch = /* @__PURE__ */ __toESM(require_picomatch(), 1);
+function nanoid() {
+	return customAlphabet("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", 16)();
+}
+var EventaType = /* @__PURE__ */ function(EventaType) {
+	EventaType["Event"] = "event";
+	EventaType["MatchExpression"] = "matchExpression";
+	return EventaType;
+}({});
+var EventaFlowDirection = /* @__PURE__ */ function(EventaFlowDirection) {
+	EventaFlowDirection["Inbound"] = "inbound";
+	EventaFlowDirection["Outbound"] = "outbound";
+	return EventaFlowDirection;
+}({});
+function defineInboundEventa(id) {
+	return {
+		...defineEventa(id),
+		_flowDirection: "inbound"
+	};
+}
+function defineOutboundEventa(id) {
+	return {
+		...defineEventa(id),
+		_flowDirection: "outbound"
+	};
+}
+function defineEventa(id, options) {
+	if (!id) id = nanoid();
+	const eventaObj = {
+		id: options?.inheritFrom?.id || id,
+		type: options?.inheritFrom?.type || "event"
+	};
+	const metadata = options?.inheritFrom?.metadata || options?.metadata;
+	if (metadata) eventaObj.metadata = metadata;
+	const invokeMetadata = options?.inheritFrom?.invokeMetadata || options?.invokeMetadata;
+	if (invokeMetadata) eventaObj.invokeMetadata = invokeMetadata;
+	return eventaObj;
+}
+function and(...matchExpression) {
+	return {
+		id: nanoid(),
+		type: "matchExpression",
+		matcher: (event) => {
+			return matchExpression.every((m) => m.matcher ? m.matcher(event) : false);
+		}
+	};
+}
+function or(...matchExpression) {
+	return {
+		id: nanoid(),
+		type: "matchExpression",
+		matcher: (event) => {
+			return matchExpression.some((m) => m.matcher ? m.matcher(event) : false);
+		}
+	};
+}
+function matchBy(matchExpressionPossibleValues, inverted) {
+	const id = nanoid();
+	let matcher = () => false;
+	if (typeof matchExpressionPossibleValues === "string") matcher = (eventa) => {
+		return (0, import_picomatch.default)(matchExpressionPossibleValues)(eventa.id);
+	};
+	else if (typeof matchExpressionPossibleValues === "object") {
+		if ("ids" in matchExpressionPossibleValues) matcher = (event) => {
+			if (inverted) return !matchExpressionPossibleValues.ids.includes(event.id);
+			return matchExpressionPossibleValues.ids.includes(event.id);
+		};
+		else if ("eventa" in matchExpressionPossibleValues) matcher = (event) => {
+			if (inverted) return !matchExpressionPossibleValues.eventa.some((e) => e.id === event.id);
+			return matchExpressionPossibleValues.eventa.some((e) => e.id === event.id);
+		};
+		else if ("types" in matchExpressionPossibleValues) matcher = (event) => {
+			if (typeof event.type === "undefined") return false;
+			if (inverted) return !matchExpressionPossibleValues.types.includes(event.type);
+			return matchExpressionPossibleValues.types.includes(event.type);
+		};
+	} else if (matchExpressionPossibleValues instanceof RegExp) matcher = (event) => {
+		if (inverted) return !matchExpressionPossibleValues.test(event.id);
+		return matchExpressionPossibleValues.test(event.id);
+	};
+	else if (typeof matchExpressionPossibleValues === "function") matcher = matchExpressionPossibleValues;
+	return {
+		id,
+		type: "matchExpression",
+		matcher
+	};
+}
+function createContext(props = {}) {
+	const listeners = /* @__PURE__ */ new Map();
+	const onceListeners = /* @__PURE__ */ new Map();
+	const matchExpressions = /* @__PURE__ */ new Map();
+	const matchExpressionListeners = /* @__PURE__ */ new Map();
+	const matchExpressionOnceListeners = /* @__PURE__ */ new Map();
+	const lifetimeController = new AbortController();
+	const hooks = props.adapter?.(emit).hooks;
+	function emit(event, payload, options) {
+		const emittingPayload = {
+			...event,
+			body: payload
+		};
+		for (const listener of listeners.get(event.id) || []) {
+			listener(emittingPayload, options);
+			hooks?.onReceived?.(event.id, emittingPayload);
+		}
+		for (const onceListener of onceListeners.get(event.id) || []) {
+			onceListener(emittingPayload, options);
+			hooks?.onReceived?.(event.id, emittingPayload);
+			onceListeners.get(event.id)?.delete(onceListener);
+		}
+		for (const matchExpression of matchExpressions.values()) if (matchExpression.matcher) {
+			if (!matchExpression.matcher(emittingPayload)) continue;
+			for (const listener of matchExpressionListeners.get(matchExpression.id) || []) {
+				listener(emittingPayload, options);
+				hooks?.onReceived?.(matchExpression.id, emittingPayload);
+			}
+			for (const onceListener of matchExpressionOnceListeners.get(matchExpression.id) || []) {
+				onceListener(emittingPayload, options);
+				hooks?.onReceived?.(matchExpression.id, emittingPayload);
+				matchExpressionOnceListeners.get(matchExpression.id)?.delete(onceListener);
+			}
+		}
+		hooks?.onSent(event.id, emittingPayload, options);
+	}
+	return {
+		get listeners() {
+			return listeners;
+		},
+		get onceListeners() {
+			return onceListeners;
+		},
+		emit,
+		on(eventOrMatchExpression, handler) {
+			if (eventOrMatchExpression.type === "event") {
+				const event = eventOrMatchExpression;
+				if (!listeners.has(event.id)) listeners.set(event.id, /* @__PURE__ */ new Set());
+				listeners.get(event.id)?.add(handler);
+				return () => listeners.get(event.id)?.delete(handler);
+			}
+			if (eventOrMatchExpression.type === "matchExpression") {
+				const matchExpression = eventOrMatchExpression;
+				if (!matchExpressions.has(matchExpression.id)) matchExpressions.set(matchExpression.id, matchExpression);
+				if (!matchExpressionListeners.has(matchExpression.id)) matchExpressionListeners.set(matchExpression.id, /* @__PURE__ */ new Set());
+				matchExpressionListeners.get(matchExpression.id)?.add(handler);
+				return () => matchExpressionListeners.get(matchExpression.id)?.delete(handler);
+			}
+			return () => void 0;
+		},
+		once(eventOrMatchExpression, handler) {
+			if (eventOrMatchExpression.type === "event") {
+				const event = eventOrMatchExpression;
+				if (!onceListeners.has(event.id)) onceListeners.set(event.id, /* @__PURE__ */ new Set());
+				onceListeners.get(event.id)?.add(handler);
+				return () => onceListeners.get(event.id)?.delete(handler);
+			}
+			if (eventOrMatchExpression.type === "matchExpression") {
+				const matchExpression = eventOrMatchExpression;
+				if (!matchExpressions.has(matchExpression.id)) matchExpressions.set(matchExpression.id, matchExpression);
+				if (!matchExpressionListeners.has(matchExpression.id)) matchExpressionListeners.set(matchExpression.id, /* @__PURE__ */ new Set());
+				matchExpressionOnceListeners.get(matchExpression.id)?.add(handler);
+				return () => matchExpressionOnceListeners.get(matchExpression.id)?.delete(handler);
+			}
+			return () => void 0;
+		},
+		off(eventOrMatchExpression, handler) {
+			switch (eventOrMatchExpression.type) {
+				case "event":
+					if (handler !== void 0) {
+						listeners.get(eventOrMatchExpression.id)?.delete(handler);
+						onceListeners.get(eventOrMatchExpression.id)?.delete(handler);
+						break;
+					}
+					listeners.delete(eventOrMatchExpression.id);
+					onceListeners.delete(eventOrMatchExpression.id);
+					break;
+				case "matchExpression":
+					if (handler !== void 0) {
+						matchExpressionListeners.get(eventOrMatchExpression.id)?.delete(handler);
+						matchExpressionOnceListeners.get(eventOrMatchExpression.id)?.delete(handler);
+						break;
+					}
+					matchExpressionListeners.delete(eventOrMatchExpression.id);
+					matchExpressionOnceListeners.delete(eventOrMatchExpression.id);
+					break;
+			}
+		},
+		signal: lifetimeController.signal,
+		abort(reason) {
+			if (lifetimeController.signal.aborted) return;
+			lifetimeController.abort(reason);
+		}
+	};
+}
+//#endregion
+//#region ../../node_modules/.pnpm/@moeru+eventa@1.0.0-beta.8__f63f98377152a18feef24fa5d48038b5/node_modules/@moeru/eventa/dist/index.mjs
+var InvokeEventType = /* @__PURE__ */ function(InvokeEventType) {
+	InvokeEventType[InvokeEventType["SendEvent"] = 0] = "SendEvent";
+	InvokeEventType[InvokeEventType["SendEventError"] = 1] = "SendEventError";
+	InvokeEventType[InvokeEventType["SendEventStreamEnd"] = 2] = "SendEventStreamEnd";
+	InvokeEventType[InvokeEventType["SendEventAbort"] = 3] = "SendEventAbort";
+	InvokeEventType[InvokeEventType["ReceiveEvent"] = 4] = "ReceiveEvent";
+	InvokeEventType[InvokeEventType["ReceiveEventError"] = 5] = "ReceiveEventError";
+	InvokeEventType[InvokeEventType["ReceiveEventStreamEnd"] = 6] = "ReceiveEventStreamEnd";
+	return InvokeEventType;
+}({});
+function defineInvokeEventa(tag, options) {
+	if (!tag) tag = nanoid();
+	return {
+		sendEvent: {
+			...defineEventa(`${tag}-send`, {
+				metadata: options?.metadata,
+				invokeMetadata: options?.invokeMetadata
+			}),
+			invokeType: 0
+		},
+		sendEventError: {
+			...defineEventa(`${tag}-send-error`, {
+				metadata: options?.metadata,
+				invokeMetadata: options?.invokeMetadata
+			}),
+			invokeType: 1
+		},
+		sendEventStreamEnd: {
+			...defineEventa(`${tag}-send-stream-end`, {
+				metadata: options?.metadata,
+				invokeMetadata: options?.invokeMetadata
+			}),
+			invokeType: 2
+		},
+		sendEventAbort: {
+			...defineEventa(`${tag}-send-abort`, {
+				metadata: options?.metadata,
+				invokeMetadata: options?.invokeMetadata
+			}),
+			invokeType: 3
+		},
+		receiveEvent: {
+			...defineEventa(`${tag}-receive`, {
+				metadata: options?.metadata,
+				invokeMetadata: options?.invokeMetadata
+			}),
+			invokeType: 4
+		},
+		receiveEventError: {
+			...defineEventa(`${tag}-receive-error`, {
+				metadata: options?.metadata,
+				invokeMetadata: options?.invokeMetadata
+			}),
+			invokeType: 5
+		},
+		receiveEventStreamEnd: {
+			...defineEventa(`${tag}-receive-stream-end`, {
+				metadata: options?.metadata,
+				invokeMetadata: options?.invokeMetadata
+			}),
+			invokeType: 6
+		}
+	};
+}
+function isInvokeEventa(event) {
+	if (typeof event !== "object") return false;
+	if ("invokeType" in event) return true;
+	return false;
+}
+function isSendEvent(event) {
+	if (!isInvokeEventa(event)) return false;
+	return event.invokeType === 0 || event.invokeType === 1 || event.invokeType === 2 || event.invokeType === 3;
+}
+function isReceiveEvent(event) {
+	if (!isInvokeEventa(event)) return false;
+	return event.invokeType === 4 || event.invokeType === 5 || event.invokeType === 6;
+}
+function randomBetween(min, max) {
+	return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+/**
+* Checks if a value is an AsyncIterable.
+*
+* @param value
+* @returns True if the value is an AsyncIterable.
+*/
+function isAsyncIterable(value) {
+	return typeof value === "object" && value !== null && Symbol.asyncIterator in value;
+}
+/**
+* Checks if an object is a ReadableStream.
+*
+* @link https://github.com/cloudflare/workerd/blob/88e8696ce7a5f8969a7e02a2dcfb6504c17c9e8d/src/cloudflare/internal/streaming-forms.ts#L3
+* @param obj
+* @returns True if the object looks like a ReadableStream.
+*/
+function isReadableStream(obj) {
+	return !!(obj && typeof obj === "object" && "getReader" in obj && typeof obj.getReader === "function");
+}
+function createAbortError(reason) {
+	if (reason instanceof Error && reason.name === "AbortError") return reason;
+	if (typeof DOMException !== "undefined") try {
+		return new DOMException(reason ? String(reason) : "Aborted", "AbortError");
+	} catch {}
+	const error = reason instanceof Error ? reason : new Error(reason ? String(reason) : "Aborted");
+	error.name = "AbortError";
+	return error;
+}
+function isAbortError(error) {
+	return error instanceof Error && error.name === "AbortError";
+}
+function createUntilTriggeredOnce(fn) {
+	let resolve;
+	const promise = new Promise((res) => {
+		resolve = res;
+	});
+	const handler = async (...args) => {
+		const res = await fn(...args);
+		resolve(res);
+		return res;
+	};
+	return {
+		onceTriggered: promise,
+		wrapper: handler
+	};
+}
+function createUntilTriggered(fn) {
+	let resolve;
+	const promise = new Promise((res) => {
+		resolve = res;
+	});
+	const handler = (...args) => {
+		resolve();
+		return fn(...args);
+	};
+	return {
+		promise,
+		handler
+	};
+}
+function createUntil(options) {
+	let resolve;
+	const promise = new Promise((res) => {
+		resolve = res;
+	});
+	if (options?.intervalHandler) setInterval(() => {
+		options?.intervalHandler?.().then((shouldResolve) => {
+			if (shouldResolve) resolve(void 0);
+		});
+	}, options.interval ?? 50);
+	return {
+		promise,
+		handler: resolve
+	};
+}
+function isExtendableInvokeResponseLike(value) {
+	if (!isReceiveEvent(value)) return false;
+	return typeof value.body?.content === "object" && value.body?.content != null && "response" in value.body.content && (!("invokeResponse" in value.body.content) || "invokeResponse" in value.body.content && (typeof value.body.content.invokeResponse === "object" || typeof value.body.content.invokeResponse === "undefined"));
+}
+/**
+* Create a unary invoke function (client side).
+*
+* It supports unary or streaming requests, but returns a single response.
+* Use `defineStreamInvoke` when you expect a stream of responses.
+*
+* If you want stream input, set `Req` to `ReadableStream<T>` or `AsyncIterable<T>`
+* (or a union type like `T | ReadableStream<T>` for optional streaming).
+*
+* @example
+* ```ts
+* // 1) Define eventa once (shared by client/server)
+* const events = defineInvokeEventa<{ id: string }, { name: string }>()
+*
+* // 2) Client: define invoke function
+* const invoke = defineInvoke(clientCtx, events)
+*
+* // 3) Call
+* const res = await invoke({ name: 'alice' })
+* ```
+*
+* @example
+* ```ts
+* // Stream request -> unary response
+* const events = defineInvokeEventa<number, ReadableStream<number>>()
+*
+* defineInvokeHandler(serverCtx, events, async (payload) => {
+*   let sum = 0
+*   for await (const value of payload) {
+*     sum += value
+*   }
+*
+*   return sum
+* })
+*
+* const invoke = defineInvoke(clientCtx, events)
+* const input = new ReadableStream<number>({
+*   start(controller) {
+*     controller.enqueue(1)
+*     controller.enqueue(2)
+*     controller.close()
+*   },
+* })
+*
+* const total = await invoke(input)
+* ```
+*
+* @param ctx Event context on the caller/client side.
+* @param event Invoke event definition created by `defineInvokeEventa`.
+*/
+function defineInvoke(ctx, event) {
+	function getContext() {
+		if (typeof ctx === "function") return ctx();
+		return ctx;
+	}
+	function createInvokePromise(resolvedCtx, req, options) {
+		return new Promise((resolve, reject) => {
+			const ctx = resolvedCtx;
+			const invokeId = nanoid();
+			const invokeReceiveEvent = defineEventa(`${event.receiveEvent.id}-${invokeId}`);
+			delete invokeReceiveEvent.metadata;
+			const invokeReceiveEventError = defineEventa(`${event.receiveEventError.id}-${invokeId}`);
+			delete invokeReceiveEventError.metadata;
+			const { signal, ...emitOptions } = options ?? {};
+			let finished = false;
+			const onAbort = () => {
+				ctx.emit(event.sendEventAbort, {
+					invokeId,
+					content: signal?.reason
+				}, emitOptions);
+				finishReject(createAbortError(signal?.reason));
+			};
+			const ctxSignal = ctx.signal;
+			const onCtxAbort = () => {
+				finishReject(ctxSignal?.reason);
+			};
+			const cleanup = () => {
+				ctx.off(invokeReceiveEvent);
+				ctx.off(invokeReceiveEventError);
+				if (ctxSignal) ctxSignal.removeEventListener("abort", onCtxAbort);
+				if (signal) signal.removeEventListener("abort", onAbort);
+			};
+			const finishReject = (error) => {
+				if (finished) return;
+				finished = true;
+				reject(error);
+				cleanup();
+			};
+			const finishResolve = (value) => {
+				if (finished) return;
+				finished = true;
+				resolve(value);
+				cleanup();
+			};
+			ctx.on(invokeReceiveEvent, (payload) => {
+				if (!payload.body) return;
+				if (payload.body.invokeId !== invokeId) return;
+				const { content } = payload.body;
+				finishResolve(content);
+			});
+			ctx.on(invokeReceiveEventError, (payload) => {
+				if (!payload.body) return;
+				if (payload.body.invokeId !== invokeId) return;
+				const { error } = payload.body.content;
+				finishReject(error);
+			});
+			if (ctxSignal) {
+				if (ctxSignal.aborted) {
+					onCtxAbort();
+					return;
+				}
+				ctxSignal.addEventListener("abort", onCtxAbort, { once: true });
+			}
+			if (signal) {
+				if (signal.aborted) {
+					onAbort();
+					return;
+				}
+				signal.addEventListener("abort", onAbort, { once: true });
+			}
+			if (!isReadableStream(req) && !isAsyncIterable(req)) ctx.emit(event.sendEvent, {
+				invokeId,
+				content: req
+			}, emitOptions);
+			else {
+				const sendChunk = (chunk) => {
+					if (finished) return;
+					ctx.emit(event.sendEvent, {
+						invokeId,
+						content: chunk,
+						isReqStream: true
+					}, emitOptions);
+				};
+				const sendEnd = () => {
+					if (finished) return;
+					ctx.emit(event.sendEventStreamEnd, {
+						invokeId,
+						content: void 0
+					}, emitOptions);
+				};
+				const pump = async () => {
+					try {
+						for await (const chunk of req) {
+							if (signal?.aborted) return;
+							sendChunk(chunk);
+						}
+						sendEnd();
+					} catch (error) {
+						if (signal?.aborted) return;
+						if (isAbortError(error)) {
+							ctx.emit(event.sendEventAbort, {
+								invokeId,
+								content: error
+							}, emitOptions);
+							return;
+						}
+						ctx.emit(event.sendEventError, {
+							invokeId,
+							content: error
+						}, emitOptions);
+					}
+				};
+				pump();
+			}
+		});
+	}
+	function _invoke(req, options) {
+		const resolvedCtx = getContext();
+		if (resolvedCtx instanceof Promise) return resolvedCtx.then((ctx) => createInvokePromise(ctx, req, options));
+		return createInvokePromise(resolvedCtx, req, options);
+	}
+	return _invoke;
+}
+/**
+* Create a map of invoke functions from a map of invoke events (client side).
+*
+* @example
+* ```ts
+* const events = {
+*   double: defineInvokeEventa<number, number>(),
+*   greet: defineInvokeEventa<string, { name: string }>(),
+* }
+*
+* const invokes = defineInvokes(ctx, events)
+* const result = await invokes.double(2)
+* ```
+*
+* @param ctx Event context on the caller/client side.
+* @param events Map of invoke events created by `defineInvokeEventa`.
+*/
+function defineInvokes(ctx, events) {
+	return Object.keys(events).reduce((invokes, key) => {
+		invokes[key] = defineInvoke(ctx, events[key]);
+		return invokes;
+	}, {});
+}
+/**
+* Define a unary invoke handler (server side).
+*
+* The handler can accept a unary or streaming request; it must return
+* a single response (or an extendable response envelope).
+*
+* @example
+* ```ts
+* const events = defineInvokeEventa<{ id: string }, { name: string }>()
+*
+* defineInvokeHandler(serverCtx, events, ({ name }) => ({
+*   id: `user-${name}`,
+* }))
+* ```
+*
+* @param ctx Event context on the handler/server side.
+* @param event Invoke event definition created by `defineInvokeEventa`.
+* @param handler Handler that returns a response (or response + metadata).
+*/
+function defineInvokeHandler(ctx, event, handler) {
+	if (!ctx.invokeHandlers) ctx.invokeHandlers = /* @__PURE__ */ new Map();
+	let handlers = ctx.invokeHandlers?.get(event.sendEvent.id);
+	if (!handlers) {
+		handlers = /* @__PURE__ */ new Map();
+		ctx.invokeHandlers?.set(event.sendEvent.id, handlers);
+	}
+	let internalHandler = handlers.get(handler);
+	if (!internalHandler) {
+		const streamStates = /* @__PURE__ */ new Map();
+		const abortControllers = /* @__PURE__ */ new Map();
+		const abortReasons = /* @__PURE__ */ new Map();
+		const scheduleAbort = (controller, reason) => {
+			if (typeof queueMicrotask !== "undefined") {
+				queueMicrotask(() => controller.abort(reason));
+				return;
+			}
+			Promise.resolve().then(() => controller.abort(reason));
+		};
+		const handleInvoke = async (invokeId, payload, options) => {
+			const abortController = new AbortController();
+			abortControllers.set(invokeId, abortController);
+			if (abortReasons.has(invokeId)) scheduleAbort(abortController, abortReasons.get(invokeId));
+			const handlerOptions = options ? {
+				...options,
+				abortController
+			} : { abortController };
+			try {
+				const response = await handler(payload, handlerOptions);
+				ctx.emit({
+					...defineEventa(`${event.receiveEvent.id}-${invokeId}`),
+					invokeType: event.receiveEvent.invokeType
+				}, {
+					invokeId,
+					content: response
+				}, options);
+			} catch (error) {
+				ctx.emit({
+					...defineEventa(`${event.receiveEventError.id}-${invokeId}`),
+					invokeType: event.receiveEventError.invokeType
+				}, {
+					invokeId,
+					content: { error }
+				}, options);
+			} finally {
+				abortControllers.delete(invokeId);
+				abortReasons.delete(invokeId);
+			}
+		};
+		const onSend = async (payload, options) => {
+			if (!payload.body) return;
+			if (!payload.body.invokeId) return;
+			const invokeId = payload.body.invokeId;
+			if (payload.body.isReqStream) {
+				let controller = streamStates.get(invokeId);
+				if (!controller) {
+					let localController;
+					const reqStream = new ReadableStream({ start(c) {
+						localController = c;
+					} });
+					controller = localController;
+					streamStates.set(invokeId, controller);
+					handleInvoke(invokeId, reqStream, options);
+				}
+				controller.enqueue(payload.body.content);
+				return;
+			}
+			handleInvoke(invokeId, payload.body?.content, options);
+		};
+		const onSendStreamEnd = (payload, options) => {
+			if (!payload.body) return;
+			if (!payload.body.invokeId) return;
+			const invokeId = payload.body.invokeId;
+			let controller = streamStates.get(invokeId);
+			if (!controller) {
+				let localController;
+				const reqStream = new ReadableStream({ start(c) {
+					localController = c;
+				} });
+				controller = localController;
+				streamStates.set(invokeId, controller);
+				handleInvoke(invokeId, reqStream, options);
+			}
+			controller.close();
+			streamStates.delete(invokeId);
+		};
+		const onSendAbort = (payload, options) => {
+			if (!payload.body) return;
+			if (!payload.body.invokeId) return;
+			const invokeId = payload.body.invokeId;
+			const reason = payload.body.content;
+			const abortController = abortControllers.get(invokeId);
+			if (!abortController) {
+				abortReasons.set(invokeId, reason);
+				let streamController = streamStates.get(invokeId);
+				if (!streamController) {
+					let localController;
+					const reqStream = new ReadableStream({ start(c) {
+						localController = c;
+					} });
+					streamController = localController;
+					streamStates.set(invokeId, streamController);
+					handleInvoke(invokeId, reqStream, options);
+				}
+				streamController.error(createAbortError(reason));
+				streamStates.delete(invokeId);
+				return;
+			}
+			scheduleAbort(abortController, reason);
+			const streamController = streamStates.get(invokeId);
+			if (streamController) {
+				streamController.error(createAbortError(reason));
+				streamStates.delete(invokeId);
+			}
+		};
+		internalHandler = {
+			onSend,
+			onSendStreamEnd,
+			onSendAbort
+		};
+		handlers.set(handler, internalHandler);
+		ctx.on(event.sendEvent, internalHandler.onSend);
+		ctx.on(event.sendEventStreamEnd, internalHandler.onSendStreamEnd);
+		ctx.on(event.sendEventAbort, internalHandler.onSendAbort);
+	}
+	return () => {
+		ctx.off(event.sendEvent, internalHandler.onSend);
+		ctx.off(event.sendEventStreamEnd, internalHandler.onSendStreamEnd);
+		ctx.off(event.sendEventAbort, internalHandler.onSendAbort);
+	};
+}
+/**
+* Define multiple invoke handlers in batch (server side).
+*
+* @example
+* ```ts
+* const events = {
+*   double: defineInvokeEventa<number, number>(),
+*   greet: defineInvokeEventa<string, { name: string }>(),
+* }
+*
+* defineInvokeHandlers(ctx, events, {
+*   double: value => value * 2,
+*   greet: ({ name }) => `hi ${name}`,
+* })
+* ```
+*
+* @param ctx Event context on the handler/server side.
+* @param events Map of invoke events created by `defineInvokeEventa`.
+* @param handlers Map of handlers keyed by event name.
+*/
+function defineInvokeHandlers(ctx, events, handlers) {
+	const eventKeys = Object.keys(events);
+	const handlerKeys = new Set(Object.keys(handlers));
+	if (eventKeys.length !== handlerKeys.size || !eventKeys.every((key) => handlerKeys.has(key))) throw new Error("The keys of events and handlers must match.");
+	return eventKeys.reduce((returnValues, key) => {
+		returnValues[key] = defineInvokeHandler(ctx, events[key], handlers[key]);
+		return returnValues;
+	}, {});
+}
+/**
+* Remove one or all invoke handlers for a specific invoke event (server side).
+*
+* @example
+* ```ts
+* const off = defineInvokeHandler(ctx, events, handler)
+* off() // remove one handler
+*
+* // or remove all handlers for the event:
+* undefineInvokeHandler(ctx, events)
+* ```
+*
+* @param ctx Event context on the handler/server side.
+* @param event Invoke event definition created by `defineInvokeEventa`.
+* @param handler Specific handler to remove (omit to remove all).
+* @returns `true` if at least one handler was removed, `false` otherwise
+*/
+function undefineInvokeHandler(ctx, event, handler) {
+	if (!ctx.invokeHandlers) return false;
+	const handlers = ctx.invokeHandlers?.get(event.sendEvent.id);
+	if (!handlers) return false;
+	if (handler) {
+		const internalHandler = handlers.get(handler);
+		if (!internalHandler) return false;
+		ctx.off(event.sendEvent, internalHandler.onSend);
+		ctx.off(event.sendEventStreamEnd, internalHandler.onSendStreamEnd);
+		ctx.off(event.sendEventAbort, internalHandler.onSendAbort);
+		ctx.invokeHandlers.delete(event.sendEvent.id);
+		return true;
+	}
+	let returnValue = false;
+	for (const internalHandlers of handlers.values()) {
+		ctx.off(event.sendEvent, internalHandlers.onSend);
+		ctx.off(event.sendEventStreamEnd, internalHandlers.onSendStreamEnd);
+		ctx.off(event.sendEventAbort, internalHandlers.onSendAbort);
+		returnValue = true;
+	}
+	ctx.invokeHandlers.delete(event.sendEvent.id);
+	return returnValue;
+}
+function withTransfer(body, transfer) {
+	return {
+		response: body,
+		invokeResponse: { transfer: transfer ?? [] }
+	};
+}
+var DEFAULT_FUNCTION_STUB_OPTIONS = {
+	maxDepth: 32,
+	maxFunctions: 32,
+	tagPrefix: "eventa-invoke-fn-",
+	onDisallowedTag: "ignore",
+	autoDisposeMs: 0,
+	strict: false
+};
+function createRemoteMethodTagPrefix(prefix = DEFAULT_FUNCTION_STUB_OPTIONS.tagPrefix) {
+	return `${prefix}${nanoid()}-`;
+}
+function normalizeFunctionStubOptions(options) {
+	if (options === true) return {
+		allow: true,
+		...DEFAULT_FUNCTION_STUB_OPTIONS
+	};
+	if (!options) return {
+		allow: false,
+		...DEFAULT_FUNCTION_STUB_OPTIONS
+	};
+	return {
+		allow: options.allow ?? true,
+		maxDepth: options.maxDepth ?? DEFAULT_FUNCTION_STUB_OPTIONS.maxDepth,
+		maxFunctions: options.maxFunctions ?? DEFAULT_FUNCTION_STUB_OPTIONS.maxFunctions,
+		tagPrefix: options.tagPrefix ?? DEFAULT_FUNCTION_STUB_OPTIONS.tagPrefix,
+		onDisallowedTag: options.onDisallowedTag ?? DEFAULT_FUNCTION_STUB_OPTIONS.onDisallowedTag,
+		autoDisposeMs: options.autoDisposeMs ?? DEFAULT_FUNCTION_STUB_OPTIONS.autoDisposeMs,
+		strict: options.strict ?? DEFAULT_FUNCTION_STUB_OPTIONS.strict
+	};
+}
+function resolveFunctionStubOptions(defaults, override) {
+	const base = normalizeFunctionStubOptions(defaults);
+	if (typeof override === "undefined") return base;
+	if (typeof override === "boolean") return {
+		...base,
+		allow: override
+	};
+	return {
+		...base,
+		...normalizeFunctionStubOptions(override)
+	};
+}
+function isPlainObject(value) {
+	if (value == null || typeof value !== "object") return false;
+	const prototype = Object.getPrototypeOf(value);
+	return prototype === Object.prototype || prototype === null;
+}
+function isInvokeFunctionStubPayload(value) {
+	if (!isPlainObject(value)) return false;
+	if (!("__eventaInvoke" in value)) return false;
+	const stub = value.__eventaInvoke;
+	return !!stub && typeof stub === "object" && typeof stub.tag === "string";
+}
+function hasInvokeFunctionStubKey(value) {
+	return isPlainObject(value) && "__eventaInvoke" in value;
+}
+function serializeInvokeFunctionPayload(value, ctx, options) {
+	if (!options.allow) return {
+		value,
+		dispose: () => void 0
+	};
+	let functionCount = 0;
+	const seen = /* @__PURE__ */ new WeakMap();
+	const disposers = [];
+	const walk = (input, depth) => {
+		if (typeof input === "function") {
+			if (functionCount >= options.maxFunctions) throw new Error(`Too many function stubs in invoke payload (max ${options.maxFunctions}).`);
+			functionCount += 1;
+			const tag = `${options.tagPrefix}${nanoid()}`;
+			const off = defineInvokeHandler(ctx, defineInvokeEventa(tag), (payload, handlerOptions) => {
+				return input(payload, handlerOptions);
+			});
+			disposers.push(off);
+			return { __eventaInvoke: { tag } };
+		}
+		if (input == null || typeof input !== "object") return input;
+		if (depth > options.maxDepth) throw new Error(`Invoke payload is too deep (max ${options.maxDepth}).`);
+		if (seen.has(input)) return seen.get(input);
+		if (Array.isArray(input)) {
+			const output = Array.from({ length: input.length });
+			seen.set(input, output);
+			for (let i = 0; i < input.length; i += 1) output[i] = walk(input[i], depth + 1);
+			return output;
+		}
+		if (!isPlainObject(input)) return input;
+		const output = Object.create(null);
+		seen.set(input, output);
+		for (const [key, child] of Object.entries(input)) output[key] = walk(child, depth + 1);
+		return output;
+	};
+	return {
+		value: walk(value, 0),
+		dispose: () => {
+			for (const off of disposers) off();
+		}
+	};
+}
+function deserializeInvokeFunctionPayload(value, ctx, options) {
+	if (!options.allow) return value;
+	let functionCount = 0;
+	const seen = /* @__PURE__ */ new WeakMap();
+	const walk = (input, depth) => {
+		if (input == null || typeof input !== "object") return input;
+		if (depth > options.maxDepth) throw new Error(`Invoke payload is too deep (max ${options.maxDepth}).`);
+		if (isInvokeFunctionStubPayload(input)) {
+			if (functionCount >= options.maxFunctions) throw new Error(`Too many function stubs in invoke payload (max ${options.maxFunctions}).`);
+			const tag = input.__eventaInvoke.tag;
+			if (options.tagPrefix && !tag.startsWith(options.tagPrefix)) {
+				if (options.onDisallowedTag === "throw") throw new Error(`Invoke function tag not allowed: ${tag}`);
+				return input;
+			}
+			functionCount += 1;
+			return defineInvoke(ctx, defineInvokeEventa(tag));
+		} else if (options.strict && hasInvokeFunctionStubKey(input)) throw new Error("Invalid invoke function stub payload.");
+		if (seen.has(input)) return seen.get(input);
+		if (Array.isArray(input)) {
+			const output = Array.from({ length: input.length });
+			seen.set(input, output);
+			for (let i = 0; i < input.length; i += 1) output[i] = walk(input[i], depth + 1);
+			return output;
+		}
+		if (!isPlainObject(input)) return input;
+		const output = Object.create(null);
+		seen.set(input, output);
+		for (const [key, child] of Object.entries(input)) output[key] = walk(child, depth + 1);
+		return output;
+	};
+	return walk(value, 0);
+}
+/**
+* Enable "remote method" payloads for invoke: functions in the request body are
+* serialized into stub descriptors and rehydrated into invoke callers on the
+* receiving side.
+*
+* This is an adapter around the plain-value RPC primitives `defineInvoke` and
+* `defineInvokeHandler`. It keeps the core invoke APIs clean while offering an
+* opt-in bridge for function values.
+*
+* @example
+* ```ts
+* const remote = withRemoteMethods({ allow: true })
+* const events = defineInvokeEventa<{ output: number }, { helper: (n: number) => Promise<number> }>()
+*
+* // server (handler)
+* remote.defineInvokeHandler(serverCtx, events, async ({ helper }) => {
+*   const output = await helper(21)
+*   return { output }
+* })
+*
+* // client (caller)
+* const invoke = remote.defineInvoke(clientCtx, events)
+* const result = await invoke({ helper: async n => n * 2 }, { functionStubs: true })
+* ```
+*
+* @example
+* ```ts
+* // Manual cleanup when you fire-and-forget or cancel midway:
+* const invoke = remote.defineInvoke(clientCtx, events)
+* const result = invoke({ helper: () => 'ok' }, { functionStubs: true })
+* result.dispose()
+* await result
+* ```
+*
+* Security notes:
+* - This feature is off by default. Enabling it allows the remote side to call
+*   back into your process; only use with trusted peers.
+* - Function stubs are tagged; prefer a unique `tagPrefix` to avoid collisions
+*   (see `createRemoteMethodTagPrefix`).
+* - `maxDepth`, `maxFunctions`, and `autoDisposeMs` limit attack surface and
+*   resource usage. `autoDisposeMs` is useful for fire-and-forget calls.
+* - Objects are rebuilt with a null prototype to mitigate `__proto__` pollution.
+* - Enable `strict` to reject malformed `__eventaInvoke` payloads.
+*
+* @param defaultOptions Defaults for function stub behavior. Use `{ allow: true }`
+*        to enable, or provide `maxDepth`, `maxFunctions`, `tagPrefix`,
+*        `onDisallowedTag`, `autoDisposeMs`, and `strict` for stricter control.
+*/
+function withRemoteMethods(defaultOptions) {
+	return {
+		defineInvoke(ctx, event) {
+			const baseInvoke = defineInvoke(ctx, event);
+			const invoke = ((req, options) => {
+				const { functionStubs, ...invokeOptions } = options ?? {};
+				const normalizedOptions = resolveFunctionStubOptions(defaultOptions, functionStubs);
+				if (!normalizedOptions.allow) {
+					const wrapped = baseInvoke(req, invokeOptions);
+					wrapped.dispose = () => void 0;
+					return wrapped;
+				}
+				let serialized;
+				try {
+					serialized = serializeInvokeFunctionPayload(req, ctx, normalizedOptions);
+				} catch (error) {
+					const rejected = Promise.reject(error);
+					rejected.dispose = () => void 0;
+					return rejected;
+				}
+				let disposed = false;
+				const dispose = () => {
+					if (disposed) return;
+					disposed = true;
+					serialized.dispose();
+				};
+				let autoDisposeTimer;
+				if (normalizedOptions.autoDisposeMs > 0) autoDisposeTimer = setTimeout(() => {
+					dispose();
+				}, normalizedOptions.autoDisposeMs);
+				const finalize = () => {
+					if (autoDisposeTimer) clearTimeout(autoDisposeTimer);
+					dispose();
+				};
+				const wrapped = baseInvoke(serialized.value, invokeOptions).finally(finalize);
+				wrapped.dispose = finalize;
+				return wrapped;
+			});
+			return invoke;
+		},
+		defineInvokeHandler(ctx, event, handler) {
+			const normalizedOptions = resolveFunctionStubOptions(defaultOptions);
+			return defineInvokeHandler(ctx, event, async (payload, options) => {
+				return handler(normalizedOptions.allow ? deserializeInvokeFunctionPayload(payload, ctx, normalizedOptions) : payload, options);
+			});
+		}
+	};
+}
+/**
+* Create a stream invoke function (client side).
+*
+* Use when the response is streamed and the request may be unary or streaming.
+*
+* Common patterns:
+* - Unary request -> stream response (server-streaming)
+* - Stream request -> stream response (bi-directional streaming)
+*
+* @example
+* ```ts
+* // 1) Define eventa once (shared by client/server)
+* const events = defineInvokeEventa<Progress | Result, Params>()
+*
+* // 2) Client: define invoke function
+* const invoke = defineStreamInvoke(clientCtx, events)
+*
+* // 3) Call with unary request
+* for await (const msg of invoke({ name: 'alice' })) {
+*   console.log(msg)
+* }
+* ```
+*
+* @example
+* ```ts
+* // Client-streaming request
+* const input = new ReadableStream<number>({
+*   start(c) { c.enqueue(1); c.enqueue(2); c.close() },
+* })
+*
+* for await (const msg of invoke(input)) {
+*   console.log(msg)
+* }
+* ```
+*
+* @param clientCtx Event context on the caller/client side.
+* @param event Invoke event definition created by `defineInvokeEventa`.
+*/
+function defineStreamInvoke(clientCtx, event) {
+	return (req, options) => {
+		const invokeId = nanoid();
+		const { signal, ...emitOptions } = options ?? {};
+		let onAbort;
+		const invokeReceiveEvent = defineEventa(`${event.receiveEvent.id}-${invokeId}`);
+		const invokeReceiveEventError = defineEventa(`${event.receiveEventError.id}-${invokeId}`);
+		const invokeReceiveEventStreamEnd = defineEventa(`${event.receiveEventStreamEnd.id}-${invokeId}`);
+		const stream = new ReadableStream({
+			start(controller) {
+				const cleanup = () => {
+					clientCtx.off(invokeReceiveEvent);
+					clientCtx.off(invokeReceiveEventError);
+					clientCtx.off(invokeReceiveEventStreamEnd);
+					if (signal && onAbort) signal.removeEventListener("abort", onAbort);
+				};
+				onAbort = () => {
+					clientCtx.emit(event.sendEventAbort, {
+						invokeId,
+						content: signal?.reason
+					}, emitOptions);
+					controller.error(createAbortError(signal?.reason));
+					cleanup();
+				};
+				clientCtx.on(invokeReceiveEvent, (payload) => {
+					if (!payload.body) return;
+					if (payload.body.invokeId !== invokeId) return;
+					controller.enqueue(payload.body.content);
+				});
+				clientCtx.on(invokeReceiveEventError, (payload) => {
+					if (!payload.body) return;
+					if (payload.body.invokeId !== invokeId) return;
+					controller.error(payload.body.content.error);
+					cleanup();
+				});
+				clientCtx.on(invokeReceiveEventStreamEnd, (payload) => {
+					if (!payload.body) return;
+					if (payload.body.invokeId !== invokeId) return;
+					controller.close();
+					cleanup();
+				});
+				if (signal && onAbort) {
+					if (signal.aborted) {
+						onAbort();
+						return;
+					}
+					signal.addEventListener("abort", onAbort, { once: true });
+				}
+			},
+			cancel(reason) {
+				clientCtx.emit(event.sendEventAbort, {
+					invokeId,
+					content: reason
+				}, emitOptions);
+				clientCtx.off(invokeReceiveEvent);
+				clientCtx.off(invokeReceiveEventError);
+				clientCtx.off(invokeReceiveEventStreamEnd);
+				if (signal && onAbort) signal.removeEventListener("abort", onAbort);
+			}
+		});
+		if (isReadableStream(req) || isAsyncIterable(req)) {
+			const sendChunk = (chunk) => {
+				clientCtx.emit(event.sendEvent, {
+					invokeId,
+					content: chunk,
+					isReqStream: true
+				}, emitOptions);
+			};
+			const sendEnd = () => {
+				clientCtx.emit(event.sendEventStreamEnd, {
+					invokeId,
+					content: void 0
+				}, emitOptions);
+			};
+			const pump = async () => {
+				try {
+					for await (const chunk of req) {
+						if (signal?.aborted) return;
+						sendChunk(chunk);
+					}
+					sendEnd();
+				} catch (error) {
+					if (signal?.aborted) return;
+					if (isAbortError(error)) {
+						clientCtx.emit(event.sendEventAbort, {
+							invokeId,
+							content: error
+						}, emitOptions);
+						return;
+					}
+					clientCtx.emit(event.sendEventError, {
+						invokeId,
+						content: error
+					}, emitOptions);
+				}
+			};
+			pump();
+		} else clientCtx.emit(event.sendEvent, {
+			invokeId,
+			content: req
+		}, emitOptions);
+		return stream;
+	};
+}
+/**
+* Define a stream invoke handler (server side).
+*
+* The handler can receive either:
+* - a unary request `Req`
+* - a streaming request `ReadableStream<Req>` / `AsyncIterable<Req>`
+*
+* It must return an async generator of response messages.
+*
+* @example
+* ```ts
+* const events = defineInvokeEventa<Progress | Result, Params>()
+*
+* defineStreamInvokeHandler(serverCtx, events, async function* (payload) {
+*   if (isReadableStream<Params>(payload) || isAsyncIterable<Params>(payload)) {
+*     for await (const item of payload) {
+*       yield { type: 'progress', value: item }
+*     }
+*   }
+*
+*   yield { type: 'result', ok: true }
+* })
+* ```
+*
+* @param serverCtx Event context on the handler/server side.
+* @param event Invoke event definition created by `defineInvokeEventa`.
+* @param fn Stream handler that yields response chunks.
+*/
+function defineStreamInvokeHandler(serverCtx, event, fn) {
+	const invokeReceiveEvent = (invokeId) => defineEventa(`${event.receiveEvent.id}-${invokeId}`);
+	const invokeReceiveEventError = (invokeId) => defineEventa(`${event.receiveEventError.id}-${invokeId}`);
+	const invokeReceiveEventStreamEnd = (invokeId) => defineEventa(`${event.receiveEventStreamEnd.id}-${invokeId}`);
+	const streamStates = /* @__PURE__ */ new Map();
+	const abortControllers = /* @__PURE__ */ new Map();
+	const abortReasons = /* @__PURE__ */ new Map();
+	const scheduleAbort = (controller, reason) => {
+		if (typeof queueMicrotask !== "undefined") {
+			queueMicrotask(() => controller.abort(reason));
+			return;
+		}
+		Promise.resolve().then(() => controller.abort(reason));
+	};
+	const handleInvoke = async (invokeId, payload, options) => {
+		const receiveEvent = invokeReceiveEvent(invokeId);
+		const receiveEventError = invokeReceiveEventError(invokeId);
+		const receiveEventStreamEnd = invokeReceiveEventStreamEnd(invokeId);
+		const abortController = new AbortController();
+		abortControllers.set(invokeId, abortController);
+		if (abortReasons.has(invokeId)) scheduleAbort(abortController, abortReasons.get(invokeId));
+		const handlerOptions = options ? {
+			...options,
+			abortController
+		} : { abortController };
+		try {
+			const generator = fn(payload, handlerOptions);
+			for await (const res of generator) serverCtx.emit(receiveEvent, {
+				invokeId,
+				content: res
+			}, options);
+			serverCtx.emit(receiveEventStreamEnd, {
+				invokeId,
+				content: void 0
+			}, options);
+		} catch (error) {
+			serverCtx.emit(receiveEventError, {
+				invokeId,
+				content: { error }
+			}, options);
+		} finally {
+			abortControllers.delete(invokeId);
+			abortReasons.delete(invokeId);
+		}
+	};
+	serverCtx.on(event.sendEvent, async (payload, options) => {
+		if (!payload.body) return;
+		if (!payload.body.invokeId) return;
+		const invokeId = payload.body.invokeId;
+		if (payload.body.isReqStream) {
+			let controller = streamStates.get(invokeId);
+			if (!controller) {
+				let localController;
+				const reqStream = new ReadableStream({ start(c) {
+					localController = c;
+				} });
+				controller = localController;
+				streamStates.set(invokeId, controller);
+				handleInvoke(invokeId, reqStream, options);
+			}
+			controller.enqueue(payload.body.content);
+			return;
+		}
+		handleInvoke(invokeId, payload.body.content, options);
+	});
+	serverCtx.on(event.sendEventStreamEnd, (payload) => {
+		if (!payload.body) return;
+		if (!payload.body.invokeId) return;
+		const controller = streamStates.get(payload.body.invokeId);
+		if (!controller) return;
+		controller.close();
+		streamStates.delete(payload.body.invokeId);
+	});
+	serverCtx.on(event.sendEventAbort, (payload) => {
+		if (!payload.body) return;
+		if (!payload.body.invokeId) return;
+		const invokeId = payload.body.invokeId;
+		const reason = payload.body.content;
+		const abortController = abortControllers.get(invokeId);
+		if (!abortController) {
+			abortReasons.set(invokeId, reason);
+			let controller = streamStates.get(invokeId);
+			if (!controller) {
+				let localController;
+				const reqStream = new ReadableStream({ start(c) {
+					localController = c;
+				} });
+				controller = localController;
+				streamStates.set(invokeId, controller);
+				handleInvoke(invokeId, reqStream);
+			}
+			controller.error(createAbortError(reason));
+			streamStates.delete(invokeId);
+			return;
+		}
+		scheduleAbort(abortController, reason);
+		const controller = streamStates.get(invokeId);
+		if (controller) {
+			controller.error(createAbortError(reason));
+			streamStates.delete(invokeId);
+		}
+	});
+}
+/**
+* Convert a callback-style handler into a stream handler.
+*
+* Use `emit` to push response chunks, and return when done.
+* Works for unary or streaming requests.
+*
+* @example
+* ```ts
+* defineStreamInvokeHandler(ctx, events, toStreamHandler(async ({ payload, emit }) => {
+*   if (isReadableStream<Params>(payload) || isAsyncIterable<Params>(payload)) {
+*     for await (const item of payload) {
+*       emit({ type: 'progress', value: item })
+*     }
+*
+*     emit({ type: 'result', ok: true })
+*     return
+*   }
+*
+*   emit({ type: 'result', ok: true })
+* }))
+* ```
+*
+* @param handler Callback handler with `emit` for streaming responses.
+*/
+function toStreamHandler(handler) {
+	return (payload, options) => {
+		const values = [];
+		let resolve;
+		let handlerError = null;
+		values.push(new Promise((r) => {
+			resolve = r;
+		}));
+		const emit = (data) => {
+			resolve([data, false]);
+			values.push(new Promise((r) => {
+				resolve = r;
+			}));
+		};
+		handler({
+			payload,
+			options,
+			emit
+		}).then(() => {
+			resolve([void 0, true]);
+		}).catch((err) => {
+			handlerError = err;
+			resolve([void 0, true]);
+		});
+		return async function* () {
+			let val;
+			for (let i = 0, done = false; !done; i++) {
+				[val, done] = await values[i];
+				delete values[i];
+				if (handlerError) throw handlerError;
+				if (!done) yield val;
+			}
+		}();
+	};
+}
+//#endregion
+export { defineEventa as A, undefineInvokeHandler as C, EventaType as D, EventaFlowDirection as E, or as F, defineOutboundEventa as M, matchBy as N, and as O, nanoid as P, toStreamHandler as S, withTransfer as T, isInvokeEventa as _, createUntilTriggered as a, isSendEvent as b, defineInvokeEventa as c, defineInvokes as d, defineStreamInvoke as f, isExtendableInvokeResponseLike as g, isAsyncIterable as h, createUntil as i, defineInboundEventa as j, createContext as k, defineInvokeHandler as l, isAbortError as m, createAbortError as n, createUntilTriggeredOnce as o, defineStreamInvokeHandler as p, createRemoteMethodTagPrefix as r, defineInvoke as s, InvokeEventType as t, defineInvokeHandlers as u, isReadableStream as v, withRemoteMethods as w, randomBetween as x, isReceiveEvent as y };
+
+//# sourceMappingURL=dist-C88F0Zci.js.map

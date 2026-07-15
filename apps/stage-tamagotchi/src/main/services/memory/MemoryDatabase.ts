@@ -1,6 +1,6 @@
-import type { MemoryRecord, MemorySettings, MemoryDatabaseStats, StoreMemoryPayload, UpdateMemoryPayload } from '../../../shared/eventa/memory'
-
 import type { SQLInputValue } from 'node:sqlite'
+
+import type { MemoryDatabaseStats, MemoryRecord, MemorySettings, StoreMemoryPayload, UpdateMemoryPayload } from '../../../shared/eventa/memory'
 
 import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -288,7 +288,8 @@ export function storeMemory(db: DatabaseSync, payload: StoreMemoryPayload): Memo
 
 export function getMemoryById(db: DatabaseSync, id: number): MemoryRecord | null {
   const row = db.prepare('SELECT * FROM memories WHERE id = ?').get(id) as Record<string, unknown> | undefined
-  if (!row) return null
+  if (!row)
+    return null
 
   // Update last_accessed_at
   db.prepare('UPDATE memories SET last_accessed_at = datetime(\'now\') WHERE id = ?').run(id)
@@ -298,7 +299,8 @@ export function getMemoryById(db: DatabaseSync, id: number): MemoryRecord | null
 
 export function updateMemory(db: DatabaseSync, payload: UpdateMemoryPayload): MemoryRecord | null {
   const existing = db.prepare('SELECT * FROM memories WHERE id = ?').get(payload.id) as Record<string, unknown> | undefined
-  if (!existing) return null
+  if (!existing)
+    return null
 
   const updates: string[] = []
   const values: SQLInputValue[] = []
@@ -311,7 +313,8 @@ export function updateMemory(db: DatabaseSync, payload: UpdateMemoryPayload): Me
   if (payload.type !== undefined) { updates.push('type = ?'); values.push(payload.type) }
   if (payload.metadata !== undefined) { updates.push('metadata = ?'); values.push(JSON.stringify(payload.metadata)) }
 
-  if (updates.length === 0) return rowToMemory(existing)
+  if (updates.length === 0)
+    return rowToMemory(existing)
 
   updates.push('updated_at = datetime(\'now\')')
   values.push(payload.id)
@@ -336,7 +339,8 @@ export function deleteMemory(db: DatabaseSync, id: number): void {
 export function forgetMemories(db: DatabaseSync, userId: string, query: string, projectId?: string | null): number {
   // Use FTS5 to find matching memories
   const ftsQuery = query.replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/).map(w => `"${w}"`).join(' OR ')
-  if (!ftsQuery) return 0
+  if (!ftsQuery)
+    return 0
 
   let sql = `
     UPDATE memories SET status = 'deleted', updated_at = datetime('now')
@@ -347,7 +351,7 @@ export function forgetMemories(db: DatabaseSync, userId: string, query: string, 
     AND user_id = ?
     AND status = 'active'
   `
-  const params: SQLInputValue[] =[ftsQuery, userId]
+  const params: SQLInputValue[] = [ftsQuery, userId]
 
   if (projectId) {
     sql += ' AND project_id = ?'
@@ -455,7 +459,7 @@ export function retrieveMemories(
   const candidates = db.prepare(sql).all(...baseParams) as Record<string, unknown>[]
 
   // Score and rank
-  const scored = candidates.map(row => {
+  const scored = candidates.map((row) => {
     const mem = rowToMemory(row)
     const recency = timeDecayScore(mem.updatedAt)
     const accessFreq = accessFrequencyScore(db, mem.id)
@@ -482,7 +486,7 @@ export function searchMemories(
   offset: number = 0,
 ): MemoryRecord[] {
   const conditions: string[] = ['user_id = ?', 'status != \'deleted\'']
-  const params: SQLInputValue[] =[userId]
+  const params: SQLInputValue[] = [userId]
 
   if (query) {
     const cleaned = query.replace(/[^\p{L}\p{N}\s]/gu, ' ').trim()
@@ -491,7 +495,7 @@ export function searchMemories(
       const words = cleaned.split(/\s+/).filter(w => w.length > 0)
       const likeConditions = words.map(() => '(subject LIKE ? OR content LIKE ?)')
       conditions.push(`(${likeConditions.join(' OR ')})`)
-      words.forEach(w => { params.push(`%${w}%`); params.push(`%${w}%`) })
+      words.forEach((w) => { params.push(`%${w}%`); params.push(`%${w}%`) })
     }
     else {
       const ftsQuery = cleaned.split(/\s+/).filter(w => w.length > 0).map(w => `"${w}"`).join(' OR ')
@@ -591,7 +595,7 @@ export function getStats(db: DatabaseSync): MemoryDatabaseStats {
  * Returns 0-1 where 1 means "updated right now" and ~0 means 90+ days ago.
  */
 function timeDecayScore(updatedAt: string): number {
-  const updated = new Date(updatedAt.replace(' ', 'T') + 'Z').getTime()
+  const updated = new Date(`${updatedAt.replace(' ', 'T')}Z`).getTime()
   const now = Date.now()
   const daysDiff = (now - updated) / (1000 * 60 * 60 * 24)
   return Math.exp(-daysDiff / 30) // Half-life ~21 days

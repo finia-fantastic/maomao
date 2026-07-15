@@ -23,8 +23,8 @@ import { onMounted, onUnmounted, watch } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { toast, Toaster } from 'vue-sonner'
 
-
 import ResizeHandler from './components/ResizeHandler.vue'
+import VisionScreenWatch from './components/VisionScreenWatch.vue'
 
 import {
   electronGetServerChannelConfig,
@@ -52,11 +52,9 @@ import {
 import { electronPluginToolsChanged } from '../shared/eventa/plugin/tools'
 import { initializeElectronAuthCallbackBridge } from './bridges/electron-auth-callback'
 import { initializeStageThreeRuntimeTraceBridge } from './bridges/stage-three-runtime-trace'
-import VisionScreenWatch from './components/VisionScreenWatch.vue'
-
+import { useLanguage } from './composables/use-language'
 import { useIdleGestures } from './composables/useIdleGestures'
 import { useTimeGreeting } from './composables/useTimeGreeting'
-import { useLanguage } from './composables/use-language'
 import { createChatSyncWindowLifecycle, resolveInitialChatSyncRoutePath } from './stores/chat-sync-lifecycle'
 import { useTamagotchiMcpToolsStore } from './stores/mcp-tools'
 import { useTamagotchiPluginToolsStore } from './stores/plugin-tools'

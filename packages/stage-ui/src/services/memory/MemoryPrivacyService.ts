@@ -17,17 +17,17 @@
  */
 const CREDENTIAL_PATTERNS: Array<{ pattern: RegExp, name: string }> = [
   // JWT tokens
-  { pattern: /eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{0,}/g, name: 'JWT token' },
+  { pattern: /eyJ[\w-]{20,}\.[\w-]{20,}\.[\w-]*/g, name: 'JWT token' },
   // OpenAI-style API keys
   { pattern: /sk-[A-Za-z0-9]{32,}/g, name: 'API key (sk-*)' },
   // Generic API keys in assignment contexts
-  { pattern: /(?:api[_-]?key|apikey|API_KEY)\s*[:=]\s*['"]?[A-Za-z0-9_-]{16,}['"]?/gi, name: 'API key assignment' },
+  { pattern: /(?:api[_-]?key|apikey|API_KEY)\s*[:=]\s*['"]?[\w-]{16,}['"]?/gi, name: 'API key assignment' },
   // Private key blocks
-  { pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |)?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |DSA |OPENSSH |)?PRIVATE KEY-----/g, name: 'Private key block' },
+  { pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/g, name: 'Private key block' },
   // Bearer tokens in Authorization headers
-  { pattern: /(?:Authorization|auth)\s*:\s*Bearer\s+[A-Za-z0-9_\-\.]+/gi, name: 'Bearer token' },
+  { pattern: /(?:Authorization|auth)\s*:\s*Bearer\s+[\w\-.]+/gi, name: 'Bearer token' },
   // GitHub/other service tokens
-  { pattern: /(?:gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{22,})/g, name: 'GitHub token' },
+  { pattern: /(?:gh[pousr]_[A-Za-z0-9]{36,}|github_pat_\w{22,})/g, name: 'GitHub token' },
   // Generic secret keys
   { pattern: /(?:secret|token|password|passwd)\s*[:=]\s*['"][^'"]{6,}['"]/gi, name: 'Secret assignment' },
 ]
@@ -71,7 +71,8 @@ export function stripCredentials(text: string): { sanitized: string, redactedCou
  */
 export function isSensitiveContent(text: string): boolean {
   // Check for credential patterns
-  if (containsCredentials(text)) return true
+  if (containsCredentials(text))
+    return true
 
   // Check for common sensitive content markers
   const sensitiveIndicators = [

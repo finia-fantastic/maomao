@@ -1,0 +1,271 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue");/* Injection by vite-plugin-vue-inspector Start */
+import { createElementVNode as __createElementVNode,createVNode as __createVNode,createElementBlock as __createElementBlock } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d"
+function _interopVNode(vnode) {
+  if (vnode && vnode.props && 'data-v-inspector' in vnode.props) {
+    const data = vnode.props['data-v-inspector']
+    delete vnode.props['data-v-inspector']
+    Object.defineProperty(vnode.props, '__v_inspector', { value: data, enumerable: false })
+  }
+  return vnode
+}
+function _createElementVNode(...args) { return _interopVNode(__createElementVNode(...args)) }
+function _createVNode(...args) { return _interopVNode(__createVNode(...args)) }
+function _createElementBlock(...args) { return _interopVNode(__createElementBlock(...args)) }
+/* Injection by vite-plugin-vue-inspector End */
+import { useModel as _useModel, mergeModels as _mergeModels, defineComponent as _defineComponent } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import { Callout, FieldCheckbox, FieldCombobox } from "/@fs/C:/Users/Administrator/airi-app/packages/ui/src/index.ts";
+import { storeToRefs } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/pinia.js?v=6c17d38d";
+import { computed } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import { useAudioAnalyzer, useAudioDevice } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/composables/index.ts";
+import { useSettingsAudioDevice } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/stores/index.ts";
+const _sfc_main = /* @__PURE__ */ _defineComponent({
+	__name: "hearing-config",
+	props: /* @__PURE__ */ _mergeModels({ granted: {
+		type: Boolean,
+		required: false,
+		default: false
+	} }, {
+		"autoSend": {
+			type: Boolean,
+			skipCheck: true
+		},
+		"autoSendModifiers": {}
+	}),
+	emits: ["update:autoSend"],
+	setup(__props, { expose: __expose }) {
+		__expose();
+		const props = __props;
+		const deviceStore = useSettingsAudioDevice();
+		const { enabled, selectedAudioInput } = storeToRefs(deviceStore);
+		const { audioInputs, permissionGranted, askPermission } = useAudioDevice();
+		const { volumeLevel } = useAudioAnalyzer();
+		const autoSend = _useModel(__props, "autoSend");
+		const hasAutoSendControl = computed(() => autoSend.value !== undefined);
+		const autoSendEnabled = computed({
+			get: () => autoSend.value ?? false,
+			set: (value) => autoSend.value = value
+		});
+		const hearingToggleLabel = computed(() => enabled.value ? "Disable microphone input" : "Enable microphone input");
+		const hearingToggleClass = computed(() => [
+			"absolute left-1/2 top-1/2 grid h-16 w-16 place-items-center outline-none -translate-x-1/2 -translate-y-1/2",
+			"rounded-2xl backdrop-blur-md",
+			"transition-colors duration-150 ease-in-out",
+			"focus-visible:ring-2 focus-visible:ring-primary-400/40",
+			"active:scale-95",
+			enabled.value ? [
+				"border-2 border-solid border-primary-300/30 bg-primary-200/90~45 text-primary-950",
+				"hover:border-primary-400/55 active:border-primary-500/60",
+				"dark:border-primary-400/30 dark:bg-primary-500/75~45*90 dark:text-primary-50",
+				"dark:hover:border-primary-300/55 dark:active:border-primary-300/70"
+			] : [
+				"border-2 border-solid border-neutral-300/40 bg-neutral-100/70 text-neutral-700",
+				"hover:border-neutral-400/55 active:border-neutral-500/60",
+				"dark:border-neutral-700/45 dark:bg-neutral-800/70 dark:text-neutral-200",
+				"dark:hover:border-neutral-600/65 dark:active:border-neutral-500/70"
+			]
+		]);
+		const ringEnabledClass = computed(() => enabled.value ? "bg-primary-500/15 dark:bg-primary-600/20" : "bg-neutral-300/20 dark:bg-neutral-700/20");
+		function toggleHearingEnabled() {
+			if (enabled.value) return enabled.value = false;
+			if (selectedAudioInput.value !== "" && permissionGranted.value) return enabled.value = true;
+			if (!permissionGranted.value) return askPermission().then(() => {
+				enabled.value = permissionGranted.value;
+			});
+		}
+		const __returned__ = {
+			props,
+			deviceStore,
+			enabled,
+			selectedAudioInput,
+			audioInputs,
+			permissionGranted,
+			askPermission,
+			volumeLevel,
+			autoSend,
+			hasAutoSendControl,
+			autoSendEnabled,
+			hearingToggleLabel,
+			hearingToggleClass,
+			ringEnabledClass,
+			toggleHearingEnabled,
+			get Callout() {
+				return Callout;
+			},
+			get FieldCheckbox() {
+				return FieldCheckbox;
+			},
+			get FieldCombobox() {
+				return FieldCombobox;
+			}
+		};
+		Object.defineProperty(__returned__, "__isScriptSetup", {
+			enumerable: false,
+			value: true
+		});
+		return __returned__;
+	}
+});
+import { createCommentVNode as _createCommentVNode, normalizeClass as _normalizeClass, normalizeStyle as _normalizeStyle,  withCtx as _withCtx,  openBlock as _openBlock,  } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+const _hoisted_1 = {
+	class: "space-y-2",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:63:3"
+};
+const _hoisted_2 = {
+	class: "flex flex-col items-center justify-center py-2",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:65:5"
+};
+const _hoisted_3 = {
+	class: "relative h-28 w-28 select-none",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:66:7"
+};
+const _hoisted_4 = ["aria-label", "title"];
+const _hoisted_5 = {
+	key: 0,
+	class: "mt-3 w-full",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:98:7"
+};
+const _hoisted_6 = {
+	key: 0,
+	class: "mt-3",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:108:5"
+};
+const _hoisted_7 = {
+	class: "mt-3 w-full",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:117:5"
+};
+function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+	return _openBlock(), _createElementBlock("div", _hoisted_1, [
+		_createCommentVNode(" Minimal mic control with animated rings "),
+		_createElementVNode("div", _hoisted_2, [
+			_createElementVNode("div", _hoisted_3, [
+				_createCommentVNode(" Rings (scale + opacity follow volume) "),
+				_createElementVNode(
+					"div",
+					{
+						class: _normalizeClass(["absolute left-1/2 top-1/2 h-20 w-20 rounded-full transition-all duration-150 -translate-x-1/2 -translate-y-1/2", $setup.ringEnabledClass]),
+						style: _normalizeStyle({
+							transform: `translate(-50%, -50%) scale(${1 + $setup.volumeLevel / 100 * .35})`,
+							opacity: String(.25 + $setup.volumeLevel / 100 * .25)
+						}),
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:68:9"
+					},
+					null,
+					6
+					/* CLASS, STYLE */
+				),
+				_createElementVNode(
+					"div",
+					{
+						class: _normalizeClass(["absolute left-1/2 top-1/2 h-24 w-24 rounded-full transition-all duration-200 -translate-x-1/2 -translate-y-1/2", $setup.enabled ? "bg-primary-500/10 dark:bg-primary-600/15" : "bg-neutral-300/10 dark:bg-neutral-700/10"]),
+						style: _normalizeStyle({
+							transform: `translate(-50%, -50%) scale(${1.2 + $setup.volumeLevel / 100 * .55})`,
+							opacity: String(.15 + $setup.volumeLevel / 100 * .2)
+						}),
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:73:9"
+					},
+					null,
+					6
+					/* CLASS, STYLE */
+				),
+				_createElementVNode(
+					"div",
+					{
+						class: _normalizeClass(["absolute left-1/2 top-1/2 h-28 w-28 rounded-full transition-all duration-300 -translate-x-1/2 -translate-y-1/2", $setup.enabled ? "bg-primary-500/5 dark:bg-primary-600/10" : "bg-neutral-300/5 dark:bg-neutral-700/5"]),
+						style: _normalizeStyle({
+							transform: `translate(-50%, -50%) scale(${1.5 + $setup.volumeLevel / 100 * .8})`,
+							opacity: String(.08 + $setup.volumeLevel / 100 * .15)
+						}),
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:78:9"
+					},
+					null,
+					6
+					/* CLASS, STYLE */
+				),
+				_createCommentVNode(" Mic icon button "),
+				_createElementVNode("button", {
+					"aria-label": $setup.hearingToggleLabel,
+					title: $setup.hearingToggleLabel,
+					class: _normalizeClass($setup.hearingToggleClass),
+					onClick: $setup.toggleHearingEnabled,
+					"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:85:9"
+				}, [_createElementVNode(
+					"div",
+					{
+						class: _normalizeClass([$setup.enabled ? "i-ph:microphone" : "i-ph:microphone-slash", "h-6 w-6"]),
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:91:11"
+					},
+					null,
+					2
+					/* CLASS */
+				)], 10, _hoisted_4)
+			]),
+			_cache[3] || (_cache[3] = _createElementVNode(
+				"div",
+				{
+					class: "mt-3 h-1",
+					"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:95:7"
+				},
+				null,
+				-1
+				/* CACHED */
+			)),
+			_createCommentVNode(" Permission callout when needed (Electron contexts) "),
+			!$setup.props.granted ? (_openBlock(), _createElementBlock("div", _hoisted_5, [_createVNode($setup["Callout"], {
+				theme: "orange",
+				label: "Microphone permission required",
+				"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:99:9"
+			}, {
+				default: _withCtx(() => [..._cache[2] || (_cache[2] = [_createElementVNode(
+					"div",
+					{
+						class: "text-sm",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:100:11"
+					},
+					" The app doesn't have permission to access your microphone. Please grant microphone access in your system settings to enable audio input. ",
+					-1
+					/* CACHED */
+				)])]),
+				_: 1
+			})])) : _createCommentVNode("v-if", true)
+		]),
+		$setup.hasAutoSendControl ? (_openBlock(), _createElementBlock("div", _hoisted_6, [_createVNode($setup["FieldCheckbox"], {
+			modelValue: $setup.autoSendEnabled,
+			"onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => $setup.autoSendEnabled = $event),
+			label: "Auto send",
+			description: "Send transcribed text to chat automatically.",
+			"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:109:7"
+		}, null, 8, ["modelValue"])])) : _createCommentVNode("v-if", true),
+		_createCommentVNode(" Always-visible device selector "),
+		_createElementVNode("div", _hoisted_7, [_createVNode($setup["FieldCombobox"], {
+			modelValue: $setup.selectedAudioInput,
+			"onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => $setup.selectedAudioInput = $event),
+			label: "Input device",
+			description: "Select the microphone you want to use.",
+			options: $setup.audioInputs.map((device) => ({
+				label: device.label || "Unknown Device",
+				value: device.deviceId
+			})),
+			placeholder: "Select microphone",
+			layout: "vertical",
+			"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue:118:7"
+		}, null, 8, ["modelValue", "options"])])
+	]);
+}
+_sfc_main.__hmrId = "bdcd8000";
+typeof __VUE_HMR_RUNTIME__ !== "undefined" && __VUE_HMR_RUNTIME__.createRecord(_sfc_main.__hmrId, _sfc_main);
+import.meta.hot.on("file-changed", ({ file }) => {
+	__VUE_HMR_RUNTIME__.CHANGED_FILE = file;
+});
+import.meta.hot.accept((mod) => {
+	if (!mod) return;
+	const { default: updated, _rerender_only } = mod;
+	if (_rerender_only) {
+		__VUE_HMR_RUNTIME__.rerender(updated.__hmrId, updated.render);
+	} else {
+		__VUE_HMR_RUNTIME__.reload(updated.__hmrId, updated);
+	}
+});
+import _export_sfc from "/@id/__x00__plugin-vue:export-helper";
+export default /* @__PURE__ */ _export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/dialogs/audio-input/hearing-config.vue"]]);
+
+//# sourceMappingURL=data:application/json;base64,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SUFBUyxPQUFNO0lBQWlDLG9CQUFpQjs7NEJBSXhFLCtCQUhOO0tBR007S0FBQTtNQUhELE9BQU07TUFBVSxvQkFBaUI7O0tBQWlHO0tBR3ZJOztLQUFBOzs7O0VBS0ssMkNBQVgsb0JBTU0sT0FOTixZQU1NLENBTEosYUFJRTtlQUhTO2dFQUFBLHlCQUFlO0dBQ3hCLE9BQU07R0FDTixhQUFZO0dBQStDLG9CQUFpQjs7RUFJaEYsdURBQXVDO0VBQ3ZDLG9CQVNNLE9BVE4sWUFTTSxDQVJKLGFBT0U7ZUFOUztnRUFBQSw0QkFBa0I7R0FDM0IsT0FBTTtHQUNOLGFBQVk7R0FDWCxTQUFTLG1CQUFZLEtBQUksWUFBTTtJQUFBLE9BQWMsT0FBTyxTQUFLO0lBQUEsT0FBNkIsT0FBTztJQUFRO0dBQ3RHLGFBQVk7R0FDWixRQUFPO0dBQVcsb0JBQWlCIiwibmFtZXMiOltdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJoZWFyaW5nLWNvbmZpZy52dWUiXSwic291cmNlc0NvbnRlbnQiOlsiPHNjcmlwdCBzZXR1cCBsYW5nPVwidHNcIj5cclxuaW1wb3J0IHsgQ2FsbG91dCwgRmllbGRDaGVja2JveCwgRmllbGRDb21ib2JveCB9IGZyb20gJ0Bwcm9qLWFpcmkvdWknXHJcbmltcG9ydCB7IHN0b3JlVG9SZWZzIH0gZnJvbSAncGluaWEnXHJcbmltcG9ydCB7IGNvbXB1dGVkIH0gZnJvbSAndnVlJ1xyXG5cclxuaW1wb3J0IHsgdXNlQXVkaW9BbmFseXplciwgdXNlQXVkaW9EZXZpY2UgfSBmcm9tICcuLi8uLi8uLi8uLi9jb21wb3NhYmxlcydcclxuaW1wb3J0IHsgdXNlU2V0dGluZ3NBdWRpb0RldmljZSB9IGZyb20gJy4uLy4uLy4uLy4uL3N0b3JlcydcclxuXHJcbmNvbnN0IHByb3BzID0gd2l0aERlZmF1bHRzKGRlZmluZVByb3BzPHtcclxuICBncmFudGVkPzogYm9vbGVhbiAvLyBwZXJtaXNzaW9uIHN0YXR1cyBvbiBPUyBsZXZlbFxyXG59PigpLCB7XHJcbiAgZ3JhbnRlZDogZmFsc2UsXHJcbn0pXHJcblxyXG5jb25zdCBkZXZpY2VTdG9yZSA9IHVzZVNldHRpbmdzQXVkaW9EZXZpY2UoKVxyXG5jb25zdCB7IGVuYWJsZWQsIHNlbGVjdGVkQXVkaW9JbnB1dCB9ID0gc3RvcmVUb1JlZnMoZGV2aWNlU3RvcmUpXHJcbmNvbnN0IHsgYXVkaW9JbnB1dHMsIHBlcm1pc3Npb25HcmFudGVkLCBhc2tQZXJtaXNzaW9uIH0gPSB1c2VBdWRpb0RldmljZSgpXHJcbmNvbnN0IHsgdm9sdW1lTGV2ZWwgfSA9IHVzZUF1ZGlvQW5hbHl6ZXIoKVxyXG5cclxuY29uc3QgYXV0b1NlbmQgPSBkZWZpbmVNb2RlbDxib29sZWFuIHwgdW5kZWZpbmVkPignYXV0b1NlbmQnKVxyXG5jb25zdCBoYXNBdXRvU2VuZENvbnRyb2wgPSBjb21wdXRlZCgoKSA9PiBhdXRvU2VuZC52YWx1ZSAhPT0gdW5kZWZpbmVkKVxyXG5jb25zdCBhdXRvU2VuZEVuYWJsZWQgPSBjb21wdXRlZCh7XHJcbiAgZ2V0OiAoKSA9PiBhdXRvU2VuZC52YWx1ZSA/PyBmYWxzZSxcclxuICBzZXQ6IHZhbHVlID0+IGF1dG9TZW5kLnZhbHVlID0gdmFsdWUsXHJcbn0pXHJcbmNvbnN0IGhlYXJpbmdUb2dnbGVMYWJlbCA9IGNvbXB1dGVkKCgpID0+IGVuYWJsZWQudmFsdWUgPyAnRGlzYWJsZSBtaWNyb3Bob25lIGlucHV0JyA6ICdFbmFibGUgbWljcm9waG9uZSBpbnB1dCcpXHJcbmNvbnN0IGhlYXJpbmdUb2dnbGVDbGFzcyA9IGNvbXB1dGVkKCgpID0+IFtcclxuICAnYWJzb2x1dGUgbGVmdC0xLzIgdG9wLTEvMiBncmlkIGgtMTYgdy0xNiBwbGFjZS1pdGVtcy1jZW50ZXIgb3V0bGluZS1ub25lIC10cmFuc2xhdGUteC0xLzIgLXRyYW5zbGF0ZS15LTEvMicsXHJcbiAgJ3JvdW5kZWQtMnhsIGJhY2tkcm9wLWJsdXItbWQnLFxyXG4gICd0cmFuc2l0aW9uLWNvbG9ycyBkdXJhdGlvbi0xNTAgZWFzZS1pbi1vdXQnLFxyXG4gICdmb2N1cy12aXNpYmxlOnJpbmctMiBmb2N1cy12aXNpYmxlOnJpbmctcHJpbWFyeS00MDAvNDAnLFxyXG4gICdhY3RpdmU6c2NhbGUtOTUnLFxyXG4gIGVuYWJsZWQudmFsdWVcclxuICAgID8gW1xyXG4gICAgICAgICdib3JkZXItMiBib3JkZXItc29saWQgYm9yZGVyLXByaW1hcnktMzAwLzMwIGJnLXByaW1hcnktMjAwLzkwfjQ1IHRleHQtcHJpbWFyeS05NTAnLFxyXG4gICAgICAgICdob3Zlcjpib3JkZXItcHJpbWFyeS00MDAvNTUgYWN0aXZlOmJvcmRlci1wcmltYXJ5LTUwMC82MCcsXHJcbiAgICAgICAgJ2Rhcms6Ym9yZGVyLXByaW1hcnktNDAwLzMwIGRhcms6YmctcHJpbWFyeS01MDAvNzV+NDUqOTAgZGFyazp0ZXh0LXByaW1hcnktNTAnLFxyXG4gICAgICAgICdkYXJrOmhvdmVyOmJvcmRlci1wcmltYXJ5LTMwMC81NSBkYXJrOmFjdGl2ZTpib3JkZXItcHJpbWFyeS0zMDAvNzAnLFxyXG4gICAgICBdXHJcbiAgICA6IFtcclxuICAgICAgICAnYm9yZGVyLTIgYm9yZGVyLXNvbGlkIGJvcmRlci1uZXV0cmFsLTMwMC80MCBiZy1uZXV0cmFsLTEwMC83MCB0ZXh0LW5ldXRyYWwtNzAwJyxcclxuICAgICAgICAnaG92ZXI6Ym9yZGVyLW5ldXRyYWwtNDAwLzU1IGFjdGl2ZTpib3JkZXItbmV1dHJhbC01MDAvNjAnLFxyXG4gICAgICAgICdkYXJrOmJvcmRlci1uZXV0cmFsLTcwMC80NSBkYXJrOmJnLW5ldXRyYWwtODAwLzcwIGRhcms6dGV4dC1uZXV0cmFsLTIwMCcsXHJcbiAgICAgICAgJ2Rhcms6aG92ZXI6Ym9yZGVyLW5ldXRyYWwtNjAwLzY1IGRhcms6YWN0aXZlOmJvcmRlci1uZXV0cmFsLTUwMC83MCcsXHJcbiAgICAgIF0sXHJcbl0pXHJcbmNvbnN0IHJpbmdFbmFibGVkQ2xhc3MgPSBjb21wdXRlZCgoKSA9PiBlbmFibGVkLnZhbHVlXHJcbiAgPyAnYmctcHJpbWFyeS01MDAvMTUgZGFyazpiZy1wcmltYXJ5LTYwMC8yMCdcclxuICA6ICdiZy1uZXV0cmFsLTMwMC8yMCBkYXJrOmJnLW5ldXRyYWwtNzAwLzIwJyxcclxuKVxyXG5cclxuZnVuY3Rpb24gdG9nZ2xlSGVhcmluZ0VuYWJsZWQoKSB7XHJcbiAgaWYgKGVuYWJsZWQudmFsdWUpXHJcbiAgICByZXR1cm4gZW5hYmxlZC52YWx1ZSA9IGZhbHNlXHJcbiAgaWYgKHNlbGVjdGVkQXVkaW9JbnB1dC52YWx1ZSAhPT0gJycgJiYgcGVybWlzc2lvbkdyYW50ZWQudmFsdWUpXHJcbiAgICByZXR1cm4gZW5hYmxlZC52YWx1ZSA9IHRydWVcclxuICBpZiAoIXBlcm1pc3Npb25HcmFudGVkLnZhbHVlKVxyXG4gICAgcmV0dXJuIGFza1Blcm1pc3Npb24oKS50aGVuKCgpID0+IHsgZW5hYmxlZC52YWx1ZSA9IHBlcm1pc3Npb25HcmFudGVkLnZhbHVlIH0pXHJcbn1cclxuPC9zY3JpcHQ+XHJcblxyXG48dGVtcGxhdGU+XHJcbiAgPGRpdiBjbGFzcz1cInNwYWNlLXktMlwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvZGlhbG9ncy9hdWRpby1pbnB1dC9oZWFyaW5nLWNvbmZpZy52dWU6NjM6M1wiPlxyXG4gICAgPCEtLSBNaW5pbWFsIG1pYyBjb250cm9sIHdpdGggYW5pbWF0ZWQgcmluZ3MgLS0+XHJcbiAgICA8ZGl2IGNsYXNzPVwiZmxleCBmbGV4LWNvbCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcHktMlwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvZGlhbG9ncy9hdWRpby1pbnB1dC9oZWFyaW5nLWNvbmZpZy52dWU6NjU6NVwiPlxyXG4gICAgICA8ZGl2IGNsYXNzPVwicmVsYXRpdmUgaC0yOCB3LTI4IHNlbGVjdC1ub25lXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9kaWFsb2dzL2F1ZGlvLWlucHV0L2hlYXJpbmctY29uZmlnLnZ1ZTo2Njo3XCI+XHJcbiAgICAgICAgPCEtLSBSaW5ncyAoc2NhbGUgKyBvcGFjaXR5IGZvbGxvdyB2b2x1bWUpIC0tPlxyXG4gICAgICAgIDxkaXZcclxuICAgICAgICAgIGNsYXNzPVwiYWJzb2x1dGUgbGVmdC0xLzIgdG9wLTEvMiBoLTIwIHctMjAgcm91bmRlZC1mdWxsIHRyYW5zaXRpb24tYWxsIGR1cmF0aW9uLTE1MCAtdHJhbnNsYXRlLXgtMS8yIC10cmFuc2xhdGUteS0xLzJcIlxyXG4gICAgICAgICAgOnN0eWxlPVwieyB0cmFuc2Zvcm06IGB0cmFuc2xhdGUoLTUwJSwgLTUwJSkgc2NhbGUoJHsxICsgKHZvbHVtZUxldmVsIC8gMTAwKSAqIDAuMzV9KWAsIG9wYWNpdHk6IFN0cmluZygwLjI1ICsgKHZvbHVtZUxldmVsIC8gMTAwKSAqIDAuMjUpIH1cIlxyXG4gICAgICAgICAgOmNsYXNzPVwicmluZ0VuYWJsZWRDbGFzc1wiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvZGlhbG9ncy9hdWRpby1pbnB1dC9oZWFyaW5nLWNvbmZpZy52dWU6Njg6OVwiXHJcbiAgICAgICAgLz5cclxuICAgICAgICA8ZGl2XHJcbiAgICAgICAgICBjbGFzcz1cImFic29sdXRlIGxlZnQtMS8yIHRvcC0xLzIgaC0yNCB3LTI0IHJvdW5kZWQtZnVsbCB0cmFuc2l0aW9uLWFsbCBkdXJhdGlvbi0yMDAgLXRyYW5zbGF0ZS14LTEvMiAtdHJhbnNsYXRlLXktMS8yXCJcclxuICAgICAgICAgIDpzdHlsZT1cInsgdHJhbnNmb3JtOiBgdHJhbnNsYXRlKC01MCUsIC01MCUpIHNjYWxlKCR7MS4yICsgKHZvbHVtZUxldmVsIC8gMTAwKSAqIDAuNTV9KWAsIG9wYWNpdHk6IFN0cmluZygwLjE1ICsgKHZvbHVtZUxldmVsIC8gMTAwKSAqIDAuMikgfVwiXHJcbiAgICAgICAgICA6Y2xhc3M9XCJlbmFibGVkID8gJ2JnLXByaW1hcnktNTAwLzEwIGRhcms6YmctcHJpbWFyeS02MDAvMTUnIDogJ2JnLW5ldXRyYWwtMzAwLzEwIGRhcms6YmctbmV1dHJhbC03MDAvMTAnXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9kaWFsb2dzL2F1ZGlvLWlucHV0L2hlYXJpbmctY29uZmlnLnZ1ZTo3Mzo5XCJcclxuICAgICAgICAvPlxyXG4gICAgICAgIDxkaXZcclxuICAgICAgICAgIGNsYXNzPVwiYWJzb2x1dGUgbGVmdC0xLzIgdG9wLTEvMiBoLTI4IHctMjggcm91bmRlZC1mdWxsIHRyYW5zaXRpb24tYWxsIGR1cmF0aW9uLTMwMCAtdHJhbnNsYXRlLXgtMS8yIC10cmFuc2xhdGUteS0xLzJcIlxyXG4gICAgICAgICAgOnN0eWxlPVwieyB0cmFuc2Zvcm06IGB0cmFuc2xhdGUoLTUwJSwgLTUwJSkgc2NhbGUoJHsxLjUgKyAodm9sdW1lTGV2ZWwgLyAxMDApICogMC44fSlgLCBvcGFjaXR5OiBTdHJpbmcoMC4wOCArICh2b2x1bWVMZXZlbCAvIDEwMCkgKiAwLjE1KSB9XCJcclxuICAgICAgICAgIDpjbGFzcz1cImVuYWJsZWQgPyAnYmctcHJpbWFyeS01MDAvNSBkYXJrOmJnLXByaW1hcnktNjAwLzEwJyA6ICdiZy1uZXV0cmFsLTMwMC81IGRhcms6YmctbmV1dHJhbC03MDAvNSdcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2RpYWxvZ3MvYXVkaW8taW5wdXQvaGVhcmluZy1jb25maWcudnVlOjc4OjlcIlxyXG4gICAgICAgIC8+XHJcblxyXG4gICAgICAgIDwhLS0gTWljIGljb24gYnV0dG9uIC0tPlxyXG4gICAgICAgIDxidXR0b25cclxuICAgICAgICAgIDphcmlhLWxhYmVsPVwiaGVhcmluZ1RvZ2dsZUxhYmVsXCJcclxuICAgICAgICAgIDp0aXRsZT1cImhlYXJpbmdUb2dnbGVMYWJlbFwiXHJcbiAgICAgICAgICA6Y2xhc3M9XCJoZWFyaW5nVG9nZ2xlQ2xhc3NcIlxyXG4gICAgICAgICAgQGNsaWNrPVwidG9nZ2xlSGVhcmluZ0VuYWJsZWRcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2RpYWxvZ3MvYXVkaW8taW5wdXQvaGVhcmluZy1jb25maWcudnVlOjg1OjlcIlxyXG4gICAgICAgID5cclxuICAgICAgICAgIDxkaXYgOmNsYXNzPVwiZW5hYmxlZCA/ICdpLXBoOm1pY3JvcGhvbmUnIDogJ2ktcGg6bWljcm9waG9uZS1zbGFzaCdcIiBjbGFzcz1cImgtNiB3LTZcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2RpYWxvZ3MvYXVkaW8taW5wdXQvaGVhcmluZy1jb25maWcudnVlOjkxOjExXCIgLz5cclxuICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgPC9kaXY+XHJcblxyXG4gICAgICA8ZGl2IGNsYXNzPVwibXQtMyBoLTFcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2RpYWxvZ3MvYXVkaW8taW5wdXQvaGVhcmluZy1jb25maWcudnVlOjk1OjdcIiAvPlxyXG5cclxuICAgICAgPCEtLSBQZXJtaXNzaW9uIGNhbGxvdXQgd2hlbiBuZWVkZWQgKEVsZWN0cm9uIGNvbnRleHRzKSAtLT5cclxuICAgICAgPGRpdiB2LWlmPVwiIXByb3BzLmdyYW50ZWRcIiBjbGFzcz1cIm10LTMgdy1mdWxsXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9kaWFsb2dzL2F1ZGlvLWlucHV0L2hlYXJpbmctY29uZmlnLnZ1ZTo5ODo3XCI+XHJcbiAgICAgICAgPENhbGxvdXQgdGhlbWU9XCJvcmFuZ2VcIiBsYWJlbD1cIk1pY3JvcGhvbmUgcGVybWlzc2lvbiByZXF1aXJlZFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvZGlhbG9ncy9hdWRpby1pbnB1dC9oZWFyaW5nLWNvbmZpZy52dWU6OTk6OVwiPlxyXG4gICAgICAgICAgPGRpdiBjbGFzcz1cInRleHQtc21cIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2RpYWxvZ3MvYXVkaW8taW5wdXQvaGVhcmluZy1jb25maWcudnVlOjEwMDoxMVwiPlxyXG4gICAgICAgICAgICBUaGUgYXBwIGRvZXNuJ3QgaGF2ZSBwZXJtaXNzaW9uIHRvIGFjY2VzcyB5b3VyIG1pY3JvcGhvbmUuXHJcbiAgICAgICAgICAgIFBsZWFzZSBncmFudCBtaWNyb3Bob25lIGFjY2VzcyBpbiB5b3VyIHN5c3RlbSBzZXR0aW5ncyB0byBlbmFibGUgYXVkaW8gaW5wdXQuXHJcbiAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICA8L0NhbGxvdXQ+XHJcbiAgICAgIDwvZGl2PlxyXG4gICAgPC9kaXY+XHJcblxyXG4gICAgPGRpdiB2LWlmPVwiaGFzQXV0b1NlbmRDb250cm9sXCIgY2xhc3M9XCJtdC0zXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9kaWFsb2dzL2F1ZGlvLWlucHV0L2hlYXJpbmctY29uZmlnLnZ1ZToxMDg6NVwiPlxyXG4gICAgICA8RmllbGRDaGVja2JveFxyXG4gICAgICAgIHYtbW9kZWw9XCJhdXRvU2VuZEVuYWJsZWRcIlxyXG4gICAgICAgIGxhYmVsPVwiQXV0byBzZW5kXCJcclxuICAgICAgICBkZXNjcmlwdGlvbj1cIlNlbmQgdHJhbnNjcmliZWQgdGV4dCB0byBjaGF0IGF1dG9tYXRpY2FsbHkuXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9kaWFsb2dzL2F1ZGlvLWlucHV0L2hlYXJpbmctY29uZmlnLnZ1ZToxMDk6N1wiXHJcbiAgICAgIC8+XHJcbiAgICA8L2Rpdj5cclxuXHJcbiAgICA8IS0tIEFsd2F5cy12aXNpYmxlIGRldmljZSBzZWxlY3RvciAtLT5cclxuICAgIDxkaXYgY2xhc3M9XCJtdC0zIHctZnVsbFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvZGlhbG9ncy9hdWRpby1pbnB1dC9oZWFyaW5nLWNvbmZpZy52dWU6MTE3OjVcIj5cclxuICAgICAgPEZpZWxkQ29tYm9ib3hcclxuICAgICAgICB2LW1vZGVsPVwic2VsZWN0ZWRBdWRpb0lucHV0XCJcclxuICAgICAgICBsYWJlbD1cIklucHV0IGRldmljZVwiXHJcbiAgICAgICAgZGVzY3JpcHRpb249XCJTZWxlY3QgdGhlIG1pY3JvcGhvbmUgeW91IHdhbnQgdG8gdXNlLlwiXHJcbiAgICAgICAgOm9wdGlvbnM9XCJhdWRpb0lucHV0cy5tYXAoZGV2aWNlID0+ICh7IGxhYmVsOiBkZXZpY2UubGFiZWwgfHwgJ1Vua25vd24gRGV2aWNlJywgdmFsdWU6IGRldmljZS5kZXZpY2VJZCB9KSlcIlxyXG4gICAgICAgIHBsYWNlaG9sZGVyPVwiU2VsZWN0IG1pY3JvcGhvbmVcIlxyXG4gICAgICAgIGxheW91dD1cInZlcnRpY2FsXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9kaWFsb2dzL2F1ZGlvLWlucHV0L2hlYXJpbmctY29uZmlnLnZ1ZToxMTg6N1wiXHJcbiAgICAgIC8+XHJcbiAgICA8L2Rpdj5cclxuICA8L2Rpdj5cclxuPC90ZW1wbGF0ZT5cclxuIl0sImZpbGUiOiJDOi9Vc2Vycy9BZG1pbmlzdHJhdG9yL2FpcmktYXBwL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9kaWFsb2dzL2F1ZGlvLWlucHV0L2hlYXJpbmctY29uZmlnLnZ1ZSJ9

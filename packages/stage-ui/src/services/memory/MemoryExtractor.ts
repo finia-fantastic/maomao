@@ -19,25 +19,25 @@ import type { MemoryExtractionResult, MemoryType } from './types'
  */
 const SAVE_SIGNALS: Array<{ pattern: RegExp, type: MemoryType, priority: number }> = [
   // Chinese explicit remember commands
-  { pattern: /(?:记住|记下|记住这个|帮我记住|记住我说|写下来|记着)(?:，|：|:)?(.+)/i, type: 'episode', priority: 10 },
+  { pattern: /(?:记住|记下|记住这个|帮我记住|记住我说|写下来|记着)[，：:]?(.+)/, type: 'episode', priority: 10 },
   // English explicit remember commands
-  { pattern: /(?:remember|note this|save this|keep this in memory)(?:\s|:|,)?(.+)/i, type: 'episode', priority: 10 },
+  { pattern: /(?:remember|note this|save this|keep this in memory)[\s:,]?(.+)/i, type: 'episode', priority: 10 },
 
   // Preferences
-  { pattern: /我(?:喜欢|不喜欢|讨厌|偏好|习惯|爱|常用)/i, type: 'preference', priority: 8 },
+  { pattern: /我(?:喜欢|不喜欢|讨厌|偏好|习惯|爱|常用)/, type: 'preference', priority: 8 },
   { pattern: /I (?:like|love|prefer|hate|dislike|enjoy)/i, type: 'preference', priority: 8 },
   { pattern: /(?:我的|my)\s*(?:偏好|preference|习惯|habit)/i, type: 'preference', priority: 9 },
 
   // Project/Goal related
   { pattern: /我的(?:项目|计划|目标|project|goal|plan)/i, type: 'project', priority: 7 },
   { pattern: /(?:正在做|在做|working on|working toward)/i, type: 'project', priority: 7 },
-  { pattern: /(?:想做一个|想开发|想写|要做|准备做)/i, type: 'project', priority: 7 },
+  { pattern: /(?:想做一个|想开发|想写|要做|准备做)/, type: 'project', priority: 7 },
 
   // Decisions
   { pattern: /(?:决定了|决定|选择|确定用|采用|decision|decided|chose)/i, type: 'decision', priority: 8 },
 
   // Corrections
-  { pattern: /(?:不对|错了|不是这样|纠正|修正|应该是|实际上是|我说的是|我的意思是)/i, type: 'correction', priority: 10 },
+  { pattern: /(?:不对|错了|不是这样|纠正|修正|应该是|实际上是|我说的是|我的意思是)/, type: 'correction', priority: 10 },
   { pattern: /(?:that's wrong|not correct|actually|I meant|correction|that's not right|my mistake)/i, type: 'correction', priority: 10 },
 
   // Commitments
@@ -52,7 +52,7 @@ const SAVE_SIGNALS: Array<{ pattern: RegExp, type: MemoryType, priority: number 
  */
 const NO_SAVE_SIGNALS: Array<{ pattern: RegExp }> = [
   // Small talk
-  { pattern: /^(?:hi|hello|hey|你好|嗨|哈喽|喂|在吗|在不在|早|晚安|下午好)$/i },
+  { pattern: /^(?:hi|hello|hey|你好|[嗨喂早]|哈喽|在吗|在不在|晚安|下午好)$/i },
   { pattern: /^(?:ok|好的|嗯|哦|知道了|明白了|got it|okay|thanks|谢谢|thank you)$/i },
 
   // One-off queries
@@ -61,7 +61,7 @@ const NO_SAVE_SIGNALS: Array<{ pattern: RegExp }> = [
 
   // Temporary/this-session-only
   { pattern: /(?:暂时|临时|这次|就现在|just now|for now|this time)/i },
-  { pattern: /这个只在今天有效/i },
+  { pattern: /这个只在今天有效/ },
 
   // Credentials / secrets (caught by MemoryPrivacyService too)
   { pattern: /(?:密码|password|token|api.?key|secret|密钥|验证码)/i },
@@ -163,7 +163,7 @@ export function evaluateForMemory(
  */
 function hasPersonalContent(text: string): boolean {
   const personalIndicators = [
-    /我(?:是|有|的|想|要|觉得|认为)/i,
+    /我(?:[是有的想要]|觉得|认为)/,
     /I (?:am|have|want|need|think|believe|feel|work)/i,
     /my\s+\w+/i,
   ]
@@ -177,8 +177,8 @@ function hasPersonalContent(text: string): boolean {
 function generateMemoryKey(type: MemoryType, content: string): string {
   const normalized = content
     .replace(/\s+/g, ' ')
-    .replace(/[，。！？；：""''、（）《》【】…]/g, '')
-    .replace(/[,!?;:'"()\[\]{}<>.]/g, '')
+    .replace(/[，。！？；："'、（）《》【】…]/g, '')
+    .replace(/[,!?;:'"()[\]{}<>.]/g, '')
     .trim()
     .slice(0, 60)
     .toLowerCase()

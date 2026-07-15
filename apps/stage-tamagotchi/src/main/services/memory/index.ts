@@ -80,8 +80,13 @@ export function createMemoryService(context: MainContext): void {
 
   defineInvokeHandler(context, memorySearch, async (payload) => {
     return searchMemories(
-      db, payload.userId, payload.query, payload.projectId, payload.type,
-      payload.limit, payload.offset,
+      db,
+      payload.userId,
+      payload.query,
+      payload.projectId,
+      payload.type,
+      payload.limit,
+      payload.offset,
     )
   })
 

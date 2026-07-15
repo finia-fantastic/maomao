@@ -23,16 +23,16 @@ export interface MemoryRecord {
   metadata: Record<string, unknown> | null
 }
 
-export type MemoryType =
-  | 'profile'
-  | 'preference'
-  | 'project'
-  | 'decision'
-  | 'relationship'
-  | 'episode'
-  | 'commitment'
-  | 'correction'
-  | 'temporary'
+export type MemoryType
+  = | 'profile'
+    | 'preference'
+    | 'project'
+    | 'decision'
+    | 'relationship'
+    | 'episode'
+    | 'commitment'
+    | 'correction'
+    | 'temporary'
 
 export type MemoryStatus = 'active' | 'superseded' | 'expired' | 'deleted'
 

@@ -1,0 +1,529 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue");/* Injection by vite-plugin-vue-inspector Start */
+import { createElementVNode as __createElementVNode,createElementBlock as __createElementBlock } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d"
+function _interopVNode(vnode) {
+  if (vnode && vnode.props && 'data-v-inspector' in vnode.props) {
+    const data = vnode.props['data-v-inspector']
+    delete vnode.props['data-v-inspector']
+    Object.defineProperty(vnode.props, '__v_inspector', { value: data, enumerable: false })
+  }
+  return vnode
+}
+function _createElementVNode(...args) { return _interopVNode(__createElementVNode(...args)) }
+function _createElementBlock(...args) { return _interopVNode(__createElementBlock(...args)) }
+/* Injection by vite-plugin-vue-inspector End */
+import { defineComponent as _defineComponent } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import useEmblaCarousel from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/embla-carousel-vue.js?v=6c17d38d";
+import { computed, onBeforeUnmount, ref, watch } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import { useI18n } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue-i18n.js?v=6c17d38d";
+import { useRouter } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue-router.js?v=6c17d38d";
+import { useAuthStore } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/stores/auth.ts";
+import { getPromoBannerFallbackLabelKey, promoBannerVisuals } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/hologram/promo-banner.ts";
+import { usePromoBannerLayout } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/hologram/use-promo-banner-layout.ts";
+const _sfc_main = /* @__PURE__ */ _defineComponent({
+	__name: "holo-coupon",
+	setup(__props, { expose: __expose }) {
+		__expose();
+		const router = useRouter();
+		const { locale, t } = useI18n();
+		const authStore = useAuthStore();
+		const isVisible = ref(false);
+		function translateBannerItem(key) {
+			const prefix = `stage.promo-banner.items.${key}`;
+			return {
+				watermark: t(`${prefix}.watermark`),
+				title: t(`${prefix}.title`),
+				eventName: t(`${prefix}.eventName`),
+				date: t(`${prefix}.date`),
+				reward: t(`${prefix}.reward`),
+				cta: t(`${prefix}.cta`)
+			};
+		}
+		const items = computed(() => promoBannerVisuals.map((item) => ({
+			...item,
+			...translateBannerItem(item.key)
+		})));
+		const currentIndex = ref(0);
+		let autoplayTimer;
+		const [_emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+		function stopAutoplay() {
+			if (autoplayTimer !== undefined) {
+				clearInterval(autoplayTimer);
+				autoplayTimer = undefined;
+			}
+		}
+		function startAutoplay() {
+			stopAutoplay();
+			autoplayTimer = setInterval(() => {
+				emblaApi.value?.goToNext();
+			}, 5e3);
+		}
+		watch(emblaApi, (api, _, onCleanup) => {
+			if (!api) {
+				return;
+			}
+			const syncIndex = () => {
+				currentIndex.value = api.selectedSnap();
+			};
+			syncIndex();
+			api.on("select", syncIndex);
+			const rootNode = api.rootNode();
+			rootNode.addEventListener("mouseenter", stopAutoplay);
+			rootNode.addEventListener("mouseleave", startAutoplay);
+			startAutoplay();
+			onCleanup(() => {
+				api.off?.("select", syncIndex);
+				rootNode.removeEventListener("mouseenter", stopAutoplay);
+				rootNode.removeEventListener("mouseleave", startAutoplay);
+				stopAutoplay();
+			});
+		}, { immediate: true });
+		function scrollTo(index) {
+			if (emblaApi.value) {
+				emblaApi.value.goTo(index);
+				startAutoplay();
+			}
+		}
+		function handlePromoBannerAction(action) {
+			close();
+			if (action.type === "login") {
+				authStore.needsLogin = true;
+				return;
+			}
+			void router.push(action.to);
+		}
+		function close() {
+			isVisible.value = false;
+			stopAutoplay();
+		}
+		function open() {
+			isVisible.value = true;
+			startAutoplay();
+		}
+		const activeItem = computed(() => items.value[currentIndex.value] ?? items.value[0]);
+		const { buttonClass, descriptionClass, metaClass, titleClass, watermarkClass } = usePromoBannerLayout(locale);
+		onBeforeUnmount(() => {
+			stopAutoplay();
+		});
+		const __returned__ = {
+			router,
+			locale,
+			t,
+			authStore,
+			isVisible,
+			translateBannerItem,
+			items,
+			currentIndex,
+			get autoplayTimer() {
+				return autoplayTimer;
+			},
+			set autoplayTimer(v) {
+				autoplayTimer = v;
+			},
+			_emblaRef,
+			emblaApi,
+			stopAutoplay,
+			startAutoplay,
+			scrollTo,
+			handlePromoBannerAction,
+			close,
+			open,
+			activeItem,
+			buttonClass,
+			descriptionClass,
+			metaClass,
+			titleClass,
+			watermarkClass,
+			get getPromoBannerFallbackLabelKey() {
+				return getPromoBannerFallbackLabelKey;
+			}
+		};
+		Object.defineProperty(__returned__, "__isScriptSetup", {
+			enumerable: false,
+			value: true
+		});
+		return __returned__;
+	}
+});
+import {  normalizeClass as _normalizeClass, openBlock as _openBlock,  createCommentVNode as _createCommentVNode, renderList as _renderList, Fragment as _Fragment, toDisplayString as _toDisplayString } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+const _hoisted_1 = {
+	key: 0,
+	class: "fixed bottom-10 left-6 z-50 <md:hidden",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:127:3"
+};
+const _hoisted_2 = {
+	key: 1,
+	class: "pointer-events-auto relative flex flex-col items-start",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:147:5"
+};
+const _hoisted_3 = {
+	class: /* @__PURE__ */ _normalizeClass(["relative h-60 w-108 overflow-hidden rounded-3xl border border-white/8 bg-neutral-900/86 shadow-2xl backdrop-blur-xl", "ring-1 ring-black/10"]),
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:148:7"
+};
+const _hoisted_4 = {
+	ref: "_emblaRef",
+	class: "embla h-full w-full",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:168:9"
+};
+const _hoisted_5 = {
+	class: "embla__container h-full",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:169:11"
+};
+const _hoisted_6 = {
+	class: "absolute inset-y-0 left-0 w-78 px-4 py-4",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:175:15"
+};
+const _hoisted_7 = {
+	class: "absolute left-5 top-4 z-0 select-none",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:176:17"
+};
+const _hoisted_8 = {
+	class: "relative z-10 h-full flex flex-col pr-2",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:182:17"
+};
+const _hoisted_9 = { "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:185:21" };
+const _hoisted_10 = {
+	class: "mt-3 space-y-1.5",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:196:19"
+};
+const _hoisted_11 = { "data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:199:23" };
+const _hoisted_12 = ["onClick"];
+const _hoisted_13 = {
+	class: "absolute inset-y-3 right-3 w-23 overflow-hidden border border-white/10 rounded-2xl bg-white/5",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:217:15"
+};
+const _hoisted_14 = ["src", "alt"];
+const _hoisted_15 = {
+	class: "absolute bottom-5 left-4 text-[10px] text-white/70 font-700 tracking-[0.3em] uppercase",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:236:19"
+};
+const _hoisted_16 = {
+	class: "absolute bottom-3.5 right-4 z-30 flex items-center gap-2",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:248:9"
+};
+const _hoisted_17 = {
+	class: "text-[11px] text-white/42 font-600",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:249:11"
+};
+const _hoisted_18 = {
+	class: "flex gap-1.5",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:250:11"
+};
+const _hoisted_19 = ["onClick"];
+function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+	return false ? (_openBlock(), _createElementBlock("div", _hoisted_1, [!$setup.isVisible ? (_openBlock(), _createElementBlock("button", {
+		key: 0,
+		class: _normalizeClass([
+			"pointer-events-auto max-h-[10lh] min-h-[1lh]",
+			"bg-neutral-100 dark:bg-neutral-800",
+			"text-lg text-neutral-500 dark:text-neutral-400",
+			"flex items-center justify-center rounded-md p-2 outline-none",
+			"transition-colors transition-transform active:scale-95"
+		]),
+		title: "Open promo banner",
+		type: "button",
+		onClick: $setup.open,
+		"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:131:5"
+	}, [..._cache[0] || (_cache[0] = [_createElementVNode(
+		"div",
+		{
+			class: "i-solar:gift-bold-duotone",
+			"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:144:7"
+		},
+		null,
+		-1
+		/* CACHED */
+	)])])) : (_openBlock(), _createElementBlock("div", _hoisted_2, [_createElementVNode("div", _hoisted_3, [
+		_createElementVNode("button", {
+			class: _normalizeClass(["absolute right-3 top-3 z-30 h-8 w-8 flex items-center justify-center rounded-full", "text-white/55 transition-colors hover:bg-white/10 hover:text-white"]),
+			type: "button",
+			onClick: $setup.close,
+			"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:149:9"
+		}, [..._cache[1] || (_cache[1] = [_createElementVNode(
+			"div",
+			{
+				class: "i-lucide-x h-5 w-5",
+				"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:157:11"
+			},
+			null,
+			-1
+			/* CACHED */
+		)])]),
+		_createElementVNode(
+			"div",
+			{
+				class: _normalizeClass(["pointer-events-none absolute inset-0 bg-gradient-to-br", $setup.activeItem.accentClass]),
+				"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:160:9"
+			},
+			null,
+			2
+			/* CLASS */
+		),
+		_cache[9] || (_cache[9] = _createElementVNode(
+			"div",
+			{
+				class: "pointer-events-none absolute inset-y-0 right-28 w-px bg-white/8",
+				"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:166:9"
+			},
+			null,
+			-1
+			/* CACHED */
+		)),
+		_createElementVNode(
+			"div",
+			_hoisted_4,
+			[_createElementVNode("div", _hoisted_5, [(_openBlock(true), _createElementBlock(
+				_Fragment,
+				null,
+				_renderList($setup.items, (item, index) => {
+					return _openBlock(), _createElementBlock("div", {
+						key: index,
+						class: "embla__slide relative h-full min-w-0",
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:170:13"
+					}, [_createElementVNode("div", _hoisted_6, [_createElementVNode("div", _hoisted_7, [_createElementVNode(
+						"span",
+						{
+							class: _normalizeClass(["block text-white/8 leading-none uppercase", $setup.watermarkClass]),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:177:19"
+						},
+						_toDisplayString(item.watermark),
+						3
+						/* TEXT, CLASS */
+					)]), _createElementVNode("div", _hoisted_8, [
+						_createElementVNode(
+							"div",
+							{
+								class: _normalizeClass(["flex items-center gap-1.5 text-white/72", $setup.metaClass]),
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:183:19"
+							},
+							[_cache[2] || (_cache[2] = _createElementVNode(
+								"div",
+								{
+									class: "i-solar:calendar-mark-bold-duotone text-[13px] text-primary-200",
+									"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:184:21"
+								},
+								null,
+								-1
+								/* CACHED */
+							)), _createElementVNode(
+								"span",
+								_hoisted_9,
+								_toDisplayString(item.date),
+								1
+								/* TEXT */
+							)],
+							2
+							/* CLASS */
+						),
+						_createElementVNode(
+							"div",
+							{
+								class: _normalizeClass(["mt-3 text-white break-words", $setup.titleClass]),
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:188:19"
+							},
+							_toDisplayString(item.title),
+							3
+							/* TEXT, CLASS */
+						),
+						_createElementVNode(
+							"div",
+							{
+								class: _normalizeClass(["mt-2 text-white/68 break-words", $setup.descriptionClass]),
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:192:19"
+							},
+							_toDisplayString(item.eventName),
+							3
+							/* TEXT, CLASS */
+						),
+						_createElementVNode("div", _hoisted_10, [_createElementVNode(
+							"div",
+							{
+								class: _normalizeClass(["flex items-center gap-1.5 text-white/72", $setup.metaClass]),
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:197:21"
+							},
+							[_cache[3] || (_cache[3] = _createElementVNode(
+								"div",
+								{
+									class: "i-solar:gift-bold-duotone text-[13px] text-amber-300",
+									"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:198:23"
+								},
+								null,
+								-1
+								/* CACHED */
+							)), _createElementVNode(
+								"span",
+								_hoisted_11,
+								_toDisplayString(item.reward),
+								1
+								/* TEXT */
+							)],
+							2
+							/* CLASS */
+						)]),
+						_createElementVNode("button", {
+							class: _normalizeClass([
+								"mt-auto mb-1 w-fit rounded-full px-4 py-2 text-neutral-950 transition-transform active:scale-95",
+								$setup.buttonClass,
+								"bg-white shadow-[0_8px_24px_rgba(255,255,255,0.16)] hover:translate-y-[-1px]"
+							]),
+							type: "button",
+							onClick: ($event) => $setup.handlePromoBannerAction(item.action),
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:203:19"
+						}, _toDisplayString(item.cta), 11, _hoisted_12)
+					])]), _createElementVNode("div", _hoisted_13, [
+						item.image ? (_openBlock(), _createElementBlock("img", {
+							key: 0,
+							src: item.image,
+							alt: item.title,
+							class: "h-full w-full object-cover",
+							"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:218:17"
+						}, null, 8, _hoisted_14)) : (_openBlock(), _createElementBlock(
+							"div",
+							{
+								key: 1,
+								class: _normalizeClass(["relative h-full w-full overflow-hidden bg-gradient-to-br", item.fallbackClass]),
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:224:17"
+							},
+							[
+								_cache[4] || (_cache[4] = _createElementVNode(
+									"div",
+									{
+										class: "absolute left-4 top-4 h-10 w-10 rounded-2xl bg-white/12 blur-sm",
+										"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:231:19"
+									},
+									null,
+									-1
+									/* CACHED */
+								)),
+								_cache[5] || (_cache[5] = _createElementVNode(
+									"div",
+									{
+										class: "absolute right-3 top-3 h-14 w-14 rounded-full bg-amber-300/22 blur-md",
+										"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:232:19"
+									},
+									null,
+									-1
+									/* CACHED */
+								)),
+								_cache[6] || (_cache[6] = _createElementVNode(
+									"div",
+									{
+										class: "absolute inset-x-4 bottom-4 h-18 border border-white/12 rounded-[1.4rem] bg-black/18 backdrop-blur-sm",
+										"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:233:19"
+									},
+									null,
+									-1
+									/* CACHED */
+								)),
+								_createElementVNode(
+									"div",
+									{
+										class: _normalizeClass([
+											item.fallbackIcon,
+											item.fallbackIconClass,
+											"absolute left-5 top-5 text-2xl"
+										]),
+										"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:234:19"
+									},
+									null,
+									2
+									/* CLASS */
+								),
+								_createElementVNode(
+									"div",
+									{
+										class: _normalizeClass([
+											item.fallbackIcon,
+											item.fallbackIconClass,
+											"absolute bottom-7 right-4 text-4xl opacity-90"
+										]),
+										"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:235:19"
+									},
+									null,
+									2
+									/* CLASS */
+								),
+								_createElementVNode(
+									"div",
+									_hoisted_15,
+									_toDisplayString($setup.t($setup.getPromoBannerFallbackLabelKey(item.key))),
+									1
+									/* TEXT */
+								)
+							],
+							2
+							/* CLASS */
+						)),
+						_cache[7] || (_cache[7] = _createElementVNode(
+							"div",
+							{
+								class: "pointer-events-none absolute inset-0 from-neutral-950/55 via-transparent to-white/8 bg-gradient-to-t",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:241:17"
+							},
+							null,
+							-1
+							/* CACHED */
+						)),
+						_cache[8] || (_cache[8] = _createElementVNode(
+							"div",
+							{
+								class: "pointer-events-none absolute bottom-0 left-0 right-0 h-18 from-neutral-950/88 to-transparent bg-gradient-to-t",
+								"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:242:17"
+							},
+							null,
+							-1
+							/* CACHED */
+						))
+					])]);
+				}),
+				128
+				/* KEYED_FRAGMENT */
+			))])],
+			512
+			/* NEED_PATCH */
+		),
+		_createElementVNode("div", _hoisted_16, [_createElementVNode(
+			"span",
+			_hoisted_17,
+			_toDisplayString($setup.currentIndex + 1) + "/" + _toDisplayString($setup.items.length),
+			1
+			/* TEXT */
+		), _createElementVNode("div", _hoisted_18, [(_openBlock(true), _createElementBlock(
+			_Fragment,
+			null,
+			_renderList($setup.items, (_, index) => {
+				return _openBlock(), _createElementBlock("button", {
+					key: `dot-${index}`,
+					class: _normalizeClass(["h-2.5 rounded-full transition-all duration-300", $setup.currentIndex === index ? "w-5 bg-white" : "w-2.5 bg-white/30 hover:bg-white/50"]),
+					type: "button",
+					onClick: ($event) => $setup.scrollTo(index),
+					"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue:251:13"
+				}, null, 10, _hoisted_19);
+			}),
+			128
+			/* KEYED_FRAGMENT */
+		))])])
+	])]))])) : _createCommentVNode("v-if", true);
+}
+import "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue?vue&type=style&index=0&scoped=1eff75e7&lang.css";
+_sfc_main.__hmrId = "1eff75e7";
+typeof __VUE_HMR_RUNTIME__ !== "undefined" && __VUE_HMR_RUNTIME__.createRecord(_sfc_main.__hmrId, _sfc_main);
+import.meta.hot.on("file-changed", ({ file }) => {
+	__VUE_HMR_RUNTIME__.CHANGED_FILE = file;
+});
+import.meta.hot.accept((mod) => {
+	if (!mod) return;
+	const { default: updated, _rerender_only } = mod;
+	if (_rerender_only) {
+		__VUE_HMR_RUNTIME__.rerender(updated.__hmrId, updated.render);
+	} else {
+		__VUE_HMR_RUNTIME__.reload(updated.__hmrId, updated);
+	}
+});
+import _export_sfc from "/@id/__x00__plugin-vue:export-helper";
+export default /* @__PURE__ */ _export_sfc(_sfc_main, [
+	["render", _sfc_render],
+	["__scopeId", "data-v-1eff75e7"],
+	["__file", "C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/hologram/holo-coupon.vue"]
+]);
+
+//# sourceMappingURL=data:application/json;base64,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OztrQ0FFcEI7U0FBbUw7U0FBQTtVQUE5SyxPQUFNO1VBQWtFLG9CQUFpQjs7Ozs7O2tDQUM5RjtTQUF5TDtTQUFBO1VBQXBMLE9BQU07VUFBd0Usb0JBQWlCOzs7Ozs7a0NBQ3BHO1NBQXlOO1NBQUE7VUFBcE4sT0FBTTtVQUF3RyxvQkFBaUI7Ozs7OztRQUNwSTtTQUFrTTtTQUFBO1VBQTVMLE9BQUs7V0FBRyxLQUFLO1dBQWMsS0FBSztXQUFpQjtXQUFBO1VBQXFDLG9CQUFpQjs7Ozs7O1FBQzdHO1NBQWlOO1NBQUE7VUFBM00sT0FBSztXQUFHLEtBQUs7V0FBYyxLQUFLO1dBQWlCO1dBQUE7VUFBb0Qsb0JBQWlCOzs7Ozs7UUFDNUg7U0FFTTtTQUZOO1NBRU0saUJBREQsU0FBRSxzQ0FBK0IsS0FBSyxJQUFHO1NBQUE7Ozs7Ozs7Z0NBSWhEO09BQXdOO09BQUE7UUFBbk4sT0FBTTtRQUF1RyxvQkFBaUI7Ozs7OztnQ0FDbkk7T0FBaU87T0FBQTtRQUE1TixPQUFNO1FBQWdILG9CQUFpQjs7Ozs7Ozs7Ozs7Ozs7RUFNcEosb0JBY00sT0FkTixhQWNNLENBYko7R0FBcU07R0FBck07R0FBcU0saUJBQTdDLHNCQUFZLEtBQU8sTUFBQyxpQkFBRyxhQUFNLE9BQU07R0FBQTs7R0FBQSxFQUMzTCxvQkFXTSxPQVhOLGFBV00sb0JBVko7R0FTRTtHQUFBO0dBQUEsWUFScUIsZUFBYixHQUFHLFVBQUs7eUJBRGxCLG9CQVNFO0tBUEMsS0FBRyxPQUFTO0tBQ1osT0FBSyxtRUFBd0Ysd0JBQWlCLFFBQUs7S0FJcEgsTUFBSztLQUNKLFVBQUssV0FBRSxnQkFBUyxNQUFLO0tBQUcsb0JBQWlCIiwibmFtZXMiOltdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJob2xvLWNvdXBvbi52dWUiXSwic291cmNlc0NvbnRlbnQiOlsiPHNjcmlwdCBzZXR1cCBsYW5nPVwidHNcIj5cclxuaW1wb3J0IHR5cGUgeyBQcm9tb0Jhbm5lckFjdGlvbiwgUHJvbW9CYW5uZXJJdGVtLCBQcm9tb0Jhbm5lckl0ZW1LZXksIFByb21vQmFubmVyVmlzdWFsIH0gZnJvbSAnLi9wcm9tby1iYW5uZXInXHJcblxyXG5pbXBvcnQgdXNlRW1ibGFDYXJvdXNlbCBmcm9tICdlbWJsYS1jYXJvdXNlbC12dWUnXHJcblxyXG5pbXBvcnQgeyBjb21wdXRlZCwgb25CZWZvcmVVbm1vdW50LCByZWYsIHdhdGNoIH0gZnJvbSAndnVlJ1xyXG5pbXBvcnQgeyB1c2VJMThuIH0gZnJvbSAndnVlLWkxOG4nXHJcbmltcG9ydCB7IHVzZVJvdXRlciB9IGZyb20gJ3Z1ZS1yb3V0ZXInXHJcblxyXG5pbXBvcnQgeyB1c2VBdXRoU3RvcmUgfSBmcm9tICcuLi8uLi8uLi9zdG9yZXMvYXV0aCdcclxuaW1wb3J0IHsgZ2V0UHJvbW9CYW5uZXJGYWxsYmFja0xhYmVsS2V5LCBwcm9tb0Jhbm5lclZpc3VhbHMgfSBmcm9tICcuL3Byb21vLWJhbm5lcidcclxuaW1wb3J0IHsgdXNlUHJvbW9CYW5uZXJMYXlvdXQgfSBmcm9tICcuL3VzZS1wcm9tby1iYW5uZXItbGF5b3V0J1xyXG5cclxuY29uc3Qgcm91dGVyID0gdXNlUm91dGVyKClcclxuY29uc3QgeyBsb2NhbGUsIHQgfSA9IHVzZUkxOG4oKVxyXG5jb25zdCBhdXRoU3RvcmUgPSB1c2VBdXRoU3RvcmUoKVxyXG5jb25zdCBpc1Zpc2libGUgPSByZWYoZmFsc2UpXHJcblxyXG5mdW5jdGlvbiB0cmFuc2xhdGVCYW5uZXJJdGVtKGtleTogUHJvbW9CYW5uZXJJdGVtS2V5KTogUHJvbW9CYW5uZXJJdGVtIHtcclxuICBjb25zdCBwcmVmaXggPSBgc3RhZ2UucHJvbW8tYmFubmVyLml0ZW1zLiR7a2V5fWBcclxuXHJcbiAgcmV0dXJuIHtcclxuICAgIHdhdGVybWFyazogdChgJHtwcmVmaXh9LndhdGVybWFya2ApLFxyXG4gICAgdGl0bGU6IHQoYCR7cHJlZml4fS50aXRsZWApLFxyXG4gICAgZXZlbnROYW1lOiB0KGAke3ByZWZpeH0uZXZlbnROYW1lYCksXHJcbiAgICBkYXRlOiB0KGAke3ByZWZpeH0uZGF0ZWApLFxyXG4gICAgcmV3YXJkOiB0KGAke3ByZWZpeH0ucmV3YXJkYCksXHJcbiAgICBjdGE6IHQoYCR7cHJlZml4fS5jdGFgKSxcclxuICB9XHJcbn1cclxuXHJcbmNvbnN0IGl0ZW1zID0gY29tcHV0ZWQ8KFByb21vQmFubmVySXRlbSAmIFByb21vQmFubmVyVmlzdWFsKVtdPigoKSA9PlxyXG4gIHByb21vQmFubmVyVmlzdWFscy5tYXAoaXRlbSA9PiAoe1xyXG4gICAgLi4uaXRlbSxcclxuICAgIC4uLnRyYW5zbGF0ZUJhbm5lckl0ZW0oaXRlbS5rZXkpLFxyXG4gIH0pKSxcclxuKVxyXG5cclxuY29uc3QgY3VycmVudEluZGV4ID0gcmVmKDApXHJcbmxldCBhdXRvcGxheVRpbWVyOiBSZXR1cm5UeXBlPHR5cGVvZiBzZXRJbnRlcnZhbD4gfCB1bmRlZmluZWRcclxuXHJcbmNvbnN0IFtfZW1ibGFSZWYsIGVtYmxhQXBpXSA9IHVzZUVtYmxhQ2Fyb3VzZWwoeyBsb29wOiB0cnVlIH0pXHJcblxyXG5mdW5jdGlvbiBzdG9wQXV0b3BsYXkoKSB7XHJcbiAgaWYgKGF1dG9wbGF5VGltZXIgIT09IHVuZGVmaW5lZCkge1xyXG4gICAgY2xlYXJJbnRlcnZhbChhdXRvcGxheVRpbWVyKVxyXG4gICAgYXV0b3BsYXlUaW1lciA9IHVuZGVmaW5lZFxyXG4gIH1cclxufVxyXG5cclxuZnVuY3Rpb24gc3RhcnRBdXRvcGxheSgpIHtcclxuICBzdG9wQXV0b3BsYXkoKVxyXG4gIGF1dG9wbGF5VGltZXIgPSBzZXRJbnRlcnZhbCgoKSA9PiB7XHJcbiAgICBlbWJsYUFwaS52YWx1ZT8uZ29Ub05leHQoKVxyXG4gIH0sIDUwMDApXHJcbn1cclxuXHJcbndhdGNoKGVtYmxhQXBpLCAoYXBpLCBfLCBvbkNsZWFudXApID0+IHtcclxuICBpZiAoIWFwaSkge1xyXG4gICAgcmV0dXJuXHJcbiAgfVxyXG5cclxuICBjb25zdCBzeW5jSW5kZXggPSAoKSA9PiB7XHJcbiAgICBjdXJyZW50SW5kZXgudmFsdWUgPSBhcGkuc2VsZWN0ZWRTbmFwKClcclxuICB9XHJcblxyXG4gIHN5bmNJbmRleCgpXHJcbiAgYXBpLm9uKCdzZWxlY3QnLCBzeW5jSW5kZXgpXHJcblxyXG4gIGNvbnN0IHJvb3ROb2RlID0gYXBpLnJvb3ROb2RlKClcclxuICByb290Tm9kZS5hZGRFdmVudExpc3RlbmVyKCdtb3VzZWVudGVyJywgc3RvcEF1dG9wbGF5KVxyXG4gIHJvb3ROb2RlLmFkZEV2ZW50TGlzdGVuZXIoJ21vdXNlbGVhdmUnLCBzdGFydEF1dG9wbGF5KVxyXG5cclxuICBzdGFydEF1dG9wbGF5KClcclxuXHJcbiAgb25DbGVhbnVwKCgpID0+IHtcclxuICAgIGFwaS5vZmY/Lignc2VsZWN0Jywgc3luY0luZGV4KVxyXG4gICAgcm9vdE5vZGUucmVtb3ZlRXZlbnRMaXN0ZW5lcignbW91c2VlbnRlcicsIHN0b3BBdXRvcGxheSlcclxuICAgIHJvb3ROb2RlLnJlbW92ZUV2ZW50TGlzdGVuZXIoJ21vdXNlbGVhdmUnLCBzdGFydEF1dG9wbGF5KVxyXG4gICAgc3RvcEF1dG9wbGF5KClcclxuICB9KVxyXG59LCB7IGltbWVkaWF0ZTogdHJ1ZSB9KVxyXG5cclxuZnVuY3Rpb24gc2Nyb2xsVG8oaW5kZXg6IG51bWJlcikge1xyXG4gIGlmIChlbWJsYUFwaS52YWx1ZSkge1xyXG4gICAgZW1ibGFBcGkudmFsdWUuZ29UbyhpbmRleClcclxuICAgIHN0YXJ0QXV0b3BsYXkoKVxyXG4gIH1cclxufVxyXG5cclxuZnVuY3Rpb24gaGFuZGxlUHJvbW9CYW5uZXJBY3Rpb24oYWN0aW9uOiBQcm9tb0Jhbm5lckFjdGlvbikge1xyXG4gIGNsb3NlKClcclxuXHJcbiAgaWYgKGFjdGlvbi50eXBlID09PSAnbG9naW4nKSB7XHJcbiAgICBhdXRoU3RvcmUubmVlZHNMb2dpbiA9IHRydWVcclxuICAgIHJldHVyblxyXG4gIH1cclxuXHJcbiAgdm9pZCByb3V0ZXIucHVzaChhY3Rpb24udG8pXHJcbn1cclxuXHJcbmZ1bmN0aW9uIGNsb3NlKCkge1xyXG4gIGlzVmlzaWJsZS52YWx1ZSA9IGZhbHNlXHJcbiAgc3RvcEF1dG9wbGF5KClcclxufVxyXG5cclxuZnVuY3Rpb24gb3BlbigpIHtcclxuICBpc1Zpc2libGUudmFsdWUgPSB0cnVlXHJcbiAgc3RhcnRBdXRvcGxheSgpXHJcbn1cclxuXHJcbmNvbnN0IGFjdGl2ZUl0ZW0gPSBjb21wdXRlZCgoKSA9PiBpdGVtcy52YWx1ZVtjdXJyZW50SW5kZXgudmFsdWVdID8/IGl0ZW1zLnZhbHVlWzBdKVxyXG5jb25zdCB7XHJcbiAgYnV0dG9uQ2xhc3MsXHJcbiAgZGVzY3JpcHRpb25DbGFzcyxcclxuICBtZXRhQ2xhc3MsXHJcbiAgdGl0bGVDbGFzcyxcclxuICB3YXRlcm1hcmtDbGFzcyxcclxufSA9IHVzZVByb21vQmFubmVyTGF5b3V0KGxvY2FsZSlcclxuXHJcbm9uQmVmb3JlVW5tb3VudCgoKSA9PiB7XHJcbiAgc3RvcEF1dG9wbGF5KClcclxufSlcclxuPC9zY3JpcHQ+XHJcblxyXG48dGVtcGxhdGU+XHJcbiAgPGRpdlxyXG4gICAgdi1pZj1cImZhbHNlXCJcclxuICAgIGNsYXNzPVwiZml4ZWQgYm90dG9tLTEwIGxlZnQtNiB6LTUwIDxtZDpoaWRkZW5cIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToxMjc6M1wiXHJcbiAgPlxyXG4gICAgPGJ1dHRvblxyXG4gICAgICB2LWlmPVwiIWlzVmlzaWJsZVwiXHJcbiAgICAgIDpjbGFzcz1cIltcclxuICAgICAgICAncG9pbnRlci1ldmVudHMtYXV0byBtYXgtaC1bMTBsaF0gbWluLWgtWzFsaF0nLFxyXG4gICAgICAgICdiZy1uZXV0cmFsLTEwMCBkYXJrOmJnLW5ldXRyYWwtODAwJyxcclxuICAgICAgICAndGV4dC1sZyB0ZXh0LW5ldXRyYWwtNTAwIGRhcms6dGV4dC1uZXV0cmFsLTQwMCcsXHJcbiAgICAgICAgJ2ZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHJvdW5kZWQtbWQgcC0yIG91dGxpbmUtbm9uZScsXHJcbiAgICAgICAgJ3RyYW5zaXRpb24tY29sb3JzIHRyYW5zaXRpb24tdHJhbnNmb3JtIGFjdGl2ZTpzY2FsZS05NScsXHJcbiAgICAgIF1cIlxyXG4gICAgICB0aXRsZT1cIk9wZW4gcHJvbW8gYmFubmVyXCJcclxuICAgICAgdHlwZT1cImJ1dHRvblwiXHJcbiAgICAgIEBjbGljaz1cIm9wZW5cIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToxMzE6NVwiXHJcbiAgICA+XHJcbiAgICAgIDxkaXYgY2xhc3M9XCJpLXNvbGFyOmdpZnQtYm9sZC1kdW90b25lXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9ob2xvZ3JhbS9ob2xvLWNvdXBvbi52dWU6MTQ0OjdcIiAvPlxyXG4gICAgPC9idXR0b24+XHJcblxyXG4gICAgPGRpdiB2LWVsc2UgY2xhc3M9XCJwb2ludGVyLWV2ZW50cy1hdXRvIHJlbGF0aXZlIGZsZXggZmxleC1jb2wgaXRlbXMtc3RhcnRcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToxNDc6NVwiPlxyXG4gICAgICA8ZGl2IDpjbGFzcz1cIlsncmVsYXRpdmUgaC02MCB3LTEwOCBvdmVyZmxvdy1oaWRkZW4gcm91bmRlZC0zeGwgYm9yZGVyIGJvcmRlci13aGl0ZS84IGJnLW5ldXRyYWwtOTAwLzg2IHNoYWRvdy0yeGwgYmFja2Ryb3AtYmx1ci14bCcsICdyaW5nLTEgcmluZy1ibGFjay8xMCddXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9ob2xvZ3JhbS9ob2xvLWNvdXBvbi52dWU6MTQ4OjdcIj5cclxuICAgICAgICA8YnV0dG9uXHJcbiAgICAgICAgICA6Y2xhc3M9XCJbXHJcbiAgICAgICAgICAgICdhYnNvbHV0ZSByaWdodC0zIHRvcC0zIHotMzAgaC04IHctOCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciByb3VuZGVkLWZ1bGwnLFxyXG4gICAgICAgICAgICAndGV4dC13aGl0ZS81NSB0cmFuc2l0aW9uLWNvbG9ycyBob3ZlcjpiZy13aGl0ZS8xMCBob3Zlcjp0ZXh0LXdoaXRlJyxcclxuICAgICAgICAgIF1cIlxyXG4gICAgICAgICAgdHlwZT1cImJ1dHRvblwiXHJcbiAgICAgICAgICBAY2xpY2s9XCJjbG9zZVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvaG9sb2dyYW0vaG9sby1jb3Vwb24udnVlOjE0OTo5XCJcclxuICAgICAgICA+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzPVwiaS1sdWNpZGUteCBoLTUgdy01XCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9ob2xvZ3JhbS9ob2xvLWNvdXBvbi52dWU6MTU3OjExXCIgLz5cclxuICAgICAgICA8L2J1dHRvbj5cclxuXHJcbiAgICAgICAgPGRpdlxyXG4gICAgICAgICAgOmNsYXNzPVwiW1xyXG4gICAgICAgICAgICAncG9pbnRlci1ldmVudHMtbm9uZSBhYnNvbHV0ZSBpbnNldC0wIGJnLWdyYWRpZW50LXRvLWJyJyxcclxuICAgICAgICAgICAgYWN0aXZlSXRlbS5hY2NlbnRDbGFzcyxcclxuICAgICAgICAgIF1cIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToxNjA6OVwiXHJcbiAgICAgICAgLz5cclxuICAgICAgICA8ZGl2IGNsYXNzPVwicG9pbnRlci1ldmVudHMtbm9uZSBhYnNvbHV0ZSBpbnNldC15LTAgcmlnaHQtMjggdy1weCBiZy13aGl0ZS84XCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9ob2xvZ3JhbS9ob2xvLWNvdXBvbi52dWU6MTY2OjlcIiAvPlxyXG5cclxuICAgICAgICA8ZGl2IHJlZj1cIl9lbWJsYVJlZlwiIGNsYXNzPVwiZW1ibGEgaC1mdWxsIHctZnVsbFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvaG9sb2dyYW0vaG9sby1jb3Vwb24udnVlOjE2ODo5XCI+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzPVwiZW1ibGFfX2NvbnRhaW5lciBoLWZ1bGxcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToxNjk6MTFcIj5cclxuICAgICAgICAgICAgPGRpdlxyXG4gICAgICAgICAgICAgIHYtZm9yPVwiKGl0ZW0sIGluZGV4KSBpbiBpdGVtc1wiXHJcbiAgICAgICAgICAgICAgOmtleT1cImluZGV4XCJcclxuICAgICAgICAgICAgICBjbGFzcz1cImVtYmxhX19zbGlkZSByZWxhdGl2ZSBoLWZ1bGwgbWluLXctMFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvaG9sb2dyYW0vaG9sby1jb3Vwb24udnVlOjE3MDoxM1wiXHJcbiAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzPVwiYWJzb2x1dGUgaW5zZXQteS0wIGxlZnQtMCB3LTc4IHB4LTQgcHktNFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvaG9sb2dyYW0vaG9sby1jb3Vwb24udnVlOjE3NToxNVwiPlxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzcz1cImFic29sdXRlIGxlZnQtNSB0b3AtNCB6LTAgc2VsZWN0LW5vbmVcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToxNzY6MTdcIj5cclxuICAgICAgICAgICAgICAgICAgPHNwYW4gOmNsYXNzPVwiWydibG9jayB0ZXh0LXdoaXRlLzggbGVhZGluZy1ub25lIHVwcGVyY2FzZScsIHdhdGVybWFya0NsYXNzXVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvaG9sb2dyYW0vaG9sby1jb3Vwb24udnVlOjE3NzoxOVwiPlxyXG4gICAgICAgICAgICAgICAgICAgIHt7IGl0ZW0ud2F0ZXJtYXJrIH19XHJcbiAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cclxuICAgICAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3M9XCJyZWxhdGl2ZSB6LTEwIGgtZnVsbCBmbGV4IGZsZXgtY29sIHByLTJcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToxODI6MTdcIj5cclxuICAgICAgICAgICAgICAgICAgPGRpdiA6Y2xhc3M9XCJbJ2ZsZXggaXRlbXMtY2VudGVyIGdhcC0xLjUgdGV4dC13aGl0ZS83MicsIG1ldGFDbGFzc11cIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToxODM6MTlcIj5cclxuICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzPVwiaS1zb2xhcjpjYWxlbmRhci1tYXJrLWJvbGQtZHVvdG9uZSB0ZXh0LVsxM3B4XSB0ZXh0LXByaW1hcnktMjAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9ob2xvZ3JhbS9ob2xvLWNvdXBvbi52dWU6MTg0OjIxXCIgLz5cclxuICAgICAgICAgICAgICAgICAgICA8c3BhbiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToxODU6MjFcIj57eyBpdGVtLmRhdGUgfX08L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgICAgICAgPGRpdiA6Y2xhc3M9XCJbJ210LTMgdGV4dC13aGl0ZSBicmVhay13b3JkcycsIHRpdGxlQ2xhc3NdXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9ob2xvZ3JhbS9ob2xvLWNvdXBvbi52dWU6MTg4OjE5XCI+XHJcbiAgICAgICAgICAgICAgICAgICAge3sgaXRlbS50aXRsZSB9fVxyXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgOmNsYXNzPVwiWydtdC0yIHRleHQtd2hpdGUvNjggYnJlYWstd29yZHMnLCBkZXNjcmlwdGlvbkNsYXNzXVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvaG9sb2dyYW0vaG9sby1jb3Vwb24udnVlOjE5MjoxOVwiPlxyXG4gICAgICAgICAgICAgICAgICAgIHt7IGl0ZW0uZXZlbnROYW1lIH19XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzcz1cIm10LTMgc3BhY2UteS0xLjVcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToxOTY6MTlcIj5cclxuICAgICAgICAgICAgICAgICAgICA8ZGl2IDpjbGFzcz1cIlsnZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEuNSB0ZXh0LXdoaXRlLzcyJywgbWV0YUNsYXNzXVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvaG9sb2dyYW0vaG9sby1jb3Vwb24udnVlOjE5NzoyMVwiPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzcz1cImktc29sYXI6Z2lmdC1ib2xkLWR1b3RvbmUgdGV4dC1bMTNweF0gdGV4dC1hbWJlci0zMDBcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToxOTg6MjNcIiAvPlxyXG4gICAgICAgICAgICAgICAgICAgICAgPHNwYW4gZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9ob2xvZ3JhbS9ob2xvLWNvdXBvbi52dWU6MTk5OjIzXCI+e3sgaXRlbS5yZXdhcmQgfX08L3NwYW4+XHJcbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICAgICAgICAgICAgPGJ1dHRvblxyXG4gICAgICAgICAgICAgICAgICAgIDpjbGFzcz1cIltcclxuICAgICAgICAgICAgICAgICAgICAgICdtdC1hdXRvIG1iLTEgdy1maXQgcm91bmRlZC1mdWxsIHB4LTQgcHktMiB0ZXh0LW5ldXRyYWwtOTUwIHRyYW5zaXRpb24tdHJhbnNmb3JtIGFjdGl2ZTpzY2FsZS05NScsXHJcbiAgICAgICAgICAgICAgICAgICAgICBidXR0b25DbGFzcyxcclxuICAgICAgICAgICAgICAgICAgICAgICdiZy13aGl0ZSBzaGFkb3ctWzBfOHB4XzI0cHhfcmdiYSgyNTUsMjU1LDI1NSwwLjE2KV0gaG92ZXI6dHJhbnNsYXRlLXktWy0xcHhdJyxcclxuICAgICAgICAgICAgICAgICAgICBdXCJcclxuICAgICAgICAgICAgICAgICAgICB0eXBlPVwiYnV0dG9uXCJcclxuICAgICAgICAgICAgICAgICAgICBAY2xpY2s9XCJoYW5kbGVQcm9tb0Jhbm5lckFjdGlvbihpdGVtLmFjdGlvbilcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToyMDM6MTlcIlxyXG4gICAgICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICAgICAge3sgaXRlbS5jdGEgfX1cclxuICAgICAgICAgICAgICAgICAgPC9idXR0b24+XHJcbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICAgICAgPGRpdiBjbGFzcz1cImFic29sdXRlIGluc2V0LXktMyByaWdodC0zIHctMjMgb3ZlcmZsb3ctaGlkZGVuIGJvcmRlciBib3JkZXItd2hpdGUvMTAgcm91bmRlZC0yeGwgYmctd2hpdGUvNVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvaG9sb2dyYW0vaG9sby1jb3Vwb24udnVlOjIxNzoxNVwiPlxyXG4gICAgICAgICAgICAgICAgPGltZ1xyXG4gICAgICAgICAgICAgICAgICB2LWlmPVwiaXRlbS5pbWFnZVwiXHJcbiAgICAgICAgICAgICAgICAgIDpzcmM9XCJpdGVtLmltYWdlXCJcclxuICAgICAgICAgICAgICAgICAgOmFsdD1cIml0ZW0udGl0bGVcIlxyXG4gICAgICAgICAgICAgICAgICBjbGFzcz1cImgtZnVsbCB3LWZ1bGwgb2JqZWN0LWNvdmVyXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9ob2xvZ3JhbS9ob2xvLWNvdXBvbi52dWU6MjE4OjE3XCJcclxuICAgICAgICAgICAgICAgID5cclxuICAgICAgICAgICAgICAgIDxkaXZcclxuICAgICAgICAgICAgICAgICAgdi1lbHNlXHJcbiAgICAgICAgICAgICAgICAgIDpjbGFzcz1cIltcclxuICAgICAgICAgICAgICAgICAgICAncmVsYXRpdmUgaC1mdWxsIHctZnVsbCBvdmVyZmxvdy1oaWRkZW4gYmctZ3JhZGllbnQtdG8tYnInLFxyXG4gICAgICAgICAgICAgICAgICAgIGl0ZW0uZmFsbGJhY2tDbGFzcyxcclxuICAgICAgICAgICAgICAgICAgXVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvaG9sb2dyYW0vaG9sby1jb3Vwb24udnVlOjIyNDoxN1wiXHJcbiAgICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3M9XCJhYnNvbHV0ZSBsZWZ0LTQgdG9wLTQgaC0xMCB3LTEwIHJvdW5kZWQtMnhsIGJnLXdoaXRlLzEyIGJsdXItc21cIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToyMzE6MTlcIiAvPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzPVwiYWJzb2x1dGUgcmlnaHQtMyB0b3AtMyBoLTE0IHctMTQgcm91bmRlZC1mdWxsIGJnLWFtYmVyLTMwMC8yMiBibHVyLW1kXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9ob2xvZ3JhbS9ob2xvLWNvdXBvbi52dWU6MjMyOjE5XCIgLz5cclxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzcz1cImFic29sdXRlIGluc2V0LXgtNCBib3R0b20tNCBoLTE4IGJvcmRlciBib3JkZXItd2hpdGUvMTIgcm91bmRlZC1bMS40cmVtXSBiZy1ibGFjay8xOCBiYWNrZHJvcC1ibHVyLXNtXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9ob2xvZ3JhbS9ob2xvLWNvdXBvbi52dWU6MjMzOjE5XCIgLz5cclxuICAgICAgICAgICAgICAgICAgPGRpdiA6Y2xhc3M9XCJbaXRlbS5mYWxsYmFja0ljb24sIGl0ZW0uZmFsbGJhY2tJY29uQ2xhc3MsICdhYnNvbHV0ZSBsZWZ0LTUgdG9wLTUgdGV4dC0yeGwnXVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvaG9sb2dyYW0vaG9sby1jb3Vwb24udnVlOjIzNDoxOVwiIC8+XHJcbiAgICAgICAgICAgICAgICAgIDxkaXYgOmNsYXNzPVwiW2l0ZW0uZmFsbGJhY2tJY29uLCBpdGVtLmZhbGxiYWNrSWNvbkNsYXNzLCAnYWJzb2x1dGUgYm90dG9tLTcgcmlnaHQtNCB0ZXh0LTR4bCBvcGFjaXR5LTkwJ11cIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToyMzU6MTlcIiAvPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzPVwiYWJzb2x1dGUgYm90dG9tLTUgbGVmdC00IHRleHQtWzEwcHhdIHRleHQtd2hpdGUvNzAgZm9udC03MDAgdHJhY2tpbmctWzAuM2VtXSB1cHBlcmNhc2VcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToyMzY6MTlcIj5cclxuICAgICAgICAgICAgICAgICAgICB7eyB0KGdldFByb21vQmFubmVyRmFsbGJhY2tMYWJlbEtleShpdGVtLmtleSkpIH19XHJcbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzcz1cInBvaW50ZXItZXZlbnRzLW5vbmUgYWJzb2x1dGUgaW5zZXQtMCBmcm9tLW5ldXRyYWwtOTUwLzU1IHZpYS10cmFuc3BhcmVudCB0by13aGl0ZS84IGJnLWdyYWRpZW50LXRvLXRcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToyNDE6MTdcIiAvPlxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzcz1cInBvaW50ZXItZXZlbnRzLW5vbmUgYWJzb2x1dGUgYm90dG9tLTAgbGVmdC0wIHJpZ2h0LTAgaC0xOCBmcm9tLW5ldXRyYWwtOTUwLzg4IHRvLXRyYW5zcGFyZW50IGJnLWdyYWRpZW50LXRvLXRcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToyNDI6MTdcIiAvPlxyXG4gICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgIDwvZGl2PlxyXG5cclxuICAgICAgICA8ZGl2IGNsYXNzPVwiYWJzb2x1dGUgYm90dG9tLTMuNSByaWdodC00IHotMzAgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToyNDg6OVwiPlxyXG4gICAgICAgICAgPHNwYW4gY2xhc3M9XCJ0ZXh0LVsxMXB4XSB0ZXh0LXdoaXRlLzQyIGZvbnQtNjAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9ob2xvZ3JhbS9ob2xvLWNvdXBvbi52dWU6MjQ5OjExXCI+e3sgY3VycmVudEluZGV4ICsgMSB9fS97eyBpdGVtcy5sZW5ndGggfX08L3NwYW4+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzPVwiZmxleCBnYXAtMS41XCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9ob2xvZ3JhbS9ob2xvLWNvdXBvbi52dWU6MjUwOjExXCI+XHJcbiAgICAgICAgICAgIDxidXR0b25cclxuICAgICAgICAgICAgICB2LWZvcj1cIihfLCBpbmRleCkgaW4gaXRlbXNcIlxyXG4gICAgICAgICAgICAgIDprZXk9XCJgZG90LSR7aW5kZXh9YFwiXHJcbiAgICAgICAgICAgICAgOmNsYXNzPVwiW1xyXG4gICAgICAgICAgICAgICAgJ2gtMi41IHJvdW5kZWQtZnVsbCB0cmFuc2l0aW9uLWFsbCBkdXJhdGlvbi0zMDAnLFxyXG4gICAgICAgICAgICAgICAgY3VycmVudEluZGV4ID09PSBpbmRleCA/ICd3LTUgYmctd2hpdGUnIDogJ3ctMi41IGJnLXdoaXRlLzMwIGhvdmVyOmJnLXdoaXRlLzUwJyxcclxuICAgICAgICAgICAgICBdXCJcclxuICAgICAgICAgICAgICB0eXBlPVwiYnV0dG9uXCJcclxuICAgICAgICAgICAgICBAY2xpY2s9XCJzY3JvbGxUbyhpbmRleClcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2hvbG9ncmFtL2hvbG8tY291cG9uLnZ1ZToyNTE6MTNcIlxyXG4gICAgICAgICAgICAvPlxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgIDwvZGl2PlxyXG4gICAgPC9kaXY+XHJcbiAgPC9kaXY+XHJcbjwvdGVtcGxhdGU+XHJcblxyXG48c3R5bGUgc2NvcGVkPlxyXG4uZW1ibGEge1xyXG4gIG92ZXJmbG93OiBoaWRkZW47XHJcbn1cclxuLmVtYmxhX19jb250YWluZXIge1xyXG4gIGRpc3BsYXk6IGZsZXg7XHJcbn1cclxuLmVtYmxhX19zbGlkZSB7XHJcbiAgZmxleDogMCAwIDEwMCU7XHJcbiAgbWluLXdpZHRoOiAwO1xyXG59XHJcbjwvc3R5bGU+XHJcbiJdLCJmaWxlIjoiQzovVXNlcnMvQWRtaW5pc3RyYXRvci9haXJpLWFwcC9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvaG9sb2dyYW0vaG9sby1jb3Vwb24udnVlIn0=

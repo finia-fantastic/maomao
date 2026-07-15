@@ -1,5 +1,5 @@
 import { generateDoubaoImage } from '@proj-airi/stage-ui/services/doubao-image/generate'
-import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
+import { useArtistryStore } from '@proj-airi/stage-ui/stores/modules/artistry'
 import { tool } from '@xsai/tool'
 import { z } from 'zod'
 
@@ -32,26 +32,28 @@ function pickCompanionMessage(): string {
 }
 
 async function executeDrawImage(input: { prompt: string, size?: string }): Promise<string> {
-  const providersStore = useProvidersStore()
-  const config = (providersStore.providers as any)?.['doubao-seedream'] as Record<string, string> | undefined
+  const artistryStore = useArtistryStore()
 
-  if (!config?.apiKey) {
-    return '❌ 画画失败：豆包 API Key 未配置。请在设置里填写。'
+  const apiKey = artistryStore.doubaoSeedreamApiKey
+  const endpointId = artistryStore.doubaoSeedreamEndpointId
+  const defaultSize = artistryStore.doubaoSeedreamSize || '1024x1024'
+
+  if (!apiKey) {
+    return '❌ 画画失败：API Key 未配置。请在 Artistry 设置里填写。'
   }
 
-  const seedreamEpId = config.seedreamEndpointId
-  if (!seedreamEpId) {
-    return '❌ 画画失败：Seedream 接入点 ID 未配置。请在豆包 Seedream 画图设置里填写。'
+  if (!endpointId) {
+    return '❌ 画画失败：Seedream 接入点 ID 未配置。请在 Artistry 设置里填写。'
   }
 
   const prompt = extractPrompt(input.prompt)
-  const size = input.size || '1024x1024'
+  const size = input.size || defaultSize
   console.info('[DrawImage] generating:', prompt.slice(0, 80), `size: ${size}`)
 
   const result = await generateDoubaoImage({
     prompt,
-    endpointId: seedreamEpId,
-    apiKey: config.apiKey,
+    endpointId,
+    apiKey,
     size,
   })
 
@@ -60,17 +62,28 @@ async function executeDrawImage(input: { prompt: string, size?: string }): Promi
     return `❌ 画画失败：${result.error}`
   }
 
-  const dataUrl = result.b64_json
-    ? `data:image/png;base64,${result.b64_json}`
-    : result.url
-
-  if (!dataUrl) {
+  let imageUrl: string | undefined
+  if (result.b64_json) {
+    // Save to temp file via IPC to avoid CSP blocking data: URLs
+    try {
+      const saved = await (window as any).electron.ipcRenderer.invoke('image:save-temp', {
+        base64: result.b64_json,
+        name: `airi-drawing-${Date.now()}.png`,
+      })
+      if (saved?.fileUrl) imageUrl = saved.fileUrl
+    }
+    catch { /* fall through */ }
+  }
+  if (!imageUrl && result.url) {
+    imageUrl = result.url
+  }
+  if (!imageUrl) {
     return '❌ 画画失败：API 未返回图片。'
   }
 
-  console.info('[DrawImage] success')
+  console.info('[DrawImage] success, url:', imageUrl.slice(0, 60))
   const companionMsg = pickCompanionMessage()
-  return `${companionMsg}\n![生成图片](${dataUrl})`
+  return `${companionMsg}\n\n<img src="${imageUrl}" alt="AI生成图片" style="max-width:100%;border-radius:12px" />`
 }
 
 const tools = [

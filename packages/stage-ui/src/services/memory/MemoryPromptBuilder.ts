@@ -36,9 +36,10 @@ const TYPE_LABELS: Record<string, string> = {
  * @returns A string ready to inject into the system prompt, or empty string if no memories
  */
 export function buildMemoryPrompt(memories: RetrievedMemory[]): string {
-  if (memories.length === 0) return ''
+  if (memories.length === 0)
+    return ''
 
-  const lines = memories.map(m => {
+  const lines = memories.map((m) => {
     const typeLabel = TYPE_LABELS[m.record.type] ?? m.record.type
     const recency = formatRelativeTime(m.record.updatedAt)
     const importancePct = Math.round(m.record.importance * 100)
@@ -57,16 +58,20 @@ export function buildMemoryPrompt(memories: RetrievedMemory[]): string {
  * Formats an ISO-like datetime as a relative time string.
  */
 function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr.replace(' ', 'T') + 'Z')
+  const date = new Date(`${dateStr.replace(' ', 'T')}Z`)
   const now = Date.now()
   const diffMs = now - date.getTime()
   const diffMins = Math.round(diffMs / (1000 * 60))
   const diffHours = Math.round(diffMs / (1000 * 60 * 60))
   const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
 
-  if (diffMins < 1) return '刚刚'
-  if (diffMins < 60) return `${diffMins}分钟前`
-  if (diffHours < 24) return `${diffHours}小时前`
-  if (diffDays < 30) return `${diffDays}天前`
+  if (diffMins < 1)
+    return '刚刚'
+  if (diffMins < 60)
+    return `${diffMins}分钟前`
+  if (diffHours < 24)
+    return `${diffHours}小时前`
+  if (diffDays < 30)
+    return `${diffDays}天前`
   return date.toLocaleDateString('zh-CN')
 }

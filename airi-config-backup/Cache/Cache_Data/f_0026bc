@@ -1,0 +1,279 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/gadgets/processing-meter.vue");/* Injection by vite-plugin-vue-inspector Start */
+import { createElementVNode as __createElementVNode,createVNode as __createVNode,createBlock as __createBlock,createElementBlock as __createElementBlock } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d"
+function _interopVNode(vnode) {
+  if (vnode && vnode.props && 'data-v-inspector' in vnode.props) {
+    const data = vnode.props['data-v-inspector']
+    delete vnode.props['data-v-inspector']
+    Object.defineProperty(vnode.props, '__v_inspector', { value: data, enumerable: false })
+  }
+  return vnode
+}
+function _createElementVNode(...args) { return _interopVNode(__createElementVNode(...args)) }
+function _createVNode(...args) { return _interopVNode(__createVNode(...args)) }
+function _createBlock(...args) { return _interopVNode(__createBlock(...args)) }
+function _createElementBlock(...args) { return _interopVNode(__createElementBlock(...args)) }
+/* Injection by vite-plugin-vue-inspector End */
+import { defineComponent as _defineComponent } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import { computed } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import LevelMeter from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/gadgets/level-meter.vue";
+import TimeSeriesChart from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/gadgets/time-series-chart.vue";
+const _sfc_main = /* @__PURE__ */ _defineComponent({
+	__name: "processing-meter",
+	props: {
+		title: {
+			type: String,
+			required: false,
+			default: "Processing"
+		},
+		processingHistory: {
+			type: Object,
+			required: true
+		},
+		processingValue: {
+			type: [Number, null],
+			required: false,
+			default: null
+		},
+		processingUnit: {
+			type: String,
+			required: false,
+			default: "ms"
+		},
+		processingLabel: {
+			type: String,
+			required: false,
+			default: "Inference latency"
+		},
+		processingMax: {
+			type: Number,
+			required: false,
+			default: 0
+		},
+		rateValue: {
+			type: Number,
+			required: false,
+			default: 0
+		},
+		rateMax: {
+			type: Number,
+			required: false,
+			default: 60
+		},
+		rateLabel: {
+			type: String,
+			required: false,
+			default: "Context updates"
+		},
+		rateUnit: {
+			type: String,
+			required: false,
+			default: "/min"
+		},
+		secondaryRateValue: {
+			type: Number,
+			required: false,
+			default: undefined
+		},
+		secondaryRateMax: {
+			type: Number,
+			required: false,
+			default: 60
+		},
+		secondaryRateLabel: {
+			type: String,
+			required: false,
+			default: "Capture rate"
+		},
+		secondaryRateUnit: {
+			type: String,
+			required: false,
+			default: "/min"
+		}
+	},
+	setup(__props, { expose: __expose }) {
+		__expose();
+		const props = __props;
+		const resolvedProcessingMax = computed(() => {
+			const historyMax = props.processingHistory.length > 0 ? Math.max(...props.processingHistory) : 0;
+			return Math.max(1, props.processingMax || 0, historyMax);
+		});
+		const processingValueResolved = computed(() => {
+			if (props.processingValue !== null && props.processingValue !== undefined) return props.processingValue;
+			return props.processingHistory.at(-1) ?? 0;
+		});
+		const normalizedProcessingHistory = computed(() => {
+			const maxValue = resolvedProcessingMax.value;
+			return props.processingHistory.map((value) => Math.min(1, value / maxValue));
+		});
+		const normalizedProcessingValue = computed(() => {
+			return Math.min(1, processingValueResolved.value / resolvedProcessingMax.value);
+		});
+		const formattedProcessingValue = computed(() => {
+			return `${processingValueResolved.value.toFixed(0)}${props.processingUnit}`;
+		});
+		const __returned__ = {
+			props,
+			resolvedProcessingMax,
+			processingValueResolved,
+			normalizedProcessingHistory,
+			normalizedProcessingValue,
+			formattedProcessingValue,
+			LevelMeter,
+			TimeSeriesChart
+		};
+		Object.defineProperty(__returned__, "__isScriptSetup", {
+			enumerable: false,
+			value: true
+		});
+		return __returned__;
+	}
+});
+import { toDisplayString as _toDisplayString, normalizeClass as _normalizeClass,   openBlock as _openBlock,  createCommentVNode as _createCommentVNode,  } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+const _hoisted_1 = {
+	class: /* @__PURE__ */ _normalizeClass([
+		"flex",
+		"flex-col",
+		"gap-4",
+		"rounded-2xl",
+		"bg-white/70",
+		"p-4",
+		"shadow-sm",
+		"dark:bg-neutral-900/50"
+	]),
+	"data-v-inspector": "../../packages/stage-ui/src/components/gadgets/processing-meter.vue:68:3"
+};
+const _hoisted_2 = {
+	class: /* @__PURE__ */ _normalizeClass([
+		"flex",
+		"items-center",
+		"justify-between"
+	]),
+	"data-v-inspector": "../../packages/stage-ui/src/components/gadgets/processing-meter.vue:69:5"
+};
+const _hoisted_3 = {
+	class: /* @__PURE__ */ _normalizeClass([
+		"flex",
+		"flex-col",
+		"gap-1"
+	]),
+	"data-v-inspector": "../../packages/stage-ui/src/components/gadgets/processing-meter.vue:70:7"
+};
+const _hoisted_4 = {
+	class: /* @__PURE__ */ _normalizeClass([
+		"text-xs",
+		"uppercase",
+		"tracking-wide",
+		"text-neutral-400"
+	]),
+	"data-v-inspector": "../../packages/stage-ui/src/components/gadgets/processing-meter.vue:71:9"
+};
+const _hoisted_5 = {
+	class: /* @__PURE__ */ _normalizeClass([
+		"text-base",
+		"font-semibold",
+		"text-neutral-700",
+		"dark:text-neutral-200"
+	]),
+	"data-v-inspector": "../../packages/stage-ui/src/components/gadgets/processing-meter.vue:74:9"
+};
+const _hoisted_6 = {
+	class: /* @__PURE__ */ _normalizeClass([
+		"text-sm",
+		"text-neutral-500",
+		"dark:text-neutral-400"
+	]),
+	"data-v-inspector": "../../packages/stage-ui/src/components/gadgets/processing-meter.vue:78:7"
+};
+const _hoisted_7 = {
+	class: /* @__PURE__ */ _normalizeClass([
+		"grid",
+		"gap-4",
+		"md:grid-cols-2"
+	]),
+	"data-v-inspector": "../../packages/stage-ui/src/components/gadgets/processing-meter.vue:97:5"
+};
+function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+	return _openBlock(), _createElementBlock("div", _hoisted_1, [
+		_createElementVNode("div", _hoisted_2, [_createElementVNode("div", _hoisted_3, [_createElementVNode(
+			"div",
+			_hoisted_4,
+			_toDisplayString($props.title),
+			1
+			/* TEXT */
+		), _createElementVNode(
+			"div",
+			_hoisted_5,
+			_toDisplayString($props.processingLabel),
+			1
+			/* TEXT */
+		)]), _createElementVNode(
+			"div",
+			_hoisted_6,
+			_toDisplayString($setup.formattedProcessingValue),
+			1
+			/* TEXT */
+		)]),
+		_createVNode($setup["TimeSeriesChart"], {
+			"is-active": false,
+			history: $setup.normalizedProcessingHistory,
+			"current-value": $setup.normalizedProcessingValue,
+			"show-legend": false,
+			"show-header": false,
+			"show-area": true,
+			"show-active-indicator": false,
+			"show-current-value": false,
+			height: 72,
+			precision: 0,
+			unit: $props.processingUnit,
+			"data-v-inspector": "../../packages/stage-ui/src/components/gadgets/processing-meter.vue:83:5"
+		}, null, 8, [
+			"history",
+			"current-value",
+			"unit"
+		]),
+		_createElementVNode("div", _hoisted_7, [_createVNode($setup["LevelMeter"], {
+			level: $props.rateValue,
+			min: 0,
+			max: $props.rateMax,
+			label: $props.rateLabel,
+			unit: $props.rateUnit,
+			"data-v-inspector": "../../packages/stage-ui/src/components/gadgets/processing-meter.vue:98:7"
+		}, null, 8, [
+			"level",
+			"max",
+			"label",
+			"unit"
+		]), $props.secondaryRateValue !== undefined ? (_openBlock(), _createBlock($setup["LevelMeter"], {
+			key: 0,
+			level: $props.secondaryRateValue,
+			min: 0,
+			max: $props.secondaryRateMax,
+			label: $props.secondaryRateLabel,
+			unit: $props.secondaryRateUnit,
+			"data-v-inspector": "../../packages/stage-ui/src/components/gadgets/processing-meter.vue:106:7"
+		}, null, 8, [
+			"level",
+			"max",
+			"label",
+			"unit"
+		])) : _createCommentVNode("v-if", true)])
+	]);
+}
+_sfc_main.__hmrId = "5acfeb3a";
+typeof __VUE_HMR_RUNTIME__ !== "undefined" && __VUE_HMR_RUNTIME__.createRecord(_sfc_main.__hmrId, _sfc_main);
+import.meta.hot.on("file-changed", ({ file }) => {
+	__VUE_HMR_RUNTIME__.CHANGED_FILE = file;
+});
+import.meta.hot.accept((mod) => {
+	if (!mod) return;
+	const { default: updated, _rerender_only } = mod;
+	if (_rerender_only) {
+		__VUE_HMR_RUNTIME__.rerender(updated.__hmrId, updated.render);
+	} else {
+		__VUE_HMR_RUNTIME__.reload(updated.__hmrId, updated);
+	}
+});
+import _export_sfc from "/@id/__x00__plugin-vue:export-helper";
+export default /* @__PURE__ */ _export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/Administrator/airi-app/packages/stage-ui/src/components/gadgets/processing-meter.vue"]]);
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7OztBQUNBLFNBQVMsZ0JBQWdCO0FBRXpCLE9BQU8sZ0JBQWdCO0FBQ3ZCLE9BQU8scUJBQXFCOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0VBbUI1QixNQUFNLFFBQVE7RUFnQmQsTUFBTSx3QkFBd0IsZUFBZTtHQUMzQyxNQUFNLGFBQWEsTUFBTSxrQkFBa0IsU0FBUyxJQUNoRCxLQUFLLElBQUksR0FBRyxNQUFNLGtCQUFrQixHQUNwQztBQUNKLFVBQU8sS0FBSyxJQUFJLEdBQUcsTUFBTSxpQkFBaUIsR0FBRyxXQUFXO0lBQ3hEO0VBRUYsTUFBTSwwQkFBMEIsZUFBZTtBQUM3QyxPQUFJLE1BQU0sb0JBQW9CLFFBQVEsTUFBTSxvQkFBb0IsVUFDOUQsUUFBTyxNQUFNO0FBQ2YsVUFBTyxNQUFNLGtCQUFrQixHQUFHLENBQUMsRUFBRSxJQUFJO0lBQ3pDO0VBRUYsTUFBTSw4QkFBOEIsZUFBZTtHQUNqRCxNQUFNLFdBQVcsc0JBQXNCO0FBQ3ZDLFVBQU8sTUFBTSxrQkFBa0IsS0FBSSxVQUFTLEtBQUssSUFBSSxHQUFHLFFBQVEsU0FBUyxDQUFDO0lBQzFFO0VBRUYsTUFBTSw0QkFBNEIsZUFBZTtBQUMvQyxVQUFPLEtBQUssSUFBSSxHQUFHLHdCQUF3QixRQUFRLHNCQUFzQixNQUFNO0lBQy9FO0VBRUYsTUFBTSwyQkFBMkIsZUFBZTtBQUM5QyxVQUFPLEdBQUcsd0JBQXdCLE1BQU0sUUFBUSxFQUFFLEdBQUcsTUFBTTtJQUMzRDs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Q0FJTSxPQUFLLGdDQUFFO0VBQUE7RUFBQTtFQUFBO0VBQUE7RUFBQTtFQUFBO0VBQUE7RUFBQTtFQUF5RztDQUFFLG9CQUFpQjs7O0NBQ2pJLE9BQUssZ0NBQUU7RUFBQTtFQUFBO0VBQUE7RUFBMkM7Q0FBRSxvQkFBaUI7OztDQUNuRSxPQUFLLGdDQUFFO0VBQUE7RUFBQTtFQUFBO0VBQTZCO0NBQUUsb0JBQWlCOzs7Q0FDckQsT0FBSyxnQ0FBRTtFQUFBO0VBQUE7RUFBQTtFQUFBO0VBQTZEO0NBQUUsb0JBQWlCOzs7Q0FHdkYsT0FBSyxnQ0FBRTtFQUFBO0VBQUE7RUFBQTtFQUFBO0VBQTJFO0NBQUUsb0JBQWlCOzs7Q0FJdkcsT0FBSyxnQ0FBRTtFQUFBO0VBQUE7RUFBQTtFQUF3RDtDQUFFLG9CQUFpQjs7O0NBbUJwRixPQUFLLGdDQUFFO0VBQUE7RUFBQTtFQUFBO0VBQW1DO0NBQUUsb0JBQWlCOzs7c0JBN0JyRSxvQkErQ00sT0EvQ04sWUErQ007RUE5Q0osb0JBWU0sT0FaTixZQVlNLENBWEosb0JBT00sT0FQTixZQU9NLENBTko7R0FFTTtHQUZOO0dBRU0saUJBREQsYUFBSztHQUFBOztHQUFBLEVBRVY7R0FFTTtHQUZOO0dBRU0saUJBREQsdUJBQWU7R0FBQTs7R0FBQSxJQUd0QjtHQUVNO0dBRk47R0FFTSxpQkFERCxnQ0FBd0I7R0FBQTs7R0FBQTtFQUkvQixhQVlFO0dBWEMsYUFBVztHQUNYLFNBQVM7R0FDVCxpQkFBZTtHQUNmLGVBQWE7R0FDYixlQUFhO0dBQ2IsYUFBVztHQUNYLHlCQUF1QjtHQUN2QixzQkFBb0I7R0FDcEIsUUFBUTtHQUNSLFdBQVc7R0FDWCxNQUFNO0dBQWdCLG9CQUFpQjs7Ozs7O0VBRzFDLG9CQWlCTSxPQWpCTixZQWlCTSxDQWhCSixhQU1FO0dBTEMsT0FBTztHQUNQLEtBQUs7R0FDTCxLQUFLO0dBQ0wsT0FBTztHQUNQLE1BQU07R0FBVSxvQkFBaUI7Ozs7OztNQUk1Qiw4QkFBdUIsMkJBRC9CLGFBT0U7O0dBTEMsT0FBTztHQUNQLEtBQUs7R0FDTCxLQUFLO0dBQ0wsT0FBTztHQUNQLE1BQU07R0FBbUIsb0JBQWlCIiwibmFtZXMiOltdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJwcm9jZXNzaW5nLW1ldGVyLnZ1ZSJdLCJzb3VyY2VzQ29udGVudCI6WyI8c2NyaXB0IHNldHVwIGxhbmc9XCJ0c1wiPlxyXG5pbXBvcnQgeyBjb21wdXRlZCB9IGZyb20gJ3Z1ZSdcclxuXHJcbmltcG9ydCBMZXZlbE1ldGVyIGZyb20gJy4vbGV2ZWwtbWV0ZXIudnVlJ1xyXG5pbXBvcnQgVGltZVNlcmllc0NoYXJ0IGZyb20gJy4vdGltZS1zZXJpZXMtY2hhcnQudnVlJ1xyXG5cclxuaW50ZXJmYWNlIFByb3BzIHtcclxuICB0aXRsZT86IHN0cmluZ1xyXG4gIHByb2Nlc3NpbmdIaXN0b3J5OiBSZWFkb25seTxudW1iZXJbXT5cclxuICBwcm9jZXNzaW5nVmFsdWU/OiBudW1iZXIgfCBudWxsXHJcbiAgcHJvY2Vzc2luZ1VuaXQ/OiBzdHJpbmdcclxuICBwcm9jZXNzaW5nTGFiZWw/OiBzdHJpbmdcclxuICBwcm9jZXNzaW5nTWF4PzogbnVtYmVyXHJcbiAgcmF0ZVZhbHVlPzogbnVtYmVyXHJcbiAgcmF0ZU1heD86IG51bWJlclxyXG4gIHJhdGVMYWJlbD86IHN0cmluZ1xyXG4gIHJhdGVVbml0Pzogc3RyaW5nXHJcbiAgc2Vjb25kYXJ5UmF0ZVZhbHVlPzogbnVtYmVyXHJcbiAgc2Vjb25kYXJ5UmF0ZU1heD86IG51bWJlclxyXG4gIHNlY29uZGFyeVJhdGVMYWJlbD86IHN0cmluZ1xyXG4gIHNlY29uZGFyeVJhdGVVbml0Pzogc3RyaW5nXHJcbn1cclxuXHJcbmNvbnN0IHByb3BzID0gd2l0aERlZmF1bHRzKGRlZmluZVByb3BzPFByb3BzPigpLCB7XHJcbiAgdGl0bGU6ICdQcm9jZXNzaW5nJyxcclxuICBwcm9jZXNzaW5nVmFsdWU6IG51bGwsXHJcbiAgcHJvY2Vzc2luZ1VuaXQ6ICdtcycsXHJcbiAgcHJvY2Vzc2luZ0xhYmVsOiAnSW5mZXJlbmNlIGxhdGVuY3knLFxyXG4gIHByb2Nlc3NpbmdNYXg6IDAsXHJcbiAgcmF0ZVZhbHVlOiAwLFxyXG4gIHJhdGVNYXg6IDYwLFxyXG4gIHJhdGVMYWJlbDogJ0NvbnRleHQgdXBkYXRlcycsXHJcbiAgcmF0ZVVuaXQ6ICcvbWluJyxcclxuICBzZWNvbmRhcnlSYXRlVmFsdWU6IHVuZGVmaW5lZCxcclxuICBzZWNvbmRhcnlSYXRlTWF4OiA2MCxcclxuICBzZWNvbmRhcnlSYXRlTGFiZWw6ICdDYXB0dXJlIHJhdGUnLFxyXG4gIHNlY29uZGFyeVJhdGVVbml0OiAnL21pbicsXHJcbn0pXHJcblxyXG5jb25zdCByZXNvbHZlZFByb2Nlc3NpbmdNYXggPSBjb21wdXRlZCgoKSA9PiB7XHJcbiAgY29uc3QgaGlzdG9yeU1heCA9IHByb3BzLnByb2Nlc3NpbmdIaXN0b3J5Lmxlbmd0aCA+IDBcclxuICAgID8gTWF0aC5tYXgoLi4ucHJvcHMucHJvY2Vzc2luZ0hpc3RvcnkpXHJcbiAgICA6IDBcclxuICByZXR1cm4gTWF0aC5tYXgoMSwgcHJvcHMucHJvY2Vzc2luZ01heCB8fCAwLCBoaXN0b3J5TWF4KVxyXG59KVxyXG5cclxuY29uc3QgcHJvY2Vzc2luZ1ZhbHVlUmVzb2x2ZWQgPSBjb21wdXRlZCgoKSA9PiB7XHJcbiAgaWYgKHByb3BzLnByb2Nlc3NpbmdWYWx1ZSAhPT0gbnVsbCAmJiBwcm9wcy5wcm9jZXNzaW5nVmFsdWUgIT09IHVuZGVmaW5lZClcclxuICAgIHJldHVybiBwcm9wcy5wcm9jZXNzaW5nVmFsdWVcclxuICByZXR1cm4gcHJvcHMucHJvY2Vzc2luZ0hpc3RvcnkuYXQoLTEpID8/IDBcclxufSlcclxuXHJcbmNvbnN0IG5vcm1hbGl6ZWRQcm9jZXNzaW5nSGlzdG9yeSA9IGNvbXB1dGVkKCgpID0+IHtcclxuICBjb25zdCBtYXhWYWx1ZSA9IHJlc29sdmVkUHJvY2Vzc2luZ01heC52YWx1ZVxyXG4gIHJldHVybiBwcm9wcy5wcm9jZXNzaW5nSGlzdG9yeS5tYXAodmFsdWUgPT4gTWF0aC5taW4oMSwgdmFsdWUgLyBtYXhWYWx1ZSkpXHJcbn0pXHJcblxyXG5jb25zdCBub3JtYWxpemVkUHJvY2Vzc2luZ1ZhbHVlID0gY29tcHV0ZWQoKCkgPT4ge1xyXG4gIHJldHVybiBNYXRoLm1pbigxLCBwcm9jZXNzaW5nVmFsdWVSZXNvbHZlZC52YWx1ZSAvIHJlc29sdmVkUHJvY2Vzc2luZ01heC52YWx1ZSlcclxufSlcclxuXHJcbmNvbnN0IGZvcm1hdHRlZFByb2Nlc3NpbmdWYWx1ZSA9IGNvbXB1dGVkKCgpID0+IHtcclxuICByZXR1cm4gYCR7cHJvY2Vzc2luZ1ZhbHVlUmVzb2x2ZWQudmFsdWUudG9GaXhlZCgwKX0ke3Byb3BzLnByb2Nlc3NpbmdVbml0fWBcclxufSlcclxuPC9zY3JpcHQ+XHJcblxyXG48dGVtcGxhdGU+XHJcbiAgPGRpdiA6Y2xhc3M9XCJbJ2ZsZXgnLCAnZmxleC1jb2wnLCAnZ2FwLTQnLCAncm91bmRlZC0yeGwnLCAnYmctd2hpdGUvNzAnLCAncC00JywgJ3NoYWRvdy1zbScsICdkYXJrOmJnLW5ldXRyYWwtOTAwLzUwJ11cIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvZ2FkZ2V0cy9wcm9jZXNzaW5nLW1ldGVyLnZ1ZTo2ODozXCI+XHJcbiAgICA8ZGl2IDpjbGFzcz1cIlsnZmxleCcsICdpdGVtcy1jZW50ZXInLCAnanVzdGlmeS1iZXR3ZWVuJ11cIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvZ2FkZ2V0cy9wcm9jZXNzaW5nLW1ldGVyLnZ1ZTo2OTo1XCI+XHJcbiAgICAgIDxkaXYgOmNsYXNzPVwiWydmbGV4JywgJ2ZsZXgtY29sJywgJ2dhcC0xJ11cIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvZ2FkZ2V0cy9wcm9jZXNzaW5nLW1ldGVyLnZ1ZTo3MDo3XCI+XHJcbiAgICAgICAgPGRpdiA6Y2xhc3M9XCJbJ3RleHQteHMnLCAndXBwZXJjYXNlJywgJ3RyYWNraW5nLXdpZGUnLCAndGV4dC1uZXV0cmFsLTQwMCddXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL2dhZGdldHMvcHJvY2Vzc2luZy1tZXRlci52dWU6NzE6OVwiPlxyXG4gICAgICAgICAge3sgdGl0bGUgfX1cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgICA8ZGl2IDpjbGFzcz1cIlsndGV4dC1iYXNlJywgJ2ZvbnQtc2VtaWJvbGQnLCAndGV4dC1uZXV0cmFsLTcwMCcsICdkYXJrOnRleHQtbmV1dHJhbC0yMDAnXVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9nYWRnZXRzL3Byb2Nlc3NpbmctbWV0ZXIudnVlOjc0OjlcIj5cclxuICAgICAgICAgIHt7IHByb2Nlc3NpbmdMYWJlbCB9fVxyXG4gICAgICAgIDwvZGl2PlxyXG4gICAgICA8L2Rpdj5cclxuICAgICAgPGRpdiA6Y2xhc3M9XCJbJ3RleHQtc20nLCAndGV4dC1uZXV0cmFsLTUwMCcsICdkYXJrOnRleHQtbmV1dHJhbC00MDAnXVwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9nYWRnZXRzL3Byb2Nlc3NpbmctbWV0ZXIudnVlOjc4OjdcIj5cclxuICAgICAgICB7eyBmb3JtYXR0ZWRQcm9jZXNzaW5nVmFsdWUgfX1cclxuICAgICAgPC9kaXY+XHJcbiAgICA8L2Rpdj5cclxuXHJcbiAgICA8VGltZVNlcmllc0NoYXJ0XHJcbiAgICAgIDppcy1hY3RpdmU9XCJmYWxzZVwiXHJcbiAgICAgIDpoaXN0b3J5PVwibm9ybWFsaXplZFByb2Nlc3NpbmdIaXN0b3J5XCJcclxuICAgICAgOmN1cnJlbnQtdmFsdWU9XCJub3JtYWxpemVkUHJvY2Vzc2luZ1ZhbHVlXCJcclxuICAgICAgOnNob3ctbGVnZW5kPVwiZmFsc2VcIlxyXG4gICAgICA6c2hvdy1oZWFkZXI9XCJmYWxzZVwiXHJcbiAgICAgIDpzaG93LWFyZWE9XCJ0cnVlXCJcclxuICAgICAgOnNob3ctYWN0aXZlLWluZGljYXRvcj1cImZhbHNlXCJcclxuICAgICAgOnNob3ctY3VycmVudC12YWx1ZT1cImZhbHNlXCJcclxuICAgICAgOmhlaWdodD1cIjcyXCJcclxuICAgICAgOnByZWNpc2lvbj1cIjBcIlxyXG4gICAgICA6dW5pdD1cInByb2Nlc3NpbmdVbml0XCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL2dhZGdldHMvcHJvY2Vzc2luZy1tZXRlci52dWU6ODM6NVwiXHJcbiAgICAvPlxyXG5cclxuICAgIDxkaXYgOmNsYXNzPVwiWydncmlkJywgJ2dhcC00JywgJ21kOmdyaWQtY29scy0yJ11cIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvZ2FkZ2V0cy9wcm9jZXNzaW5nLW1ldGVyLnZ1ZTo5Nzo1XCI+XHJcbiAgICAgIDxMZXZlbE1ldGVyXHJcbiAgICAgICAgOmxldmVsPVwicmF0ZVZhbHVlXCJcclxuICAgICAgICA6bWluPVwiMFwiXHJcbiAgICAgICAgOm1heD1cInJhdGVNYXhcIlxyXG4gICAgICAgIDpsYWJlbD1cInJhdGVMYWJlbFwiXHJcbiAgICAgICAgOnVuaXQ9XCJyYXRlVW5pdFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9nYWRnZXRzL3Byb2Nlc3NpbmctbWV0ZXIudnVlOjk4OjdcIlxyXG4gICAgICAvPlxyXG5cclxuICAgICAgPExldmVsTWV0ZXJcclxuICAgICAgICB2LWlmPVwic2Vjb25kYXJ5UmF0ZVZhbHVlICE9PSB1bmRlZmluZWRcIlxyXG4gICAgICAgIDpsZXZlbD1cInNlY29uZGFyeVJhdGVWYWx1ZVwiXHJcbiAgICAgICAgOm1pbj1cIjBcIlxyXG4gICAgICAgIDptYXg9XCJzZWNvbmRhcnlSYXRlTWF4XCJcclxuICAgICAgICA6bGFiZWw9XCJzZWNvbmRhcnlSYXRlTGFiZWxcIlxyXG4gICAgICAgIDp1bml0PVwic2Vjb25kYXJ5UmF0ZVVuaXRcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvZ2FkZ2V0cy9wcm9jZXNzaW5nLW1ldGVyLnZ1ZToxMDY6N1wiXHJcbiAgICAgIC8+XHJcbiAgICA8L2Rpdj5cclxuICA8L2Rpdj5cclxuPC90ZW1wbGF0ZT5cclxuIl0sImZpbGUiOiJDOi9Vc2Vycy9BZG1pbmlzdHJhdG9yL2FpcmktYXBwL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL2dhZGdldHMvcHJvY2Vzc2luZy1tZXRlci52dWUifQ==

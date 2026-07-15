@@ -1,0 +1,287 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/settings/model-settings/preview-stage.vue");/* Injection by vite-plugin-vue-inspector Start */
+import { createVNode as __createVNode,createElementBlock as __createElementBlock } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d"
+function _interopVNode(vnode) {
+  if (vnode && vnode.props && 'data-v-inspector' in vnode.props) {
+    const data = vnode.props['data-v-inspector']
+    delete vnode.props['data-v-inspector']
+    Object.defineProperty(vnode.props, '__v_inspector', { value: data, enumerable: false })
+  }
+  return vnode
+}
+function _createVNode(...args) { return _interopVNode(__createVNode(...args)) }
+function _createElementBlock(...args) { return _interopVNode(__createElementBlock(...args)) }
+/* Injection by vite-plugin-vue-inspector End */
+import { defineComponent as _defineComponent } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import { Live2DScene } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui-live2d/src/index.ts";
+import { SpineScene } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui-spine/src/index.ts";
+import { ThreeScene, useModelStore } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui-three/src/index.ts";
+import { useMouse } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/@vueuse_core.js?v=6c17d38d";
+import { storeToRefs } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/pinia.js?v=6c17d38d";
+import { computed, ref, watch } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import { useSettings } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/stores/settings/index.ts";
+import { createEmptyModelSettingsRuntimeSnapshot, resolveComponentStateToRuntimePhase } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/settings/model-settings/runtime.ts";
+const _sfc_main = /* @__PURE__ */ _defineComponent({
+	__name: "preview-stage",
+	props: {
+		live2dSceneClass: {
+			type: [String, Array],
+			required: false
+		},
+		vrmSceneClass: {
+			type: [String, Array],
+			required: false
+		},
+		spineSceneClass: {
+			type: [String, Array],
+			required: false
+		}
+	},
+	emits: ["runtimeSnapshotChanged"],
+	setup(__props, { expose: __expose, emit: __emit }) {
+		const props = __props;
+		const emit = __emit;
+		const settingsStore = useSettings();
+		const modelStore = useModelStore();
+		const live2dSceneRef = ref();
+		const vrmSceneRef = ref();
+		const spineSceneRef = ref();
+		const live2dComponentState = ref("pending");
+		const spineComponentState = ref("pending");
+		const vrmPreviewStageInstanceId = `model-settings-preview-stage:${Math.random().toString(36).slice(2, 10)}`;
+		const { stageModelSelected, stageModelSelectedUrl, stageModelRenderer, themeColorsHue, themeColorsHueDynamic } = storeToRefs(settingsStore);
+		const { spinePremultipliedAlpha, spineDefaultMixDuration, spineIdleAnimationEnabled, spineMaxFps, spineRenderScale } = storeToRefs(settingsStore);
+		const { sceneMutationLocked, scenePhase } = storeToRefs(modelStore);
+		const live2dSceneClassList = computed(() => normalizeClassList(props.live2dSceneClass));
+		const vrmSceneClassList = computed(() => normalizeClassList(props.vrmSceneClass));
+		const spineSceneClassList = computed(() => normalizeClassList(props.spineSceneClass));
+		function normalizeClassList(value) {
+			if (!value) return [];
+			return typeof value === "string" ? [value] : value;
+		}
+		function captureCanvasFrame(canvas) {
+			return new Promise((resolve) => {
+				if (!canvas) return resolve(undefined);
+				canvas.toBlob((blob) => resolve(blob ?? undefined));
+			});
+		}
+		async function capturePreviewFrame() {
+			if (stageModelRenderer.value === "live2d") return captureCanvasFrame(live2dSceneRef.value?.canvasElement());
+			if (stageModelRenderer.value === "vrm") return captureCanvasFrame(vrmSceneRef.value?.canvasElement());
+			if (stageModelRenderer.value === "spine") return captureCanvasFrame(spineSceneRef.value?.canvasElement());
+			return undefined;
+		}
+		const runtimeSnapshot = computed(() => {
+			const hasModel = !!stageModelSelectedUrl.value;
+			if (stageModelRenderer.value === "live2d") {
+				const phase = resolveComponentStateToRuntimePhase(live2dComponentState.value, { hasModel });
+				return createEmptyModelSettingsRuntimeSnapshot({
+					ownerInstanceId: vrmPreviewStageInstanceId,
+					renderer: "live2d",
+					phase,
+					controlsLocked: hasModel ? phase !== "mounted" : false,
+					previewAvailable: hasModel,
+					canCapturePreview: !!live2dSceneRef.value?.canvasElement(),
+					updatedAt: Date.now()
+				});
+			}
+			if (stageModelRenderer.value === "vrm") {
+				return createEmptyModelSettingsRuntimeSnapshot({
+					ownerInstanceId: vrmPreviewStageInstanceId,
+					renderer: "vrm",
+					phase: hasModel ? scenePhase.value : "no-model",
+					controlsLocked: hasModel ? sceneMutationLocked.value : false,
+					previewAvailable: hasModel,
+					canCapturePreview: !!vrmSceneRef.value?.canvasElement(),
+					updatedAt: Date.now()
+				});
+			}
+			if (stageModelRenderer.value === "spine") {
+				const phase = resolveComponentStateToRuntimePhase(spineComponentState.value, { hasModel });
+				return createEmptyModelSettingsRuntimeSnapshot({
+					ownerInstanceId: vrmPreviewStageInstanceId,
+					renderer: "spine",
+					phase,
+					controlsLocked: hasModel ? phase !== "mounted" : false,
+					previewAvailable: hasModel,
+					canCapturePreview: !!spineSceneRef.value?.canvasElement(),
+					updatedAt: Date.now()
+				});
+			}
+			if (stageModelRenderer.value === "godot") {
+				return createEmptyModelSettingsRuntimeSnapshot({
+					ownerInstanceId: vrmPreviewStageInstanceId,
+					renderer: "godot",
+					phase: hasModel ? "mounted" : "no-model",
+					controlsLocked: false,
+					previewAvailable: false,
+					canCapturePreview: false,
+					updatedAt: Date.now()
+				});
+			}
+			return createEmptyModelSettingsRuntimeSnapshot({
+				ownerInstanceId: vrmPreviewStageInstanceId,
+				updatedAt: Date.now()
+			});
+		});
+		watch(runtimeSnapshot, (snapshot) => emit("runtimeSnapshotChanged", snapshot), { immediate: true });
+		__expose({ capturePreviewFrame });
+		const { x: mouseX, y: mouseY } = useMouse();
+		const cursorPosition = computed(() => ({
+			x: mouseX.value,
+			y: mouseY.value
+		}));
+		const __returned__ = {
+			props,
+			emit,
+			settingsStore,
+			modelStore,
+			live2dSceneRef,
+			vrmSceneRef,
+			spineSceneRef,
+			live2dComponentState,
+			spineComponentState,
+			vrmPreviewStageInstanceId,
+			stageModelSelected,
+			stageModelSelectedUrl,
+			stageModelRenderer,
+			themeColorsHue,
+			themeColorsHueDynamic,
+			spinePremultipliedAlpha,
+			spineDefaultMixDuration,
+			spineIdleAnimationEnabled,
+			spineMaxFps,
+			spineRenderScale,
+			sceneMutationLocked,
+			scenePhase,
+			live2dSceneClassList,
+			vrmSceneClassList,
+			spineSceneClassList,
+			normalizeClassList,
+			captureCanvasFrame,
+			capturePreviewFrame,
+			runtimeSnapshot,
+			mouseX,
+			mouseY,
+			cursorPosition,
+			get Live2DScene() {
+				return Live2DScene;
+			},
+			get SpineScene() {
+				return SpineScene;
+			},
+			get ThreeScene() {
+				return ThreeScene;
+			}
+		};
+		Object.defineProperty(__returned__, "__isScriptSetup", {
+			enumerable: false,
+			value: true
+		});
+		return __returned__;
+	}
+});
+import {  normalizeClass as _normalizeClass, openBlock as _openBlock,  createCommentVNode as _createCommentVNode, Fragment as _Fragment } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+	return _openBlock(), _createElementBlock(
+		_Fragment,
+		null,
+		[
+			$setup.stageModelRenderer === "live2d" ? (_openBlock(), _createElementBlock(
+				"div",
+				{
+					key: 0,
+					class: _normalizeClass($setup.live2dSceneClassList),
+					"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/preview-stage.vue:162:5"
+				},
+				[_createVNode($setup["Live2DScene"], {
+					ref: "live2dSceneRef",
+					state: $setup.live2dComponentState,
+					"onUpdate:state": _cache[0] || (_cache[0] = ($event) => $setup.live2dComponentState = $event),
+					"model-src": $setup.stageModelSelectedUrl,
+					"model-id": $setup.stageModelSelected,
+					"cursor-position": $setup.cursorPosition,
+					"theme-colors-hue": $setup.themeColorsHue,
+					"theme-colors-hue-dynamic": $setup.themeColorsHueDynamic,
+					"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/preview-stage.vue:163:7"
+				}, null, 8, [
+					"state",
+					"model-src",
+					"model-id",
+					"cursor-position",
+					"theme-colors-hue",
+					"theme-colors-hue-dynamic"
+				])],
+				2
+				/* CLASS */
+			)) : _createCommentVNode("v-if", true),
+			$setup.stageModelRenderer === "vrm" ? (_openBlock(), _createElementBlock(
+				"div",
+				{
+					key: 1,
+					class: _normalizeClass($setup.vrmSceneClassList),
+					"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/preview-stage.vue:175:5"
+				},
+				[_createVNode($setup["ThreeScene"], {
+					ref: "vrmSceneRef",
+					"cursor-position": $setup.cursorPosition,
+					"model-src": $setup.stageModelSelectedUrl,
+					"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/preview-stage.vue:176:7"
+				}, null, 8, ["cursor-position", "model-src"])],
+				2
+				/* CLASS */
+			)) : _createCommentVNode("v-if", true),
+			$setup.stageModelRenderer === "spine" ? (_openBlock(), _createElementBlock(
+				"div",
+				{
+					key: 2,
+					class: _normalizeClass($setup.spineSceneClassList),
+					"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/preview-stage.vue:180:5"
+				},
+				[_createVNode($setup["SpineScene"], {
+					ref: "spineSceneRef",
+					state: $setup.spineComponentState,
+					"onUpdate:state": _cache[1] || (_cache[1] = ($event) => $setup.spineComponentState = $event),
+					"model-src": $setup.stageModelSelectedUrl,
+					"model-id": $setup.stageModelSelected,
+					"premultiplied-alpha": $setup.spinePremultipliedAlpha,
+					"default-mix-duration": $setup.spineDefaultMixDuration,
+					"idle-animation-enabled": $setup.spineIdleAnimationEnabled,
+					"max-fps": $setup.spineMaxFps,
+					"render-scale": $setup.spineRenderScale,
+					"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/settings/model-settings/preview-stage.vue:181:7"
+				}, null, 8, [
+					"state",
+					"model-src",
+					"model-id",
+					"premultiplied-alpha",
+					"default-mix-duration",
+					"idle-animation-enabled",
+					"max-fps",
+					"render-scale"
+				])],
+				2
+				/* CLASS */
+			)) : _createCommentVNode("v-if", true)
+		],
+		64
+		/* STABLE_FRAGMENT */
+	);
+}
+_sfc_main.__hmrId = "4e87b1a4";
+typeof __VUE_HMR_RUNTIME__ !== "undefined" && __VUE_HMR_RUNTIME__.createRecord(_sfc_main.__hmrId, _sfc_main);
+import.meta.hot.on("file-changed", ({ file }) => {
+	__VUE_HMR_RUNTIME__.CHANGED_FILE = file;
+});
+import.meta.hot.accept((mod) => {
+	if (!mod) return;
+	const { default: updated, _rerender_only } = mod;
+	if (_rerender_only) {
+		__VUE_HMR_RUNTIME__.rerender(updated.__hmrId, updated.render);
+	} else {
+		__VUE_HMR_RUNTIME__.reload(updated.__hmrId, updated);
+	}
+});
+import _export_sfc from "/@id/__x00__plugin-vue:export-helper";
+export default /* @__PURE__ */ _export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/settings/model-settings/preview-stage.vue"]]);
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7QUFHQSxTQUFTLG1CQUFtQjtBQUM1QixTQUFTLGtCQUFrQjtBQUMzQixTQUFTLFlBQVkscUJBQXFCO0FBQzFDLFNBQVMsZ0JBQWdCO0FBQ3pCLFNBQVMsbUJBQW1CO0FBQzVCLFNBQVMsVUFBVSxLQUFLLGFBQWE7QUFFckMsU0FBUyxtQkFBbUI7QUFDNUIsU0FDRSx5Q0FDQSwyQ0FDSzs7Ozs7Ozs7Ozs7Ozs7Ozs7OztFQUVQLE1BQU0sUUFBUTtFQU1kLE1BQU0sT0FBTztFQUliLE1BQU0sZ0JBQWdCLGFBQWE7RUFDbkMsTUFBTSxhQUFhLGVBQWU7RUFDbEMsTUFBTSxpQkFBaUIsS0FBNkQ7RUFDcEYsTUFBTSxjQUFjLEtBQTZEO0VBQ2pGLE1BQU0sZ0JBQWdCLEtBQTZEO0VBQ25GLE1BQU0sdUJBQXVCLElBQXVDLFVBQVU7RUFDOUUsTUFBTSxzQkFBc0IsSUFBdUMsVUFBVTtFQUM3RSxNQUFNLDRCQUE0QixnQ0FBZ0MsS0FBSyxRQUFRLENBQUMsU0FBUyxHQUFHLENBQUMsTUFBTSxHQUFHLEdBQUc7RUFFekcsTUFBTSxFQUNKLG9CQUNBLHVCQUNBLG9CQUNBLGdCQUNBLDBCQUVFLFlBQVksY0FBYztFQUM5QixNQUFNLEVBQ0oseUJBQ0EseUJBQ0EsMkJBQ0EsYUFDQSxxQkFDRSxZQUFZLGNBQWM7RUFDOUIsTUFBTSxFQUFFLHFCQUFxQixlQUFlLFlBQVksV0FBVztFQUVuRSxNQUFNLHVCQUF1QixlQUFlLG1CQUFtQixNQUFNLGlCQUFpQixDQUFDO0VBQ3ZGLE1BQU0sb0JBQW9CLGVBQWUsbUJBQW1CLE1BQU0sY0FBYyxDQUFDO0VBQ2pGLE1BQU0sc0JBQXNCLGVBQWUsbUJBQW1CLE1BQU0sZ0JBQWdCLENBQUM7RUFFckYsU0FBUyxtQkFBbUIsT0FBMkI7QUFDckQsT0FBSSxDQUFDLE1BQ0gsUUFBTyxFQUFFO0FBRVgsVUFBTyxPQUFPLFVBQVUsV0FBVyxDQUFDLE1BQU0sR0FBRzs7RUFHL0MsU0FBUyxtQkFBbUIsUUFBNEI7QUFDdEQsVUFBTyxJQUFJLFNBQTJCLFlBQVk7QUFDaEQsUUFBSSxDQUFDLE9BQ0gsUUFBTyxRQUFRLFVBQVU7QUFFM0IsV0FBTyxRQUFPLFNBQVEsUUFBUSxRQUFRLFVBQVUsQ0FBQztLQUNqRDs7RUFHSixlQUFlLHNCQUFzQjtBQUNuQyxPQUFJLG1CQUFtQixVQUFVLFNBQy9CLFFBQU8sbUJBQW1CLGVBQWUsT0FBTyxlQUFlLENBQUM7QUFFbEUsT0FBSSxtQkFBbUIsVUFBVSxNQUMvQixRQUFPLG1CQUFtQixZQUFZLE9BQU8sZUFBZSxDQUFDO0FBRS9ELE9BQUksbUJBQW1CLFVBQVUsUUFDL0IsUUFBTyxtQkFBbUIsY0FBYyxPQUFPLGVBQWUsQ0FBQztBQUVqRSxVQUFPOztFQUdULE1BQU0sa0JBQWtCLGVBQTZDO0dBQ25FLE1BQU0sV0FBVyxDQUFDLENBQUMsc0JBQXNCO0FBRXpDLE9BQUksbUJBQW1CLFVBQVUsVUFBVTtJQUN6QyxNQUFNLFFBQVEsb0NBQW9DLHFCQUFxQixPQUFPLEVBQUUsVUFBVSxDQUFDO0FBRTNGLFdBQU8sd0NBQXdDO0tBQzdDLGlCQUFpQjtLQUNqQixVQUFVO0tBQ1Y7S0FDQSxnQkFBZ0IsV0FBVyxVQUFVLFlBQVk7S0FDakQsa0JBQWtCO0tBQ2xCLG1CQUFtQixDQUFDLENBQUMsZUFBZSxPQUFPLGVBQWU7S0FDMUQsV0FBVyxLQUFLO0tBQ2pCLENBQUM7O0FBR0osT0FBSSxtQkFBbUIsVUFBVSxPQUFPO0FBQ3RDLFdBQU8sd0NBQXdDO0tBQzdDLGlCQUFpQjtLQUNqQixVQUFVO0tBQ1YsT0FBTyxXQUFXLFdBQVcsUUFBUTtLQUNyQyxnQkFBZ0IsV0FBVyxvQkFBb0IsUUFBUTtLQUN2RCxrQkFBa0I7S0FDbEIsbUJBQW1CLENBQUMsQ0FBQyxZQUFZLE9BQU8sZUFBZTtLQUN2RCxXQUFXLEtBQUs7S0FDakIsQ0FBQzs7QUFHSixPQUFJLG1CQUFtQixVQUFVLFNBQVM7SUFDeEMsTUFBTSxRQUFRLG9DQUFvQyxvQkFBb0IsT0FBTyxFQUFFLFVBQVUsQ0FBQztBQUUxRixXQUFPLHdDQUF3QztLQUM3QyxpQkFBaUI7S0FDakIsVUFBVTtLQUNWO0tBQ0EsZ0JBQWdCLFdBQVcsVUFBVSxZQUFZO0tBQ2pELGtCQUFrQjtLQUNsQixtQkFBbUIsQ0FBQyxDQUFDLGNBQWMsT0FBTyxlQUFlO0tBQ3pELFdBQVcsS0FBSztLQUNqQixDQUFDOztBQUdKLE9BQUksbUJBQW1CLFVBQVUsU0FBUztBQUN4QyxXQUFPLHdDQUF3QztLQUM3QyxpQkFBaUI7S0FDakIsVUFBVTtLQUNWLE9BQU8sV0FBVyxZQUFZO0tBQzlCLGdCQUFnQjtLQUNoQixrQkFBa0I7S0FDbEIsbUJBQW1CO0tBQ25CLFdBQVcsS0FBSztLQUNqQixDQUFDOztBQUdKLFVBQU8sd0NBQXdDO0lBQzdDLGlCQUFpQjtJQUNqQixXQUFXLEtBQUs7SUFDakIsQ0FBQztJQUNGO0FBRUYsUUFBTSxrQkFBaUIsYUFBWSxLQUFLLDBCQUEwQixTQUFTLEVBQUUsRUFBRSxXQUFXLE1BQU0sQ0FBQztBQUVqRyxXQUFhLEVBQ1gscUJBQ0QsQ0FBQztFQUVGLE1BQU0sRUFBRSxHQUFHLFFBQVEsR0FBRyxXQUFXLFVBQVU7RUFDM0MsTUFBTSxpQkFBaUIsZ0JBQWdCO0dBQ3JDLEdBQUcsT0FBTztHQUNWLEdBQUcsT0FBTztHQUNYLEVBQUU7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztHQUllLDhCQUFrQiwwQkFDaEM7SUFVTTtJQUFBOztLQVZBLE9BQUssZ0JBQUUsNEJBQW9CO0tBQUUsb0JBQWlCOztLQUNsRCxhQVFFO0tBUEEsS0FBSTtLQUNJLE9BQU87NkRBQUEsOEJBQW9CO0tBQ2xDLGFBQVc7S0FDWCxZQUFVO0tBQ1YsbUJBQWlCO0tBQ2pCLG9CQUFrQjtLQUNsQiw0QkFBMEI7S0FBdUIsb0JBQWlCOzs7Ozs7Ozs7Ozs7R0FJekQsOEJBQWtCLHVCQUNoQztJQUVNO0lBQUE7O0tBRkEsT0FBSyxnQkFBRSx5QkFBaUI7S0FBRSxvQkFBaUI7O0tBQy9DLGFBQXlOO0tBQTdNLEtBQUk7S0FBZSxtQkFBaUI7S0FBaUIsYUFBVztLQUF1QixvQkFBaUI7Ozs7O0dBR3hHLDhCQUFrQix5QkFDaEM7SUFZTTtJQUFBOztLQVpBLE9BQUssZ0JBQUUsMkJBQW1CO0tBQUUsb0JBQWlCOztLQUNqRCxhQVVFO0tBVEEsS0FBSTtLQUNJLE9BQU87NkRBQUEsNkJBQW1CO0tBQ2pDLGFBQVc7S0FDWCxZQUFVO0tBQ1YsdUJBQXFCO0tBQ3JCLHdCQUFzQjtLQUN0QiwwQkFBd0I7S0FDeEIsV0FBUztLQUNULGdCQUFjO0tBQWtCLG9CQUFpQiIsIm5hbWVzIjpbXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsicHJldmlldy1zdGFnZS52dWUiXSwic291cmNlc0NvbnRlbnQiOlsiPHNjcmlwdCBzZXR1cCBsYW5nPVwidHNcIj5cclxuaW1wb3J0IHR5cGUgeyBNb2RlbFNldHRpbmdzUnVudGltZVNuYXBzaG90IH0gZnJvbSAnLi9ydW50aW1lJ1xyXG5cclxuaW1wb3J0IHsgTGl2ZTJEU2NlbmUgfSBmcm9tICdAcHJvai1haXJpL3N0YWdlLXVpLWxpdmUyZCdcclxuaW1wb3J0IHsgU3BpbmVTY2VuZSB9IGZyb20gJ0Bwcm9qLWFpcmkvc3RhZ2UtdWktc3BpbmUnXHJcbmltcG9ydCB7IFRocmVlU2NlbmUsIHVzZU1vZGVsU3RvcmUgfSBmcm9tICdAcHJvai1haXJpL3N0YWdlLXVpLXRocmVlJ1xyXG5pbXBvcnQgeyB1c2VNb3VzZSB9IGZyb20gJ0B2dWV1c2UvY29yZSdcclxuaW1wb3J0IHsgc3RvcmVUb1JlZnMgfSBmcm9tICdwaW5pYSdcclxuaW1wb3J0IHsgY29tcHV0ZWQsIHJlZiwgd2F0Y2ggfSBmcm9tICd2dWUnXHJcblxyXG5pbXBvcnQgeyB1c2VTZXR0aW5ncyB9IGZyb20gJy4uLy4uLy4uLy4uL3N0b3Jlcy9zZXR0aW5ncydcclxuaW1wb3J0IHtcclxuICBjcmVhdGVFbXB0eU1vZGVsU2V0dGluZ3NSdW50aW1lU25hcHNob3QsXHJcbiAgcmVzb2x2ZUNvbXBvbmVudFN0YXRlVG9SdW50aW1lUGhhc2UsXHJcbn0gZnJvbSAnLi9ydW50aW1lJ1xyXG5cclxuY29uc3QgcHJvcHMgPSBkZWZpbmVQcm9wczx7XHJcbiAgbGl2ZTJkU2NlbmVDbGFzcz86IHN0cmluZyB8IHN0cmluZ1tdXHJcbiAgdnJtU2NlbmVDbGFzcz86IHN0cmluZyB8IHN0cmluZ1tdXHJcbiAgc3BpbmVTY2VuZUNsYXNzPzogc3RyaW5nIHwgc3RyaW5nW11cclxufT4oKVxyXG5cclxuY29uc3QgZW1pdCA9IGRlZmluZUVtaXRzPHtcclxuICAoZTogJ3J1bnRpbWVTbmFwc2hvdENoYW5nZWQnLCB2YWx1ZTogTW9kZWxTZXR0aW5nc1J1bnRpbWVTbmFwc2hvdCk6IHZvaWRcclxufT4oKVxyXG5cclxuY29uc3Qgc2V0dGluZ3NTdG9yZSA9IHVzZVNldHRpbmdzKClcclxuY29uc3QgbW9kZWxTdG9yZSA9IHVzZU1vZGVsU3RvcmUoKVxyXG5jb25zdCBsaXZlMmRTY2VuZVJlZiA9IHJlZjx7IGNhbnZhc0VsZW1lbnQ6ICgpID0+IEhUTUxDYW52YXNFbGVtZW50IHwgdW5kZWZpbmVkIH0+KClcclxuY29uc3QgdnJtU2NlbmVSZWYgPSByZWY8eyBjYW52YXNFbGVtZW50OiAoKSA9PiBIVE1MQ2FudmFzRWxlbWVudCB8IHVuZGVmaW5lZCB9PigpXHJcbmNvbnN0IHNwaW5lU2NlbmVSZWYgPSByZWY8eyBjYW52YXNFbGVtZW50OiAoKSA9PiBIVE1MQ2FudmFzRWxlbWVudCB8IHVuZGVmaW5lZCB9PigpXHJcbmNvbnN0IGxpdmUyZENvbXBvbmVudFN0YXRlID0gcmVmPCdwZW5kaW5nJyB8ICdsb2FkaW5nJyB8ICdtb3VudGVkJz4oJ3BlbmRpbmcnKVxyXG5jb25zdCBzcGluZUNvbXBvbmVudFN0YXRlID0gcmVmPCdwZW5kaW5nJyB8ICdsb2FkaW5nJyB8ICdtb3VudGVkJz4oJ3BlbmRpbmcnKVxyXG5jb25zdCB2cm1QcmV2aWV3U3RhZ2VJbnN0YW5jZUlkID0gYG1vZGVsLXNldHRpbmdzLXByZXZpZXctc3RhZ2U6JHtNYXRoLnJhbmRvbSgpLnRvU3RyaW5nKDM2KS5zbGljZSgyLCAxMCl9YFxyXG5cclxuY29uc3Qge1xyXG4gIHN0YWdlTW9kZWxTZWxlY3RlZCxcclxuICBzdGFnZU1vZGVsU2VsZWN0ZWRVcmwsXHJcbiAgc3RhZ2VNb2RlbFJlbmRlcmVyLFxyXG4gIHRoZW1lQ29sb3JzSHVlLFxyXG4gIHRoZW1lQ29sb3JzSHVlRHluYW1pYyxcclxuXHJcbn0gPSBzdG9yZVRvUmVmcyhzZXR0aW5nc1N0b3JlKVxyXG5jb25zdCB7XHJcbiAgc3BpbmVQcmVtdWx0aXBsaWVkQWxwaGEsXHJcbiAgc3BpbmVEZWZhdWx0TWl4RHVyYXRpb24sXHJcbiAgc3BpbmVJZGxlQW5pbWF0aW9uRW5hYmxlZCxcclxuICBzcGluZU1heEZwcyxcclxuICBzcGluZVJlbmRlclNjYWxlLFxyXG59ID0gc3RvcmVUb1JlZnMoc2V0dGluZ3NTdG9yZSlcclxuY29uc3QgeyBzY2VuZU11dGF0aW9uTG9ja2VkLCBzY2VuZVBoYXNlIH0gPSBzdG9yZVRvUmVmcyhtb2RlbFN0b3JlKVxyXG5cclxuY29uc3QgbGl2ZTJkU2NlbmVDbGFzc0xpc3QgPSBjb21wdXRlZCgoKSA9PiBub3JtYWxpemVDbGFzc0xpc3QocHJvcHMubGl2ZTJkU2NlbmVDbGFzcykpXHJcbmNvbnN0IHZybVNjZW5lQ2xhc3NMaXN0ID0gY29tcHV0ZWQoKCkgPT4gbm9ybWFsaXplQ2xhc3NMaXN0KHByb3BzLnZybVNjZW5lQ2xhc3MpKVxyXG5jb25zdCBzcGluZVNjZW5lQ2xhc3NMaXN0ID0gY29tcHV0ZWQoKCkgPT4gbm9ybWFsaXplQ2xhc3NMaXN0KHByb3BzLnNwaW5lU2NlbmVDbGFzcykpXHJcblxyXG5mdW5jdGlvbiBub3JtYWxpemVDbGFzc0xpc3QodmFsdWU/OiBzdHJpbmcgfCBzdHJpbmdbXSkge1xyXG4gIGlmICghdmFsdWUpXHJcbiAgICByZXR1cm4gW11cclxuXHJcbiAgcmV0dXJuIHR5cGVvZiB2YWx1ZSA9PT0gJ3N0cmluZycgPyBbdmFsdWVdIDogdmFsdWVcclxufVxyXG5cclxuZnVuY3Rpb24gY2FwdHVyZUNhbnZhc0ZyYW1lKGNhbnZhcz86IEhUTUxDYW52YXNFbGVtZW50KSB7XHJcbiAgcmV0dXJuIG5ldyBQcm9taXNlPEJsb2IgfCB1bmRlZmluZWQ+KChyZXNvbHZlKSA9PiB7XHJcbiAgICBpZiAoIWNhbnZhcylcclxuICAgICAgcmV0dXJuIHJlc29sdmUodW5kZWZpbmVkKVxyXG5cclxuICAgIGNhbnZhcy50b0Jsb2IoYmxvYiA9PiByZXNvbHZlKGJsb2IgPz8gdW5kZWZpbmVkKSlcclxuICB9KVxyXG59XHJcblxyXG5hc3luYyBmdW5jdGlvbiBjYXB0dXJlUHJldmlld0ZyYW1lKCkge1xyXG4gIGlmIChzdGFnZU1vZGVsUmVuZGVyZXIudmFsdWUgPT09ICdsaXZlMmQnKVxyXG4gICAgcmV0dXJuIGNhcHR1cmVDYW52YXNGcmFtZShsaXZlMmRTY2VuZVJlZi52YWx1ZT8uY2FudmFzRWxlbWVudCgpKVxyXG5cclxuICBpZiAoc3RhZ2VNb2RlbFJlbmRlcmVyLnZhbHVlID09PSAndnJtJylcclxuICAgIHJldHVybiBjYXB0dXJlQ2FudmFzRnJhbWUodnJtU2NlbmVSZWYudmFsdWU/LmNhbnZhc0VsZW1lbnQoKSlcclxuXHJcbiAgaWYgKHN0YWdlTW9kZWxSZW5kZXJlci52YWx1ZSA9PT0gJ3NwaW5lJylcclxuICAgIHJldHVybiBjYXB0dXJlQ2FudmFzRnJhbWUoc3BpbmVTY2VuZVJlZi52YWx1ZT8uY2FudmFzRWxlbWVudCgpKVxyXG5cclxuICByZXR1cm4gdW5kZWZpbmVkXHJcbn1cclxuXHJcbmNvbnN0IHJ1bnRpbWVTbmFwc2hvdCA9IGNvbXB1dGVkPE1vZGVsU2V0dGluZ3NSdW50aW1lU25hcHNob3Q+KCgpID0+IHtcclxuICBjb25zdCBoYXNNb2RlbCA9ICEhc3RhZ2VNb2RlbFNlbGVjdGVkVXJsLnZhbHVlXHJcblxyXG4gIGlmIChzdGFnZU1vZGVsUmVuZGVyZXIudmFsdWUgPT09ICdsaXZlMmQnKSB7XHJcbiAgICBjb25zdCBwaGFzZSA9IHJlc29sdmVDb21wb25lbnRTdGF0ZVRvUnVudGltZVBoYXNlKGxpdmUyZENvbXBvbmVudFN0YXRlLnZhbHVlLCB7IGhhc01vZGVsIH0pXHJcblxyXG4gICAgcmV0dXJuIGNyZWF0ZUVtcHR5TW9kZWxTZXR0aW5nc1J1bnRpbWVTbmFwc2hvdCh7XHJcbiAgICAgIG93bmVySW5zdGFuY2VJZDogdnJtUHJldmlld1N0YWdlSW5zdGFuY2VJZCxcclxuICAgICAgcmVuZGVyZXI6ICdsaXZlMmQnLFxyXG4gICAgICBwaGFzZSxcclxuICAgICAgY29udHJvbHNMb2NrZWQ6IGhhc01vZGVsID8gcGhhc2UgIT09ICdtb3VudGVkJyA6IGZhbHNlLFxyXG4gICAgICBwcmV2aWV3QXZhaWxhYmxlOiBoYXNNb2RlbCxcclxuICAgICAgY2FuQ2FwdHVyZVByZXZpZXc6ICEhbGl2ZTJkU2NlbmVSZWYudmFsdWU/LmNhbnZhc0VsZW1lbnQoKSxcclxuICAgICAgdXBkYXRlZEF0OiBEYXRlLm5vdygpLFxyXG4gICAgfSlcclxuICB9XHJcblxyXG4gIGlmIChzdGFnZU1vZGVsUmVuZGVyZXIudmFsdWUgPT09ICd2cm0nKSB7XHJcbiAgICByZXR1cm4gY3JlYXRlRW1wdHlNb2RlbFNldHRpbmdzUnVudGltZVNuYXBzaG90KHtcclxuICAgICAgb3duZXJJbnN0YW5jZUlkOiB2cm1QcmV2aWV3U3RhZ2VJbnN0YW5jZUlkLFxyXG4gICAgICByZW5kZXJlcjogJ3ZybScsXHJcbiAgICAgIHBoYXNlOiBoYXNNb2RlbCA/IHNjZW5lUGhhc2UudmFsdWUgOiAnbm8tbW9kZWwnLFxyXG4gICAgICBjb250cm9sc0xvY2tlZDogaGFzTW9kZWwgPyBzY2VuZU11dGF0aW9uTG9ja2VkLnZhbHVlIDogZmFsc2UsXHJcbiAgICAgIHByZXZpZXdBdmFpbGFibGU6IGhhc01vZGVsLFxyXG4gICAgICBjYW5DYXB0dXJlUHJldmlldzogISF2cm1TY2VuZVJlZi52YWx1ZT8uY2FudmFzRWxlbWVudCgpLFxyXG4gICAgICB1cGRhdGVkQXQ6IERhdGUubm93KCksXHJcbiAgICB9KVxyXG4gIH1cclxuXHJcbiAgaWYgKHN0YWdlTW9kZWxSZW5kZXJlci52YWx1ZSA9PT0gJ3NwaW5lJykge1xyXG4gICAgY29uc3QgcGhhc2UgPSByZXNvbHZlQ29tcG9uZW50U3RhdGVUb1J1bnRpbWVQaGFzZShzcGluZUNvbXBvbmVudFN0YXRlLnZhbHVlLCB7IGhhc01vZGVsIH0pXHJcblxyXG4gICAgcmV0dXJuIGNyZWF0ZUVtcHR5TW9kZWxTZXR0aW5nc1J1bnRpbWVTbmFwc2hvdCh7XHJcbiAgICAgIG93bmVySW5zdGFuY2VJZDogdnJtUHJldmlld1N0YWdlSW5zdGFuY2VJZCxcclxuICAgICAgcmVuZGVyZXI6ICdzcGluZScsXHJcbiAgICAgIHBoYXNlLFxyXG4gICAgICBjb250cm9sc0xvY2tlZDogaGFzTW9kZWwgPyBwaGFzZSAhPT0gJ21vdW50ZWQnIDogZmFsc2UsXHJcbiAgICAgIHByZXZpZXdBdmFpbGFibGU6IGhhc01vZGVsLFxyXG4gICAgICBjYW5DYXB0dXJlUHJldmlldzogISFzcGluZVNjZW5lUmVmLnZhbHVlPy5jYW52YXNFbGVtZW50KCksXHJcbiAgICAgIHVwZGF0ZWRBdDogRGF0ZS5ub3coKSxcclxuICAgIH0pXHJcbiAgfVxyXG5cclxuICBpZiAoc3RhZ2VNb2RlbFJlbmRlcmVyLnZhbHVlID09PSAnZ29kb3QnKSB7XHJcbiAgICByZXR1cm4gY3JlYXRlRW1wdHlNb2RlbFNldHRpbmdzUnVudGltZVNuYXBzaG90KHtcclxuICAgICAgb3duZXJJbnN0YW5jZUlkOiB2cm1QcmV2aWV3U3RhZ2VJbnN0YW5jZUlkLFxyXG4gICAgICByZW5kZXJlcjogJ2dvZG90JyxcclxuICAgICAgcGhhc2U6IGhhc01vZGVsID8gJ21vdW50ZWQnIDogJ25vLW1vZGVsJyxcclxuICAgICAgY29udHJvbHNMb2NrZWQ6IGZhbHNlLFxyXG4gICAgICBwcmV2aWV3QXZhaWxhYmxlOiBmYWxzZSxcclxuICAgICAgY2FuQ2FwdHVyZVByZXZpZXc6IGZhbHNlLFxyXG4gICAgICB1cGRhdGVkQXQ6IERhdGUubm93KCksXHJcbiAgICB9KVxyXG4gIH1cclxuXHJcbiAgcmV0dXJuIGNyZWF0ZUVtcHR5TW9kZWxTZXR0aW5nc1J1bnRpbWVTbmFwc2hvdCh7XHJcbiAgICBvd25lckluc3RhbmNlSWQ6IHZybVByZXZpZXdTdGFnZUluc3RhbmNlSWQsXHJcbiAgICB1cGRhdGVkQXQ6IERhdGUubm93KCksXHJcbiAgfSlcclxufSlcclxuXHJcbndhdGNoKHJ1bnRpbWVTbmFwc2hvdCwgc25hcHNob3QgPT4gZW1pdCgncnVudGltZVNuYXBzaG90Q2hhbmdlZCcsIHNuYXBzaG90KSwgeyBpbW1lZGlhdGU6IHRydWUgfSlcclxuXHJcbmRlZmluZUV4cG9zZSh7XHJcbiAgY2FwdHVyZVByZXZpZXdGcmFtZSxcclxufSlcclxuXHJcbmNvbnN0IHsgeDogbW91c2VYLCB5OiBtb3VzZVkgfSA9IHVzZU1vdXNlKClcclxuY29uc3QgY3Vyc29yUG9zaXRpb24gPSBjb21wdXRlZCgoKSA9PiAoe1xyXG4gIHg6IG1vdXNlWC52YWx1ZSxcclxuICB5OiBtb3VzZVkudmFsdWUsXHJcbn0pKVxyXG48L3NjcmlwdD5cclxuXHJcbjx0ZW1wbGF0ZT5cclxuICA8dGVtcGxhdGUgdi1pZj1cInN0YWdlTW9kZWxSZW5kZXJlciA9PT0gJ2xpdmUyZCdcIj5cclxuICAgIDxkaXYgOmNsYXNzPVwibGl2ZTJkU2NlbmVDbGFzc0xpc3RcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL3ByZXZpZXctc3RhZ2UudnVlOjE2Mjo1XCI+XHJcbiAgICAgIDxMaXZlMkRTY2VuZVxyXG4gICAgICAgIHJlZj1cImxpdmUyZFNjZW5lUmVmXCJcclxuICAgICAgICB2LW1vZGVsOnN0YXRlPVwibGl2ZTJkQ29tcG9uZW50U3RhdGVcIlxyXG4gICAgICAgIDptb2RlbC1zcmM9XCJzdGFnZU1vZGVsU2VsZWN0ZWRVcmxcIlxyXG4gICAgICAgIDptb2RlbC1pZD1cInN0YWdlTW9kZWxTZWxlY3RlZFwiXHJcbiAgICAgICAgOmN1cnNvci1wb3NpdGlvbj1cImN1cnNvclBvc2l0aW9uXCJcclxuICAgICAgICA6dGhlbWUtY29sb3JzLWh1ZT1cInRoZW1lQ29sb3JzSHVlXCJcclxuICAgICAgICA6dGhlbWUtY29sb3JzLWh1ZS1keW5hbWljPVwidGhlbWVDb2xvcnNIdWVEeW5hbWljXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9wcmV2aWV3LXN0YWdlLnZ1ZToxNjM6N1wiXHJcbiAgICAgIC8+XHJcbiAgICA8L2Rpdj5cclxuICA8L3RlbXBsYXRlPlxyXG4gIDx0ZW1wbGF0ZSB2LWlmPVwic3RhZ2VNb2RlbFJlbmRlcmVyID09PSAndnJtJ1wiPlxyXG4gICAgPGRpdiA6Y2xhc3M9XCJ2cm1TY2VuZUNsYXNzTGlzdFwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvcHJldmlldy1zdGFnZS52dWU6MTc1OjVcIj5cclxuICAgICAgPFRocmVlU2NlbmUgcmVmPVwidnJtU2NlbmVSZWZcIiA6Y3Vyc29yLXBvc2l0aW9uPVwiY3Vyc29yUG9zaXRpb25cIiA6bW9kZWwtc3JjPVwic3RhZ2VNb2RlbFNlbGVjdGVkVXJsXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9zZXR0aW5ncy9tb2RlbC1zZXR0aW5ncy9wcmV2aWV3LXN0YWdlLnZ1ZToxNzY6N1wiIC8+XHJcbiAgICA8L2Rpdj5cclxuICA8L3RlbXBsYXRlPlxyXG4gIDx0ZW1wbGF0ZSB2LWlmPVwic3RhZ2VNb2RlbFJlbmRlcmVyID09PSAnc3BpbmUnXCI+XHJcbiAgICA8ZGl2IDpjbGFzcz1cInNwaW5lU2NlbmVDbGFzc0xpc3RcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL3ByZXZpZXctc3RhZ2UudnVlOjE4MDo1XCI+XHJcbiAgICAgIDxTcGluZVNjZW5lXHJcbiAgICAgICAgcmVmPVwic3BpbmVTY2VuZVJlZlwiXHJcbiAgICAgICAgdi1tb2RlbDpzdGF0ZT1cInNwaW5lQ29tcG9uZW50U3RhdGVcIlxyXG4gICAgICAgIDptb2RlbC1zcmM9XCJzdGFnZU1vZGVsU2VsZWN0ZWRVcmxcIlxyXG4gICAgICAgIDptb2RlbC1pZD1cInN0YWdlTW9kZWxTZWxlY3RlZFwiXHJcbiAgICAgICAgOnByZW11bHRpcGxpZWQtYWxwaGE9XCJzcGluZVByZW11bHRpcGxpZWRBbHBoYVwiXHJcbiAgICAgICAgOmRlZmF1bHQtbWl4LWR1cmF0aW9uPVwic3BpbmVEZWZhdWx0TWl4RHVyYXRpb25cIlxyXG4gICAgICAgIDppZGxlLWFuaW1hdGlvbi1lbmFibGVkPVwic3BpbmVJZGxlQW5pbWF0aW9uRW5hYmxlZFwiXHJcbiAgICAgICAgOm1heC1mcHM9XCJzcGluZU1heEZwc1wiXHJcbiAgICAgICAgOnJlbmRlci1zY2FsZT1cInNwaW5lUmVuZGVyU2NhbGVcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL3NldHRpbmdzL21vZGVsLXNldHRpbmdzL3ByZXZpZXctc3RhZ2UudnVlOjE4MTo3XCJcclxuICAgICAgLz5cclxuICAgIDwvZGl2PlxyXG4gIDwvdGVtcGxhdGU+XHJcbjwvdGVtcGxhdGU+XHJcbiJdLCJmaWxlIjoiQzovVXNlcnMvQWRtaW5pc3RyYXRvci9haXJpLWFwcC9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3Mvc2V0dGluZ3MvbW9kZWwtc2V0dGluZ3MvcHJldmlldy1zdGFnZS52dWUifQ==

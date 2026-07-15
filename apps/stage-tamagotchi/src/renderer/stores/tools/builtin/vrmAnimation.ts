@@ -76,8 +76,7 @@ const tools: Promise<Tool>[] = [
     description: 'List the body-gesture animations available to play on the active VRM character.',
     execute: async () => {
       const keys = Object.keys(vrmGestureAnimations)
-      console.log('[vrm_list_animations] returning', keys.length, 'animations',
-        'drawing:', keys.filter(k => k.includes('画') || k.includes('趴') || k.includes('飘')).join(', ') || '(none)')
+      console.log('[vrm_list_animations] returning', keys.length, 'animations', 'drawing:', keys.filter(k => k.includes('画') || k.includes('趴') || k.includes('飘')).join(', ') || '(none)')
       return serialize({ success: true, data: keys })
     },
     parameters: z.object({}),

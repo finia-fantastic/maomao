@@ -70,6 +70,20 @@ export const useArtistryStore = defineStore('artistry', () => {
     '1K',
   )
 
+  // --- Doubao Seedream (火山方舟) provider settings ---
+  const doubaoSeedreamApiKey = useLocalStorageManualReset<string>(
+    'artistry-doubao-seedream-api-key',
+    '', // Fill in your ARK API key from 火山方舟 控制台
+  )
+  const doubaoSeedreamEndpointId = useLocalStorageManualReset<string>(
+    'artistry-doubao-seedream-endpoint-id',
+    'ep-20260715013539-k65t4',
+  )
+  const doubaoSeedreamSize = useLocalStorageManualReset<string>(
+    'artistry-doubao-seedream-size',
+    '1024x1024',
+  )
+
   /**
    * Resets active settings to match current global user preferences.
    * This is typically called when switching to a card with no overrides.
@@ -101,6 +115,9 @@ export const useArtistryStore = defineStore('artistry', () => {
     nanobananaApiKey.reset()
     nanobananaModel.reset()
     nanobananaResolution.reset()
+    doubaoSeedreamApiKey.reset()
+    doubaoSeedreamEndpointId.reset()
+    doubaoSeedreamSize.reset()
 
     // Sync active state
     resetToGlobal()
@@ -134,6 +151,10 @@ export const useArtistryStore = defineStore('artistry', () => {
       return !!nanobananaApiKey.value
     }
 
+    if (activeProvider.value === 'doubao-seedream') {
+      return !!doubaoSeedreamApiKey.value && !!doubaoSeedreamEndpointId.value
+    }
+
     return true
   })
 
@@ -148,6 +169,9 @@ export const useArtistryStore = defineStore('artistry', () => {
     nanobananaApiKey: nanobananaApiKey.value,
     nanobananaModel: nanobananaModel.value,
     nanobananaResolution: nanobananaResolution.value,
+    doubaoSeedreamApiKey: doubaoSeedreamApiKey.value,
+    doubaoSeedreamEndpointId: doubaoSeedreamEndpointId.value,
+    doubaoSeedreamSize: doubaoSeedreamSize.value,
   }))
 
   return {
@@ -180,6 +204,9 @@ export const useArtistryStore = defineStore('artistry', () => {
     nanobananaApiKey,
     nanobananaModel,
     nanobananaResolution,
+    doubaoSeedreamApiKey,
+    doubaoSeedreamEndpointId,
+    doubaoSeedreamSize,
 
     resetToGlobal,
     resetState,

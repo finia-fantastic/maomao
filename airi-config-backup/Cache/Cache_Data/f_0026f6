@@ -1,0 +1,266 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/chat/components/assistant-item.vue");/* Injection by vite-plugin-vue-inspector Start */
+import { createBlock as __createBlock,createElementVNode as __createElementVNode,createElementBlock as __createElementBlock,createVNode as __createVNode } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d"
+function _interopVNode(vnode) {
+  if (vnode && vnode.props && 'data-v-inspector' in vnode.props) {
+    const data = vnode.props['data-v-inspector']
+    delete vnode.props['data-v-inspector']
+    Object.defineProperty(vnode.props, '__v_inspector', { value: data, enumerable: false })
+  }
+  return vnode
+}
+function _createBlock(...args) { return _interopVNode(__createBlock(...args)) }
+function _createElementVNode(...args) { return _interopVNode(__createElementVNode(...args)) }
+function _createElementBlock(...args) { return _interopVNode(__createElementBlock(...args)) }
+function _createVNode(...args) { return _interopVNode(__createVNode(...args)) }
+/* Injection by vite-plugin-vue-inspector End */
+import { defineComponent as _defineComponent } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import { isStageCapacitor, isStageWeb } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-shared/src/index.ts";
+import { computed } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+import ChatResponsePart from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/chat/components/response-part.vue";
+import ChatToolCallBlock from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/chat/components/tool-call-block.vue";
+import { MarkdownRenderer } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/markdown/index.ts";
+import { getChatHistoryItemCopyText } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/chat/utils.ts";
+import { ChatActionMenu } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/chat/components/action-menu/index.ts";
+import { createToolCallResultLookup, resolveToolCallBlockState } from "/@fs/C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/chat/components/tool-call-results.ts";
+const _sfc_main = /* @__PURE__ */ _defineComponent({
+	__name: "assistant-item",
+	props: {
+		message: {
+			type: Object,
+			required: true
+		},
+		label: {
+			type: String,
+			required: true
+		},
+		showPlaceholder: {
+			type: Boolean,
+			required: false,
+			default: false
+		},
+		variant: {
+			type: String,
+			required: false,
+			default: "desktop"
+		},
+		toolCallRenderers: {
+			type: Object,
+			required: false,
+			default: () => ({})
+		}
+	},
+	emits: [
+		"copy",
+		"delete",
+		"toolCallRerun"
+	],
+	setup(__props, { expose: __expose, emit: __emit }) {
+		__expose();
+		const props = __props;
+		const emit = __emit;
+		const resolvedSlices = computed(() => {
+			if (props.message.slices?.length) {
+				return props.message.slices;
+			}
+			if (typeof props.message.content === "string" && props.message.content.trim()) {
+				return [{
+					type: "text",
+					text: props.message.content
+				}];
+			}
+			if (Array.isArray(props.message.content)) {
+				const textPart = props.message.content.find((part) => "type" in part && part.type === "text");
+				if (textPart?.text) return [{
+					type: "text",
+					text: textPart.text
+				}];
+			}
+			return [];
+		});
+		const toolResultById = computed(() => {
+			return createToolCallResultLookup(resolvedSlices.value, props.message.tool_results);
+		});
+		function getToolCallResult(slice) {
+			if (slice.type !== "tool-call") {
+				return undefined;
+			}
+			return toolResultById.value.get(slice.toolCall.toolCallId);
+		}
+		function getToolCallState(slice) {
+			return resolveToolCallBlockState(getToolCallResult(slice));
+		}
+		function getToolCallRenderer(slice) {
+			if (slice.type !== "tool-call") {
+				return ChatToolCallBlock;
+			}
+			return props.toolCallRenderers[slice.toolCall.toolName] ?? ChatToolCallBlock;
+		}
+		const showLoader = computed(() => props.showPlaceholder && resolvedSlices.value.length === 0);
+		const containerClass = computed(() => props.variant === "mobile" ? "mr-0" : "mr-12");
+		const boxClasses = computed(() => [props.variant === "mobile" ? "px-2 py-2 text-sm bg-primary-50/90 dark:bg-primary-950/90" : "px-3 py-3 bg-primary-50/80 dark:bg-primary-950/80"]);
+		const copyText = computed(() => getChatHistoryItemCopyText(props.message));
+		const __returned__ = {
+			props,
+			emit,
+			resolvedSlices,
+			toolResultById,
+			getToolCallResult,
+			getToolCallState,
+			getToolCallRenderer,
+			showLoader,
+			containerClass,
+			boxClasses,
+			copyText,
+			get isStageCapacitor() {
+				return isStageCapacitor;
+			},
+			get isStageWeb() {
+				return isStageWeb;
+			},
+			ChatResponsePart,
+			get MarkdownRenderer() {
+				return MarkdownRenderer;
+			},
+			get ChatActionMenu() {
+				return ChatActionMenu;
+			}
+		};
+		Object.defineProperty(__returned__, "__isScriptSetup", {
+			enumerable: false,
+			value: true
+		});
+		return __returned__;
+	}
+});
+import { openBlock as _openBlock,  createCommentVNode as _createCommentVNode, toDisplayString as _toDisplayString,  renderList as _renderList, Fragment as _Fragment,  resolveDynamicComponent as _resolveDynamicComponent, normalizeClass as _normalizeClass, withCtx as _withCtx,  } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/vue.js?v=6c17d38d";
+const _hoisted_1 = {
+	class: "<sm:hidden",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/chat/components/assistant-item.vue:107:11"
+};
+const _hoisted_2 = {
+	"text-sm": "",
+	text: "black/60 dark:white/65",
+	"font-normal": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/chat/components/assistant-item.vue:108:13"
+};
+const _hoisted_3 = {
+	key: 1,
+	class: "flex flex-col gap-2 break-words",
+	text: "primary-700 dark:primary-100",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/chat/components/assistant-item.vue:110:11"
+};
+const _hoisted_4 = {
+	key: 2,
+	"i-eos-icons:three-dots-loading": "",
+	"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/chat/components/assistant-item.vue:128:11"
+};
+function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
+	return _openBlock(), _createElementBlock(
+		"div",
+		{
+			flex: "",
+			class: _normalizeClass([$setup.containerClass, "ph-no-capture"]),
+			"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/chat/components/assistant-item.vue:85:3"
+		},
+		[_createVNode($setup["ChatActionMenu"], {
+			"copy-text": $setup.copyText,
+			"can-delete": !$props.showPlaceholder,
+			onCopy: _cache[1] || (_cache[1] = ($event) => $setup.emit("copy")),
+			onDelete: _cache[2] || (_cache[2] = ($event) => $setup.emit("delete")),
+			"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/chat/components/assistant-item.vue:86:5"
+		}, {
+			default: _withCtx(({ setMeasuredElement }) => [_createElementVNode(
+				"div",
+				{
+					ref: setMeasuredElement,
+					flex: "~ col",
+					shadow: "sm primary-200/50 dark:none",
+					"min-w-20": "",
+					"gap-2": "",
+					"rounded-xl": "",
+					h: "unset <sm:fit",
+					class: _normalizeClass([$setup.boxClasses, ($setup.isStageWeb() || $setup.isStageCapacitor()) && $setup.props.variant === "mobile" ? "select-none sm:select-auto" : ""]),
+					"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/chat/components/assistant-item.vue:93:9"
+				},
+				[
+					$props.message.categorization ? (_openBlock(), _createBlock($setup["ChatResponsePart"], {
+						key: 0,
+						message: $props.message,
+						variant: $props.variant,
+						"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/chat/components/assistant-item.vue:102:11"
+					}, null, 8, ["message", "variant"])) : _createCommentVNode("v-if", true),
+					_createElementVNode("div", _hoisted_1, [_createElementVNode(
+						"span",
+						_hoisted_2,
+						_toDisplayString($props.label),
+						1
+						/* TEXT */
+					)]),
+					$setup.resolvedSlices.length > 0 ? (_openBlock(), _createElementBlock("div", _hoisted_3, [(_openBlock(true), _createElementBlock(
+						_Fragment,
+						null,
+						_renderList($setup.resolvedSlices, (slice, sliceIndex) => {
+							return _openBlock(), _createElementBlock(
+								_Fragment,
+								{ key: sliceIndex },
+								[slice.type === "tool-call" ? (_openBlock(), _createBlock(_resolveDynamicComponent($setup.getToolCallRenderer(slice)), {
+									key: 0,
+									"tool-call-id": slice.toolCall.toolCallId,
+									"tool-name": slice.toolCall.toolName,
+									args: slice.toolCall.args,
+									state: $setup.getToolCallState(slice),
+									result: $setup.getToolCallResult(slice)?.result,
+									onToolCallRerun: _cache[0] || (_cache[0] = ($event) => $setup.emit("toolCallRerun", $event)),
+									"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/chat/components/assistant-item.vue:112:15"
+								}, null, 40, [
+									"tool-call-id",
+									"tool-name",
+									"args",
+									"state",
+									"result"
+								])) : slice.type === "tool-call-result" ? (_openBlock(), _createElementBlock(
+									_Fragment,
+									{ key: 1 },
+									[],
+									64
+									/* STABLE_FRAGMENT */
+								)) : slice.type === "text" ? (_openBlock(), _createBlock($setup["MarkdownRenderer"], {
+									key: 2,
+									content: slice.text,
+									"data-v-inspector": "../../packages/stage-ui/src/components/scenarios/chat/components/assistant-item.vue:124:17"
+								}, null, 8, ["content"])) : _createCommentVNode("v-if", true)],
+								64
+								/* STABLE_FRAGMENT */
+							);
+						}),
+						128
+						/* KEYED_FRAGMENT */
+					))])) : $setup.showLoader ? (_openBlock(), _createElementBlock("div", _hoisted_4)) : _createCommentVNode("v-if", true)
+				],
+				2
+				/* CLASS */
+			)]),
+			_: 1
+		}, 8, ["copy-text", "can-delete"])],
+		2
+		/* CLASS */
+	);
+}
+_sfc_main.__hmrId = "c5cdf622";
+typeof __VUE_HMR_RUNTIME__ !== "undefined" && __VUE_HMR_RUNTIME__.createRecord(_sfc_main.__hmrId, _sfc_main);
+import.meta.hot.on("file-changed", ({ file }) => {
+	__VUE_HMR_RUNTIME__.CHANGED_FILE = file;
+});
+import.meta.hot.accept((mod) => {
+	if (!mod) return;
+	const { default: updated, _rerender_only } = mod;
+	if (_rerender_only) {
+		__VUE_HMR_RUNTIME__.rerender(updated.__hmrId, updated.render);
+	} else {
+		__VUE_HMR_RUNTIME__.reload(updated.__hmrId, updated);
+	}
+});
+import _export_sfc from "/@id/__x00__plugin-vue:export-helper";
+export default /* @__PURE__ */ _export_sfc(_sfc_main, [["render", _sfc_render], ["__file", "C:/Users/Administrator/airi-app/packages/stage-ui/src/components/scenarios/chat/components/assistant-item.vue"]]);
+
+//# sourceMappingURL=data:application/json;base64,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TUFBQTs7TUFBQTtLQUVySyxzQkFBZSxTQUFNLG1CQUFoQyxvQkFpQk0sT0FqQk4sWUFpQk0sb0JBaEJKO01BZVc7TUFBQTtNQUFBLFlBZjZCLHdCQUF0QixPQUFPLGVBQVU7OztlQUEyQixZQUFVO1FBQUEsQ0FHOUQsTUFBTSxTQUFJLDZCQUZsQixhQVNFLHlCQVJLLDJCQUFvQixNQUFLOztTQUU3QixnQkFBYyxNQUFNLFNBQVM7U0FDN0IsYUFBVyxNQUFNLFNBQVM7U0FDMUIsTUFBTSxNQUFNLFNBQVM7U0FDckIsT0FBTyx3QkFBaUIsTUFBSztTQUM3QixRQUFRLHlCQUFrQixNQUFLLEVBQUc7U0FDbEMsaUJBQWUsc0NBQUUsWUFBSSxpQkFBa0IsT0FBTTtTQUFHLG9CQUFpQjs7Ozs7OztjQUUvQyxNQUFNLFNBQUksb0NBQS9CO1NBQTBEO1NBQUE7U0FBQTtTQUFBOztTQUFBLElBQ3JDLE1BQU0sU0FBSSx3QkFDN0IsYUFBd0o7O1NBQXJJLFNBQVMsTUFBTTtTQUFNLG9CQUFpQjs7Ozs7Ozs7YUFJL0MsbUNBQWhCLG9CQUEySyxPQUEzSyxXQUEySyIsIm5hbWVzIjpbXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiYXNzaXN0YW50LWl0ZW0udnVlIl0sInNvdXJjZXNDb250ZW50IjpbIjxzY3JpcHQgc2V0dXAgbGFuZz1cInRzXCI+XHJcbmltcG9ydCB0eXBlIHsgQ2hhdEFzc2lzdGFudE1lc3NhZ2UsIENoYXRIaXN0b3J5SXRlbSwgQ2hhdFNsaWNlcywgQ2hhdFNsaWNlc1RleHQsIENoYXRTbGljZXNUb29sQ2FsbFJlc3VsdCB9IGZyb20gJy4uLy4uLy4uLy4uL3R5cGVzL2NoYXQnXHJcbmltcG9ydCB0eXBlIHsgQ2hhdFRvb2xDYWxsUmVuZGVyZXJSZWdpc3RyeSB9IGZyb20gJy4vdG9vbC1jYWxsLXJlbmRlcmVyJ1xyXG5cclxuaW1wb3J0IHsgaXNTdGFnZUNhcGFjaXRvciwgaXNTdGFnZVdlYiB9IGZyb20gJ0Bwcm9qLWFpcmkvc3RhZ2Utc2hhcmVkJ1xyXG5pbXBvcnQgeyBjb21wdXRlZCB9IGZyb20gJ3Z1ZSdcclxuXHJcbmltcG9ydCBDaGF0UmVzcG9uc2VQYXJ0IGZyb20gJy4vcmVzcG9uc2UtcGFydC52dWUnXHJcbmltcG9ydCBDaGF0VG9vbENhbGxCbG9jayBmcm9tICcuL3Rvb2wtY2FsbC1ibG9jay52dWUnXHJcblxyXG5pbXBvcnQgeyBNYXJrZG93blJlbmRlcmVyIH0gZnJvbSAnLi4vLi4vLi4vbWFya2Rvd24nXHJcbmltcG9ydCB7IGdldENoYXRIaXN0b3J5SXRlbUNvcHlUZXh0IH0gZnJvbSAnLi4vdXRpbHMnXHJcbmltcG9ydCB7IENoYXRBY3Rpb25NZW51IH0gZnJvbSAnLi9hY3Rpb24tbWVudSdcclxuaW1wb3J0IHsgY3JlYXRlVG9vbENhbGxSZXN1bHRMb29rdXAsIHJlc29sdmVUb29sQ2FsbEJsb2NrU3RhdGUgfSBmcm9tICcuL3Rvb2wtY2FsbC1yZXN1bHRzJ1xyXG5cclxuY29uc3QgcHJvcHMgPSB3aXRoRGVmYXVsdHMoZGVmaW5lUHJvcHM8e1xyXG4gIG1lc3NhZ2U6IENoYXRBc3Npc3RhbnRNZXNzYWdlXHJcbiAgbGFiZWw6IHN0cmluZ1xyXG4gIHNob3dQbGFjZWhvbGRlcj86IGJvb2xlYW5cclxuICB2YXJpYW50PzogJ2Rlc2t0b3AnIHwgJ21vYmlsZSdcclxuICB0b29sQ2FsbFJlbmRlcmVycz86IENoYXRUb29sQ2FsbFJlbmRlcmVyUmVnaXN0cnlcclxufT4oKSwge1xyXG4gIHNob3dQbGFjZWhvbGRlcjogZmFsc2UsXHJcbiAgdmFyaWFudDogJ2Rlc2t0b3AnLFxyXG4gIHRvb2xDYWxsUmVuZGVyZXJzOiAoKSA9PiAoe30pLFxyXG59KVxyXG5cclxuY29uc3QgZW1pdCA9IGRlZmluZUVtaXRzPHtcclxuICAoZTogJ2NvcHknKTogdm9pZFxyXG4gIChlOiAnZGVsZXRlJyk6IHZvaWRcclxuICAoZTogJ3Rvb2xDYWxsUmVydW4nLCBwYXlsb2FkOiB7IHRvb2xDYWxsSWQ6IHN0cmluZywgdG9vbE5hbWU6IHN0cmluZywgYXJnczogc3RyaW5nIH0pOiB2b2lkXHJcbn0+KClcclxuXHJcbmNvbnN0IHJlc29sdmVkU2xpY2VzID0gY29tcHV0ZWQ8Q2hhdFNsaWNlc1tdPigoKSA9PiB7XHJcbiAgaWYgKHByb3BzLm1lc3NhZ2Uuc2xpY2VzPy5sZW5ndGgpIHtcclxuICAgIHJldHVybiBwcm9wcy5tZXNzYWdlLnNsaWNlc1xyXG4gIH1cclxuXHJcbiAgaWYgKHR5cGVvZiBwcm9wcy5tZXNzYWdlLmNvbnRlbnQgPT09ICdzdHJpbmcnICYmIHByb3BzLm1lc3NhZ2UuY29udGVudC50cmltKCkpIHtcclxuICAgIHJldHVybiBbeyB0eXBlOiAndGV4dCcsIHRleHQ6IHByb3BzLm1lc3NhZ2UuY29udGVudCB9IHNhdGlzZmllcyBDaGF0U2xpY2VzVGV4dF1cclxuICB9XHJcblxyXG4gIGlmIChBcnJheS5pc0FycmF5KHByb3BzLm1lc3NhZ2UuY29udGVudCkpIHtcclxuICAgIGNvbnN0IHRleHRQYXJ0ID0gcHJvcHMubWVzc2FnZS5jb250ZW50LmZpbmQocGFydCA9PiAndHlwZScgaW4gcGFydCAmJiBwYXJ0LnR5cGUgPT09ICd0ZXh0JykgYXMgeyB0ZXh0Pzogc3RyaW5nIH0gfCB1bmRlZmluZWRcclxuICAgIGlmICh0ZXh0UGFydD8udGV4dClcclxuICAgICAgcmV0dXJuIFt7IHR5cGU6ICd0ZXh0JywgdGV4dDogdGV4dFBhcnQudGV4dCB9IHNhdGlzZmllcyBDaGF0U2xpY2VzVGV4dF1cclxuICB9XHJcblxyXG4gIHJldHVybiBbXVxyXG59KVxyXG5cclxuY29uc3QgdG9vbFJlc3VsdEJ5SWQgPSBjb21wdXRlZCgoKSA9PiB7XHJcbiAgcmV0dXJuIGNyZWF0ZVRvb2xDYWxsUmVzdWx0TG9va3VwKHJlc29sdmVkU2xpY2VzLnZhbHVlLCBwcm9wcy5tZXNzYWdlLnRvb2xfcmVzdWx0cylcclxufSlcclxuXHJcbmZ1bmN0aW9uIGdldFRvb2xDYWxsUmVzdWx0KHNsaWNlOiBDaGF0U2xpY2VzKTogQ2hhdFNsaWNlc1Rvb2xDYWxsUmVzdWx0IHwgdW5kZWZpbmVkIHtcclxuICBpZiAoc2xpY2UudHlwZSAhPT0gJ3Rvb2wtY2FsbCcpIHtcclxuICAgIHJldHVybiB1bmRlZmluZWRcclxuICB9XHJcblxyXG4gIHJldHVybiB0b29sUmVzdWx0QnlJZC52YWx1ZS5nZXQoc2xpY2UudG9vbENhbGwudG9vbENhbGxJZClcclxufVxyXG5cclxuZnVuY3Rpb24gZ2V0VG9vbENhbGxTdGF0ZShzbGljZTogQ2hhdFNsaWNlcyk6ICdleGVjdXRpbmcnIHwgJ2RvbmUnIHwgJ2Vycm9yJyB7XHJcbiAgcmV0dXJuIHJlc29sdmVUb29sQ2FsbEJsb2NrU3RhdGUoZ2V0VG9vbENhbGxSZXN1bHQoc2xpY2UpKVxyXG59XHJcblxyXG5mdW5jdGlvbiBnZXRUb29sQ2FsbFJlbmRlcmVyKHNsaWNlOiBDaGF0U2xpY2VzKSB7XHJcbiAgaWYgKHNsaWNlLnR5cGUgIT09ICd0b29sLWNhbGwnKSB7XHJcbiAgICByZXR1cm4gQ2hhdFRvb2xDYWxsQmxvY2tcclxuICB9XHJcblxyXG4gIHJldHVybiBwcm9wcy50b29sQ2FsbFJlbmRlcmVyc1tzbGljZS50b29sQ2FsbC50b29sTmFtZV0gPz8gQ2hhdFRvb2xDYWxsQmxvY2tcclxufVxyXG5cclxuY29uc3Qgc2hvd0xvYWRlciA9IGNvbXB1dGVkKCgpID0+IHByb3BzLnNob3dQbGFjZWhvbGRlciAmJiByZXNvbHZlZFNsaWNlcy52YWx1ZS5sZW5ndGggPT09IDApXHJcbmNvbnN0IGNvbnRhaW5lckNsYXNzID0gY29tcHV0ZWQoKCkgPT4gcHJvcHMudmFyaWFudCA9PT0gJ21vYmlsZScgPyAnbXItMCcgOiAnbXItMTInKVxyXG5jb25zdCBib3hDbGFzc2VzID0gY29tcHV0ZWQoKCkgPT4gW1xyXG4gIHByb3BzLnZhcmlhbnQgPT09ICdtb2JpbGUnID8gJ3B4LTIgcHktMiB0ZXh0LXNtIGJnLXByaW1hcnktNTAvOTAgZGFyazpiZy1wcmltYXJ5LTk1MC85MCcgOiAncHgtMyBweS0zIGJnLXByaW1hcnktNTAvODAgZGFyazpiZy1wcmltYXJ5LTk1MC84MCcsXHJcbl0pXHJcbmNvbnN0IGNvcHlUZXh0ID0gY29tcHV0ZWQoKCkgPT4gZ2V0Q2hhdEhpc3RvcnlJdGVtQ29weVRleHQocHJvcHMubWVzc2FnZSBhcyBDaGF0SGlzdG9yeUl0ZW0pKVxyXG48L3NjcmlwdD5cclxuXHJcbjx0ZW1wbGF0ZT5cclxuICA8ZGl2IGZsZXggOmNsYXNzPVwiY29udGFpbmVyQ2xhc3NcIiBjbGFzcz1cInBoLW5vLWNhcHR1cmVcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2NoYXQvY29tcG9uZW50cy9hc3Npc3RhbnQtaXRlbS52dWU6ODU6M1wiPlxyXG4gICAgPENoYXRBY3Rpb25NZW51XHJcbiAgICAgIDpjb3B5LXRleHQ9XCJjb3B5VGV4dFwiXHJcbiAgICAgIDpjYW4tZGVsZXRlPVwiIXNob3dQbGFjZWhvbGRlclwiXHJcbiAgICAgIEBjb3B5PVwiZW1pdCgnY29weScpXCJcclxuICAgICAgQGRlbGV0ZT1cImVtaXQoJ2RlbGV0ZScpXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9jaGF0L2NvbXBvbmVudHMvYXNzaXN0YW50LWl0ZW0udnVlOjg2OjVcIlxyXG4gICAgPlxyXG4gICAgICA8dGVtcGxhdGUgI2RlZmF1bHQ9XCJ7IHNldE1lYXN1cmVkRWxlbWVudCB9XCI+XHJcbiAgICAgICAgPGRpdlxyXG4gICAgICAgICAgOnJlZj1cInNldE1lYXN1cmVkRWxlbWVudFwiXHJcbiAgICAgICAgICBmbGV4PVwifiBjb2xcIiBzaGFkb3c9XCJzbSBwcmltYXJ5LTIwMC81MCBkYXJrOm5vbmVcIlxyXG4gICAgICAgICAgbWluLXctMjAgZ2FwLTIgcm91bmRlZC14bCBoPVwidW5zZXQgPHNtOmZpdFwiXHJcbiAgICAgICAgICA6Y2xhc3M9XCJbXHJcbiAgICAgICAgICAgIGJveENsYXNzZXMsXHJcbiAgICAgICAgICAgIChpc1N0YWdlV2ViKCkgfHwgaXNTdGFnZUNhcGFjaXRvcigpKSAmJiBwcm9wcy52YXJpYW50ID09PSAnbW9iaWxlJyA/ICdzZWxlY3Qtbm9uZSBzbTpzZWxlY3QtYXV0bycgOiAnJyxcclxuICAgICAgICAgIF1cIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2NoYXQvY29tcG9uZW50cy9hc3Npc3RhbnQtaXRlbS52dWU6OTM6OVwiXHJcbiAgICAgICAgPlxyXG4gICAgICAgICAgPENoYXRSZXNwb25zZVBhcnRcclxuICAgICAgICAgICAgdi1pZj1cIm1lc3NhZ2UuY2F0ZWdvcml6YXRpb25cIlxyXG4gICAgICAgICAgICA6bWVzc2FnZT1cIm1lc3NhZ2VcIlxyXG4gICAgICAgICAgICA6dmFyaWFudD1cInZhcmlhbnRcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2NoYXQvY29tcG9uZW50cy9hc3Npc3RhbnQtaXRlbS52dWU6MTAyOjExXCJcclxuICAgICAgICAgIC8+XHJcbiAgICAgICAgICA8ZGl2IGNsYXNzPVwiPHNtOmhpZGRlblwiIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvY2hhdC9jb21wb25lbnRzL2Fzc2lzdGFudC1pdGVtLnZ1ZToxMDc6MTFcIj5cclxuICAgICAgICAgICAgPHNwYW4gdGV4dC1zbSB0ZXh0PVwiYmxhY2svNjAgZGFyazp3aGl0ZS82NVwiIGZvbnQtbm9ybWFsIGRhdGEtdi1pbnNwZWN0b3I9XCIuLi8uLi9wYWNrYWdlcy9zdGFnZS11aS9zcmMvY29tcG9uZW50cy9zY2VuYXJpb3MvY2hhdC9jb21wb25lbnRzL2Fzc2lzdGFudC1pdGVtLnZ1ZToxMDg6MTNcIj57eyBsYWJlbCB9fTwvc3Bhbj5cclxuICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgPGRpdiB2LWlmPVwicmVzb2x2ZWRTbGljZXMubGVuZ3RoID4gMFwiIGNsYXNzPVwiZmxleCBmbGV4LWNvbCBnYXAtMiBicmVhay13b3Jkc1wiIHRleHQ9XCJwcmltYXJ5LTcwMCBkYXJrOnByaW1hcnktMTAwXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9jaGF0L2NvbXBvbmVudHMvYXNzaXN0YW50LWl0ZW0udnVlOjExMDoxMVwiPlxyXG4gICAgICAgICAgICA8dGVtcGxhdGUgdi1mb3I9XCIoc2xpY2UsIHNsaWNlSW5kZXgpIGluIHJlc29sdmVkU2xpY2VzXCIgOmtleT1cInNsaWNlSW5kZXhcIj5cclxuICAgICAgICAgICAgICA8Y29tcG9uZW50XHJcbiAgICAgICAgICAgICAgICA6aXM9XCJnZXRUb29sQ2FsbFJlbmRlcmVyKHNsaWNlKVwiXHJcbiAgICAgICAgICAgICAgICB2LWlmPVwic2xpY2UudHlwZSA9PT0gJ3Rvb2wtY2FsbCdcIlxyXG4gICAgICAgICAgICAgICAgOnRvb2wtY2FsbC1pZD1cInNsaWNlLnRvb2xDYWxsLnRvb2xDYWxsSWRcIlxyXG4gICAgICAgICAgICAgICAgOnRvb2wtbmFtZT1cInNsaWNlLnRvb2xDYWxsLnRvb2xOYW1lXCJcclxuICAgICAgICAgICAgICAgIDphcmdzPVwic2xpY2UudG9vbENhbGwuYXJnc1wiXHJcbiAgICAgICAgICAgICAgICA6c3RhdGU9XCJnZXRUb29sQ2FsbFN0YXRlKHNsaWNlKVwiXHJcbiAgICAgICAgICAgICAgICA6cmVzdWx0PVwiZ2V0VG9vbENhbGxSZXN1bHQoc2xpY2UpPy5yZXN1bHRcIlxyXG4gICAgICAgICAgICAgICAgQHRvb2wtY2FsbC1yZXJ1bj1cImVtaXQoJ3Rvb2xDYWxsUmVydW4nLCAkZXZlbnQpXCIgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9jaGF0L2NvbXBvbmVudHMvYXNzaXN0YW50LWl0ZW0udnVlOjExMjoxNVwiXHJcbiAgICAgICAgICAgICAgLz5cclxuICAgICAgICAgICAgICA8dGVtcGxhdGUgdi1lbHNlLWlmPVwic2xpY2UudHlwZSA9PT0gJ3Rvb2wtY2FsbC1yZXN1bHQnXCIgLz5cclxuICAgICAgICAgICAgICA8dGVtcGxhdGUgdi1lbHNlLWlmPVwic2xpY2UudHlwZSA9PT0gJ3RleHQnXCI+XHJcbiAgICAgICAgICAgICAgICA8TWFya2Rvd25SZW5kZXJlciA6Y29udGVudD1cInNsaWNlLnRleHRcIiBkYXRhLXYtaW5zcGVjdG9yPVwiLi4vLi4vcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2NoYXQvY29tcG9uZW50cy9hc3Npc3RhbnQtaXRlbS52dWU6MTI0OjE3XCIgLz5cclxuICAgICAgICAgICAgICA8L3RlbXBsYXRlPlxyXG4gICAgICAgICAgICA8L3RlbXBsYXRlPlxyXG4gICAgICAgICAgPC9kaXY+XHJcbiAgICAgICAgICA8ZGl2IHYtZWxzZS1pZj1cInNob3dMb2FkZXJcIiBpLWVvcy1pY29uczp0aHJlZS1kb3RzLWxvYWRpbmcgZGF0YS12LWluc3BlY3Rvcj1cIi4uLy4uL3BhY2thZ2VzL3N0YWdlLXVpL3NyYy9jb21wb25lbnRzL3NjZW5hcmlvcy9jaGF0L2NvbXBvbmVudHMvYXNzaXN0YW50LWl0ZW0udnVlOjEyODoxMVwiIC8+XHJcbiAgICAgICAgPC9kaXY+XHJcbiAgICAgIDwvdGVtcGxhdGU+XHJcbiAgICA8L0NoYXRBY3Rpb25NZW51PlxyXG4gIDwvZGl2PlxyXG48L3RlbXBsYXRlPlxyXG4iXSwiZmlsZSI6IkM6L1VzZXJzL0FkbWluaXN0cmF0b3IvYWlyaS1hcHAvcGFja2FnZXMvc3RhZ2UtdWkvc3JjL2NvbXBvbmVudHMvc2NlbmFyaW9zL2NoYXQvY29tcG9uZW50cy9hc3Npc3RhbnQtaXRlbS52dWUifQ==

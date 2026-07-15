@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useElectronEventaContext, useElectronEventaInvoke } from '@proj-airi/electron-vueuse'
+import { isStageTamagotchi } from '@proj-airi/stage-shared'
 import { useAuthStore } from '@proj-airi/stage-ui/stores/auth'
+import { useAiriCardStore } from '@proj-airi/stage-ui/stores/modules/airi-card'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -17,9 +19,15 @@ const props = defineProps<{
   iconClass?: string
 }>()
 
+const emit = defineEmits<{
+  (e: 'openProfilePicker'): void
+}>()
+
 const { t } = useI18n()
 const authStore = useAuthStore()
 const { isAuthenticated, user, needsLogin, credits } = storeToRefs(authStore)
+const airiCardStore = useAiriCardStore()
+const { activeCard } = storeToRefs(airiCardStore)
 const context = useElectronEventaContext()
 
 const startSigningIn = useElectronEventaInvoke(electronAuthStartLogin)
@@ -30,8 +38,17 @@ const signingIn = ref(false)
 const userName = computed(() => user.value?.name)
 const userAvatar = computed(() => user.value?.image)
 
+// In local-only desktop mode, show the active character card instead of login.
+const isLocalOnly = computed(() => isStageTamagotchi() && !isAuthenticated.value)
+const cardInitial = computed(() => activeCard.value?.name?.charAt(0)?.toUpperCase() ?? '?')
+const cardName = computed(() => activeCard.value?.name ?? '')
+
 function handleClick() {
-  if (isAuthenticated.value) {
+  if (isLocalOnly.value) {
+    // Local-only mode: clicking opens the profile picker.
+    emit('openProfilePicker')
+  }
+  else if (isAuthenticated.value) {
     openSettings({ route: '/settings/account' })
   }
   else {
@@ -152,7 +169,66 @@ watch(isAuthenticated, (val) => {
     </button>
   </div>
 
-  <!-- Not authenticated state -->
+  <!-- Local-only (offline desktop) state: show active character card -->
+  <div v-else-if="isLocalOnly" mb-1.5>
+    <button
+      type="button"
+      :class="[
+        'flex min-w-0 items-center gap-2.5',
+        'w-full rounded-xl px-2.5 py-2',
+        'bg-transparent hover:bg-black/5 dark:hover:bg-white/5',
+        'transition-colors duration-200',
+        'cursor-pointer border-none outline-none',
+        'text-left',
+        props.buttonStyle,
+      ]"
+      @click="handleClick"
+    >
+      <div
+        :class="[
+          'size-8 shrink-0 overflow-hidden rounded-full',
+          'bg-primary-100 dark:bg-primary-900/40',
+          'flex items-center justify-center',
+        ]"
+      >
+        <div class="size-4 text-base text-primary-500 font-bold dark:text-primary-400">
+          {{ cardInitial }}
+        </div>
+      </div>
+      <div class="min-w-0 flex flex-1 flex-col items-start gap-0.5">
+        <span
+          :class="[
+            'w-full truncate',
+            'text-sm font-semibold',
+            'text-neutral-800 dark:text-neutral-200',
+          ]"
+        >
+          {{ cardName }}
+        </span>
+
+        <!-- Local mode badge -->
+        <div
+          :class="[
+            'flex items-center gap-1',
+            'rounded-md px-1.5 py-0.5',
+            'bg-neutral-200/50 dark:bg-neutral-700/50',
+            'text-[10px] font-semibold',
+            'text-neutral-500 dark:text-neutral-400',
+          ]"
+        >
+          <div
+            :class="[
+              'i-solar:user-check-rounded-bold',
+              'size-3 shrink-0',
+            ]"
+          />
+          <span class="whitespace-nowrap leading-tight">Local Mode</span>
+        </div>
+      </div>
+    </button>
+  </div>
+
+  <!-- Not authenticated state (web, not local) -->
   <div v-else mb-1.5>
     <button
       type="button"

@@ -79,12 +79,12 @@ import {
   useIdleEyeSaccades,
 } from '../../composables/vrm/animation'
 import { loadVrm } from '../../composables/vrm/core'
+import { hideDrawingWorkstation, showDrawingWorkstation } from '../../composables/vrm/drawingWorkstation'
 import { useVRMEmote } from '../../composables/vrm/expression'
 import { switchVrmHandProp, syncVrmHandProp } from '../../composables/vrm/handProp'
-import { hideDrawingWorkstation, showDrawingWorkstation } from '../../composables/vrm/drawingWorkstation'
 import { resolveInternalVrmHooks } from '../../composables/vrm/internal-hooks'
-import { useModelStore } from '../../stores/model-store'
 import { useVRMLipSync } from '../../composables/vrm/lip-sync'
+import { useModelStore } from '../../stores/model-store'
 import {
   createThreeRendererMemorySnapshot,
   createVrmSceneSummarySnapshot,
@@ -1010,12 +1010,21 @@ onMounted(async () => {
   // Watch handPropType from modelStore and switch props on the VRM.
   const modelStore = useModelStore()
   watch(() => modelStore.handPropType, (type) => {
-    if (vrm.value) switchVrmHandProp(vrm.value, type)
+    if (vrm.value)
+      switchVrmHandProp(vrm.value, type)
   }, { immediate: true })
+
+  // If the VRM was not loaded when the initial watch fired (e.g. prop type
+  // persisted from a previous session), re-apply when the model becomes ready.
+  watch(() => vrm.value, (newVrm) => {
+    if (newVrm && modelStore.handPropType !== 'none')
+      switchVrmHandProp(newVrm, modelStore.handPropType)
+  })
 
   // Watch workstationVisible — show/hide desk + screen + adjust gaze.
   watch(() => modelStore.workstationVisible, (visible) => {
-    if (!vrm.value || !vrmGroup.value || !scene.value) return
+    if (!vrm.value || !vrmGroup.value || !scene.value)
+      return
     if (visible) {
       showDrawingWorkstation(scene.value, vrm.value, vrmGroup.value)
     }
@@ -1161,7 +1170,7 @@ async function playAnimation(url: string, options: VrmPlayAnimationOptions = {})
       console.warn('[playAnimation] FAIL: clipFromVRMAnimation returned null')
       return
     }
-    console.log('[playAnimation] clip created: duration=' + clip.duration?.toFixed(2) + 's, tracks=' + clip.tracks.length)
+    console.log(`[playAnimation] clip created: duration=${clip.duration?.toFixed(2)}s, tracks=${clip.tracks.length}`)
     // Log arm-related tracks
     const armTracks = clip.tracks.filter(t => /arm|hand|shoulder/i.test(t.name))
     console.log('[playAnimation] arm tracks:', armTracks.length, armTracks.map(t => t.name).join(', '))
@@ -1196,24 +1205,17 @@ async function playAnimation(url: string, options: VrmPlayAnimationOptions = {})
 
     const idleAction = vrmIdleClip.value ? mixer.clipAction(vrmIdleClip.value) : undefined
 
-    // Stop idle entirely when a gesture plays — no cross-fade blending
-    // so the character holds still during dances instead of mixing idle.
-    if (idleAction) {
-      idleAction.stopFading()
-      idleAction.stop()
-    }
-
-    // If there's an active gesture being interrupted, cross-fade from it;
-    // otherwise start the new gesture with an instant cut (no idle blend).
+    // Cross-fade from idle to gesture instead of stopping idle.
+    // Stopping idle (idleAction.stop()) removes bone drivers that the
+    // dance VRMA might not cover (fingers, head, etc.), causing those
+    // bones to freeze at rest pose for the entire gesture duration.
+    // crossFadeToAction fades idle to weight=0 while the gesture takes
+    // over at weight=1, keeping all bone drivers active throughout.
     if (vrmGestureAction.value) {
       crossFadeToAction(vrmGestureAction.value, gestureAction, crossFadeDuration)
     }
     else {
-      gestureAction.enabled = true
-      gestureAction.setEffectiveTimeScale(1)
-      gestureAction.setEffectiveWeight(1)
-      gestureAction.reset()
-      gestureAction.play()
+      crossFadeToAction(idleAction, gestureAction, crossFadeDuration)
     }
     vrmGestureAction.value = gestureAction
 

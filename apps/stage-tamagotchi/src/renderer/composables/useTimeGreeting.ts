@@ -2,9 +2,8 @@
 // greeting in Niko's voice (routed through the character speech pipeline). It never
 // fires again this session: subsequent model switches (e.g. settings) don't repeat it.
 
-import { useCharacterStore } from '@proj-airi/stage-ui/stores/character'
 import { useModelStore } from '@proj-airi/stage-ui-three'
-
+import { useCharacterStore } from '@proj-airi/stage-ui/stores/character'
 import { watch } from 'vue'
 
 function pickGreeting(): string {

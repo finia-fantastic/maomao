@@ -3,16 +3,16 @@
 // These types mirror the shared contracts in `apps/stage-tamagotchi/src/shared/eventa/memory.ts`
 // but are defined here to avoid stage-ui depending on stage-tamagotchi internals.
 
-export type MemoryType =
-  | 'profile'
-  | 'preference'
-  | 'project'
-  | 'decision'
-  | 'relationship'
-  | 'episode'
-  | 'commitment'
-  | 'correction'
-  | 'temporary'
+export type MemoryType
+  = | 'profile'
+    | 'preference'
+    | 'project'
+    | 'decision'
+    | 'relationship'
+    | 'episode'
+    | 'commitment'
+    | 'correction'
+    | 'temporary'
 
 export type MemoryStatus = 'active' | 'superseded' | 'expired' | 'deleted'
 

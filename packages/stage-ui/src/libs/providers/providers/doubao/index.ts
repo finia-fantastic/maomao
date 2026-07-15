@@ -16,15 +16,12 @@ const DOUBAO_MODELS = [
 ]
 
 const DOUBAO_MINI_EP_ID = 'ep-20260715012304-n6p8t'
-const DOUBAO_SEEDREAM_EP_ID = 'ep-20260715013539-k65t4'
 
 const doubaoConfigSchema = z.object({
   apiKey: z.string('API Key'),
   baseUrl: z.string('Base URL'),
   /** 可选：推理接入点 ID (ep-xxxx)。填了就用 endpoint，不填用模型名。 */
   endpointId: z.string('Endpoint ID').optional(),
-  /** 文生图接入点 ID (Seedream-4.5)。 */
-  seedreamEndpointId: z.string('Seedream Endpoint ID').optional(),
 })
 
 export const providerDoubao = defineProvider({
@@ -54,11 +51,6 @@ export const providerDoubao = defineProvider({
       label: 'Endpoint ID (可选)',
       description: '推理接入点 ID (ep-xxxx)。留空则使用模型名称直连。',
       placeholder: 'ep-xxxxxxxxxx (可选)',
-    }),
-    seedreamEndpointId: doubaoConfigSchema.shape.seedreamEndpointId.meta({
-      label: 'Seedream 画图 Endpoint ID',
-      description: '文生图模型接入点 (ep-xxxx)。猫猫画画时调用此模型生成图片。',
-      placeholder: 'ep-xxxxxxxxxx (Seedream-4.5)',
     }),
   }),
 
@@ -235,68 +227,5 @@ export const providerDoubaoMini = defineProvider({
   }) as any,
 })
 
-/**
- * doubao-seedream: 豆包 Seedream 绘图 (ep-20260715013539-k65t4)
- * 专用于文生图（Seedream-4.5）的推理接入点。
- * 与 `doubao` / `doubao-mini` 共享 API Key 和 Base URL。
- */
-export const providerDoubaoSeedream = defineProvider({
-  id: 'doubao-seedream',
-  order: 9,
-  name: 'Doubao Seedream (豆包 画图)',
-  nameLocalize: ({ t }) => t('settings.pages.providers.provider.doubao-seedream.title'),
-  description: '豆包 Seedream 文生图 — 通过方舟推理接入点使用绘画能力。',
-  descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.doubao-seedream.description'),
-  tasks: ['chat'],
-  icon: 'i-lobe-icons:volcengine',
-  iconColor: 'i-lobe-icons:volcengine',
-
-  createProviderConfig: ({ t }) => z.object({
-    apiKey: z.string('API Key').meta({
-      labelLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.api-key.label'),
-      descriptionLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.api-key.description'),
-      placeholderLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.api-key.placeholder'),
-      type: 'password',
-    }),
-    baseUrl: z.string('Base URL').default('https://ark.cn-beijing.volces.com/api/v3').meta({
-      labelLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.base-url.label'),
-      descriptionLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.base-url.description'),
-      placeholderLocalized: t('settings.pages.providers.catalog.edit.config.common.fields.field.base-url.placeholder'),
-    }),
-    seedreamEndpointId: z.string('Seedream Endpoint ID').default(DOUBAO_SEEDREAM_EP_ID).meta({
-      label: 'Seedream 画图 Endpoint ID',
-      description: '豆包 Seedream 文生图推理接入点 ID。猫猫画画时调用此模型生成图片。',
-      placeholder: DOUBAO_SEEDREAM_EP_ID,
-    }),
-  }),
-
-  createProvider(config) {
-    const apiKey = (config as any)?.apiKey ?? ''
-    const baseUrl = (config as any)?.baseUrl ?? 'https://ark.cn-beijing.volces.com/api/v3'
-    return createOpenAI(apiKey, baseUrl)
-  },
-
-  extraMethods: {
-    listModels: async (config?: Record<string, unknown>) => {
-      const cfg = config as Record<string, unknown> | undefined
-      const endpointId = (cfg?.seedreamEndpointId as string)?.trim() || DOUBAO_SEEDREAM_EP_ID
-      return [{
-        id: endpointId,
-        name: `Endpoint: ${endpointId}`,
-        provider: 'doubao-seedream',
-      }]
-    },
-  },
-
-  validationRequiredWhen(config) {
-    const cfg = config as Record<string, unknown> | undefined
-    return !!(cfg?.apiKey as string)?.trim()
-  },
-
-  validators: createOpenAICompatibleValidators({
-    checks: [ProviderValidationCheck.ChatCompletions],
-    normalizeModelId: modelId => modelId.replace(/^Endpoint:\s*/, ''),
-    connectivityFailureReason: () =>
-      '火山方舟 ARK 不支持 /models 端点。请直接测试对话功能。',
-  }) as any,
-})
+// NOTICE: doubao-seedream (文生图) 已迁移到 Artistry 模块。
+// 画图功能通过 useArtistryStore.doubaoSeedreamEndpointId 配置。

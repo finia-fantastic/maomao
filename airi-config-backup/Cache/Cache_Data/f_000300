@@ -1,0 +1,277 @@
+import { defineInvokeEventa } from "/@fs/C:/Users/Administrator/airi-app/apps/stage-tamagotchi/node_modules/.vite/deps/@moeru_eventa.js?v=6c17d38d";
+export const ARTISTRY_SYNC_CONFIG_ADDRESS = "eventa:invoke:electron:artistry:sync-config";
+export const ARTISTRY_TEST_COMFYUI_CONNECTION_ADDRESS = "eventa:invoke:electron:artistry:test-comfyui-connection";
+export const artistrySyncConfig = defineInvokeEventa(ARTISTRY_SYNC_CONFIG_ADDRESS);
+export const artistryTestComfyUIConnection = defineInvokeEventa(ARTISTRY_TEST_COMFYUI_CONNECTION_ADDRESS);
+export const artistryGenerateHeadless = defineInvokeEventa("eventa:invoke:electron:artistry:generate-headless");
+export const REPLICATE_IMAGEGEN_PRESETS = [
+	{
+		id: "prunaai/p-image",
+		label: "p-image",
+		cost: "$1 / 200 imgs",
+		prompt: "A high-quality anime-style illustration with professional shading, vibrant colors, hand-drawn aesthetic, highly detailed,",
+		preset: { aspect_ratio: "16:9" }
+	},
+	{
+		id: "prunaai/z-image-turbo",
+		label: "z-turbo",
+		cost: "$1 / 200 imgs",
+		prompt: "A highly detailed anime illustration, crisp lines, vibrant color palette, professional digital art style, nicely shaded,",
+		preset: {
+			width: 1024,
+			height: 768,
+			output_format: "jpg",
+			guidance_scale: 0,
+			output_quality: 80,
+			num_inference_steps: 8
+		}
+	},
+	{
+		id: "black-forest-labs/flux-schnell",
+		label: "flux-schnell",
+		cost: "$1 / 333 imgs",
+		prompt: "A stunning, high-definition anime scene, professional cel-shading, vibrant atmosphere, hand-drawn quality,",
+		preset: {
+			go_fast: true,
+			num_outputs: 1,
+			aspect_ratio: "1:1",
+			output_format: "webp",
+			output_quality: 80
+		}
+	},
+	{
+		id: "prunaai/z-image-turbo-lora:197b2db2015aa366d2bc61a941758adf4c31ac66b18573f5c66dc388ab081ca2",
+		label: "z-turbo-lora",
+		cost: "$1 / 217 imgs",
+		prompt: "A beautifully rendered anime illustration in a classic hand-drawn style, rich textures, vibrant colors, masterpiece quality,",
+		preset: {
+			width: 1024,
+			height: 1024,
+			lora_scales: [1],
+			lora_weights: ["https://huggingface.co/renderartist/Technically-Color-Z-Image-Turbo/resolve/main/Technically_Color_Z_Image_Turbo_v1_renderartist_2000.safetensors"],
+			output_format: "jpg",
+			guidance_scale: 0,
+			output_quality: 80,
+			num_inference_steps: 8
+		}
+	},
+	{
+		id: "aisha-ai-official/wai-nsfw-illustrious-v11:c1d5b02687df6081c7953c74bcc527858702e8c153c9382012ccc3906752d3ec",
+		label: "wai-ilx",
+		cost: "$1 / 151 imgs",
+		prompt: "high quality, masterpiece, hirez, absurdres, anime style, highly detailed, vibrant colors, aesthetic,",
+		preset: {
+			vae: "default",
+			seed: -1,
+			model: "WAI-NSFW-illustrious-SDXL-v11",
+			steps: 30,
+			width: 1024,
+			height: 1024,
+			cfg_scale: 7,
+			clip_skip: 2,
+			pag_scale: 3,
+			scheduler: "Euler a",
+			batch_size: 1,
+			negative_prompt: "nsfw, naked",
+			guidance_rescale: .5,
+			prepend_preprompt: true
+		}
+	},
+	{
+		id: "aisha-ai-official/anillustrious-v4:80441e2c32a55f2fcf9b77fa0a74c6c86ad7deac51eed722b9faedb253265cb4",
+		label: "anillustrious",
+		cost: "$1 / 188 imgs",
+		prompt: "high quality, masterpiece, hirez, absurdres, anime style, detailed background, atmospheric, beautifully shaded,",
+		preset: {
+			vae: "default",
+			seed: -1,
+			model: "Anillustrious-v4",
+			steps: 30,
+			width: 1024,
+			height: 1024,
+			refiner: false,
+			upscale: "Original",
+			cfg_scale: 7,
+			clip_skip: 2,
+			pag_scale: 0,
+			scheduler: "Euler a beta",
+			adetailer_face: false,
+			adetailer_hand: false,
+			refiner_prompt: "",
+			negative_prompt: "nsfw, naked",
+			adetailer_person: false,
+			guidance_rescale: 1,
+			refiner_strength: .8,
+			prepend_preprompt: true,
+			prompt_conjunction: true,
+			adetailer_face_prompt: "",
+			adetailer_hand_prompt: "",
+			adetailer_person_prompt: "",
+			negative_prompt_conjunction: false,
+			adetailer_face_negative_prompt: "",
+			adetailer_hand_negative_prompt: "",
+			adetailer_person_negative_prompt: ""
+		}
+	}
+];
+export const REPLICATE_IMAGEEDIT_PRESETS = [{
+	id: "prunaai/p-image-edit",
+	label: "P-Image-Edit (Texture Swapper)",
+	cost: "Turbo",
+	prompt: "The woman's dress is changed to black",
+	preset: {
+		turbo: true,
+		images: [{ value: "{{IMAGE}}" }],
+		aspect_ratio: "1:1"
+	}
+}];
+export const ARTISTRY_PRESET_GROUPS = [
+	{
+		id: "fabrics",
+		label: "Fabric Lab",
+		icon: "i-solar:palette-bold-duotone",
+		presets: [
+			{
+				id: "gold",
+				label: "Gold Leaf",
+				icon: "i-solar:star-bold-duotone",
+				text: "Divine Golden transformation. Pure white velvet fabric with thick 24k gold leaf embroidery and glowing white celestial patterns."
+			},
+			{
+				id: "gothic",
+				label: "Midnight Gothic",
+				icon: "i-solar:ghost-bold-duotone",
+				text: "Midnight Gothic style. Deep matte black fabric, crimson lace ruffles, dark leather straps, silver scrollwork embroidery."
+			},
+			{
+				id: "royal",
+				label: "Royal Porcelain",
+				icon: "i-solar:crown-minimalistic-bold-duotone",
+				text: "Royal Porcelain style. White silk base, hand-painted cobalt blue patterns, golden silk sashes, jade ornaments."
+			},
+			{
+				id: "denim",
+				label: "Raw Indigo Denim",
+				icon: "i-solar:t-shirt-bold-duotone",
+				text: "Heavyweight dark indigo denim with thick orange contrast stitching and realistic weathered fading."
+			},
+			{
+				id: "plaid",
+				label: "Classic Tartan Plaid",
+				icon: "i-solar:widget-bold-duotone",
+				text: "Traditional red and green Scottish wool plaid with a visible woven texture and cozy feel."
+			},
+			{
+				id: "satin",
+				label: "Powder Blue Satin",
+				icon: "i-solar:water-drops-bold-duotone",
+				text: "Highly reflective, pale baby blue silk with smooth flowing \"liquid\" highlights and high luster."
+			},
+			{
+				id: "hex",
+				label: "Tactical Hex-Grid",
+				icon: "i-solar:shield-bold-duotone",
+				text: "Matte olive drab fabric with a subtle hexagonal heat-pressed grid pattern and dark grey utility straps."
+			},
+			{
+				id: "camo",
+				label: "Cyber Pink Camo",
+				icon: "i-solar:skateboarding-bold-duotone",
+				text: "Vibrant hot pink and charcoal grey urban camouflage with a slight tech-fabric sheen."
+			}
+		]
+	},
+	{
+		id: "hair",
+		label: "Hair Salon",
+		icon: "i-solar:scissors-bold-duotone",
+		presets: [
+			{
+				id: "silver",
+				label: "Iridescent Silver",
+				icon: "i-solar:snowflake-bold-duotone",
+				text: "Pure white hair with subtle prismatic \"oil-slick\" highlights that catch the light."
+			},
+			{
+				id: "onyx",
+				label: "Onyx Gloss",
+				icon: "i-solar:moon-bold-duotone",
+				text: "Pitch black hair with a high-mirror shine and sharp, high-contrast highlights."
+			},
+			{
+				id: "sunset",
+				label: "Sunset Ombre",
+				icon: "i-solar:sun-2-bold-duotone",
+				text: "Vibrant gradient from deep copper roots to fiery orange and golden blonde tips."
+			},
+			{
+				id: "mint",
+				label: "Ghost Mint",
+				icon: "i-solar:leaf-bold-duotone",
+				text: "Soft, matte pastel mint green with a \"cloud-like\" ethereal texture."
+			},
+			{
+				id: "pink",
+				label: "Bubblegum Pop",
+				icon: "i-solar:heart-bold-duotone",
+				text: "High-gloss, vibrant candy pink with a plastic-like shine and white \"rim\" highlights."
+			},
+			{
+				id: "rainbow",
+				label: "Retrowave Rainbow",
+				icon: "i-solar:filters-bold-duotone",
+				text: "Multi-colored \"raver girl\" hair; dark roots with glowing neon streaks of cyan, magenta, and lime green."
+			}
+		]
+	},
+	{
+		id: "eyes",
+		label: "Iris Forge",
+		icon: "i-solar:eye-bold-duotone",
+		presets: [
+			{
+				id: "dragon",
+				label: "Dragon Slit",
+				icon: "i-solar:fire-bold-duotone",
+				text: "Glowing orange irises with vertical black slit pupils and a subtle reptilian texture."
+			},
+			{
+				id: "heart",
+				label: "Succubus Heart",
+				icon: "i-solar:heart-angle-bold-duotone",
+				text: "Soft pink irises with glowing white heart-shaped pupils and a \"love-struck\" aura."
+			},
+			{
+				id: "star",
+				label: "Celestial Star",
+				icon: "i-solar:star-fall-bold-duotone",
+				text: "Deep violet eyes with white star-shaped pupils and a subtle ring of stardust."
+			},
+			{
+				id: "galaxy",
+				label: "Nebula Galaxy",
+				icon: "i-solar:atom-bold-duotone",
+				text: "Deep space irises containing tiny sparkling stars and purple nebula clusters."
+			},
+			{
+				id: "cyber-eye",
+				label: "Cyber Scan",
+				icon: "i-solar:scanner-2-bold-duotone",
+				text: "Glowing cyan HUD-style eyes with digital scanning rings and data-stream pupils."
+			}
+		]
+	},
+	{
+		id: "special",
+		label: "Special Motifs",
+		icon: "i-solar:magic-stick-bold-duotone",
+		presets: [{
+			id: "lotus",
+			label: "Argent Lotus",
+			icon: "i-solar:flower-bold-duotone",
+			text: "The Argent Lotus motif. Translucent white silk petal layers over heavy silver brocade, with delicate silver filigree lotus accents."
+		}]
+	}
+];
+
+//# sourceMappingURL=data:application/json;base64,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O0VBQ0UsSUFBSTtFQUNKLE9BQU87RUFDUCxNQUFNO0VBQ04sU0FBUyxDQUNQO0dBQUUsSUFBSTtHQUFTLE9BQU87R0FBZ0IsTUFBTTtHQUErQixNQUFNO0dBQXVJLENBQ3pOO0VBQ0Y7Q0FDRiIsIm5hbWVzIjpbXSwic291cmNlcyI6WyJhcnRpc3RyeS50cyJdLCJ2ZXJzaW9uIjozLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBkZWZpbmVJbnZva2VFdmVudGEgfSBmcm9tICdAbW9lcnUvZXZlbnRhJ1xyXG5cclxuZXhwb3J0IGludGVyZmFjZSBBcnRpc3RyeVN5bmNQYXlsb2FkIHtcclxuICBwcm92aWRlcjogc3RyaW5nXHJcbiAgZ2xvYmFsczogYW55XHJcbiAgLy8gQ2FyZC1sZXZlbCBkZWZhdWx0cyB0byBlbnN1cmUgd2lkZ2V0IHRyaWdnZXJzIHJlc3BlY3QgY2hhcmFjdGVyIHNldHRpbmdzXHJcbiAgbW9kZWw/OiBzdHJpbmdcclxuICBwcm9tcHRQcmVmaXg/OiBzdHJpbmdcclxuICBvcHRpb25zPzogUmVjb3JkPHN0cmluZywgYW55PlxyXG59XHJcbmV4cG9ydCBjb25zdCBBUlRJU1RSWV9TWU5DX0NPTkZJR19BRERSRVNTID0gJ2V2ZW50YTppbnZva2U6ZWxlY3Ryb246YXJ0aXN0cnk6c3luYy1jb25maWcnXHJcbmV4cG9ydCBjb25zdCBBUlRJU1RSWV9URVNUX0NPTUZZVUlfQ09OTkVDVElPTl9BRERSRVNTID0gJ2V2ZW50YTppbnZva2U6ZWxlY3Ryb246YXJ0aXN0cnk6dGVzdC1jb21meXVpLWNvbm5lY3Rpb24nXHJcblxyXG5leHBvcnQgY29uc3QgYXJ0aXN0cnlTeW5jQ29uZmlnID0gZGVmaW5lSW52b2tlRXZlbnRhPHZvaWQsIEFydGlzdHJ5U3luY1BheWxvYWQ+KEFSVElTVFJZX1NZTkNfQ09ORklHX0FERFJFU1MpXHJcblxyXG5leHBvcnQgaW50ZXJmYWNlIEFydGlzdHJ5VGVzdENvbWZ5VUlSZXN1bHQge1xyXG4gIG9rOiBib29sZWFuXHJcbiAgaW5mbz86IHN0cmluZ1xyXG4gIGlzQ29ycz86IGJvb2xlYW5cclxufVxyXG5leHBvcnQgY29uc3QgYXJ0aXN0cnlUZXN0Q29tZnlVSUNvbm5lY3Rpb24gPSBkZWZpbmVJbnZva2VFdmVudGE8QXJ0aXN0cnlUZXN0Q29tZnlVSVJlc3VsdCwgeyB1cmw6IHN0cmluZyB9PihBUlRJU1RSWV9URVNUX0NPTUZZVUlfQ09OTkVDVElPTl9BRERSRVNTKVxyXG5cclxuZXhwb3J0IGNvbnN0IGFydGlzdHJ5R2VuZXJhdGVIZWFkbGVzcyA9IGRlZmluZUludm9rZUV2ZW50YTx7IGltYWdlVXJsPzogc3RyaW5nLCBiYXNlNjQ/OiBzdHJpbmcsIGVycm9yPzogc3RyaW5nIH0sIHsgcHJvbXB0OiBzdHJpbmcsIG1vZGVsPzogc3RyaW5nLCBwcm92aWRlcj86IHN0cmluZywgb3B0aW9ucz86IFJlY29yZDxzdHJpbmcsIGFueT4sIGdsb2JhbHM/OiBSZWNvcmQ8c3RyaW5nLCBhbnk+IH0+KCdldmVudGE6aW52b2tlOmVsZWN0cm9uOmFydGlzdHJ5OmdlbmVyYXRlLWhlYWRsZXNzJylcclxuXHJcbmV4cG9ydCBjb25zdCBSRVBMSUNBVEVfSU1BR0VHRU5fUFJFU0VUUyA9IFtcclxuICB7XHJcbiAgICBpZDogJ3BydW5hYWkvcC1pbWFnZScsXHJcbiAgICBsYWJlbDogJ3AtaW1hZ2UnLFxyXG4gICAgY29zdDogJyQxIC8gMjAwIGltZ3MnLFxyXG4gICAgcHJvbXB0OiAnQSBoaWdoLXF1YWxpdHkgYW5pbWUtc3R5bGUgaWxsdXN0cmF0aW9uIHdpdGggcHJvZmVzc2lvbmFsIHNoYWRpbmcsIHZpYnJhbnQgY29sb3JzLCBoYW5kLWRyYXduIGFlc3RoZXRpYywgaGlnaGx5IGRldGFpbGVkLCcsXHJcbiAgICBwcmVzZXQ6IHtcclxuICAgICAgYXNwZWN0X3JhdGlvOiAnMTY6OScsXHJcbiAgICB9LFxyXG4gIH0sXHJcbiAge1xyXG4gICAgaWQ6ICdwcnVuYWFpL3otaW1hZ2UtdHVyYm8nLFxyXG4gICAgbGFiZWw6ICd6LXR1cmJvJyxcclxuICAgIGNvc3Q6ICckMSAvIDIwMCBpbWdzJyxcclxuICAgIHByb21wdDogJ0EgaGlnaGx5IGRldGFpbGVkIGFuaW1lIGlsbHVzdHJhdGlvbiwgY3Jpc3AgbGluZXMsIHZpYnJhbnQgY29sb3IgcGFsZXR0ZSwgcHJvZmVzc2lvbmFsIGRpZ2l0YWwgYXJ0IHN0eWxlLCBuaWNlbHkgc2hhZGVkLCcsXHJcbiAgICBwcmVzZXQ6IHtcclxuICAgICAgd2lkdGg6IDEwMjQsXHJcbiAgICAgIGhlaWdodDogNzY4LFxyXG4gICAgICBvdXRwdXRfZm9ybWF0OiAnanBnJyxcclxuICAgICAgZ3VpZGFuY2Vfc2NhbGU6IDAsXHJcbiAgICAgIG91dHB1dF9xdWFsaXR5OiA4MCxcclxuICAgICAgbnVtX2luZmVyZW5jZV9zdGVwczogOCxcclxuICAgIH0sXHJcbiAgfSxcclxuICB7XHJcbiAgICBpZDogJ2JsYWNrLWZvcmVzdC1sYWJzL2ZsdXgtc2NobmVsbCcsXHJcbiAgICBsYWJlbDogJ2ZsdXgtc2NobmVsbCcsXHJcbiAgICBjb3N0OiAnJDEgLyAzMzMgaW1ncycsXHJcbiAgICBwcm9tcHQ6ICdBIHN0dW5uaW5nLCBoaWdoLWRlZmluaXRpb24gYW5pbWUgc2NlbmUsIHByb2Zlc3Npb25hbCBjZWwtc2hhZGluZywgdmlicmFudCBhdG1vc3BoZXJlLCBoYW5kLWRyYXduIHF1YWxpdHksJyxcclxuICAgIHByZXNldDoge1xyXG4gICAgICBnb19mYXN0OiB0cnVlLFxyXG4gICAgICBudW1fb3V0cHV0czogMSxcclxuICAgICAgYXNwZWN0X3JhdGlvOiAnMToxJyxcclxuICAgICAgb3V0cHV0X2Zvcm1hdDogJ3dlYnAnLFxyXG4gICAgICBvdXRwdXRfcXVhbGl0eTogODAsXHJcbiAgICB9LFxyXG4gIH0sXHJcbiAge1xyXG4gICAgaWQ6ICdwcnVuYWFpL3otaW1hZ2UtdHVyYm8tbG9yYToxOTdiMmRiMjAxNWFhMzY2ZDJiYzYxYTk0MTc1OGFkZjRjMzFhYzY2YjE4NTczZjVjNjZkYzM4OGFiMDgxY2EyJyxcclxuICAgIGxhYmVsOiAnei10dXJiby1sb3JhJyxcclxuICAgIGNvc3Q6ICckMSAvIDIxNyBpbWdzJyxcclxuICAgIHByb21wdDogJ0EgYmVhdXRpZnVsbHkgcmVuZGVyZWQgYW5pbWUgaWxsdXN0cmF0aW9uIGluIGEgY2xhc3NpYyBoYW5kLWRyYXduIHN0eWxlLCByaWNoIHRleHR1cmVzLCB2aWJyYW50IGNvbG9ycywgbWFzdGVycGllY2UgcXVhbGl0eSwnLFxyXG4gICAgcHJlc2V0OiB7XHJcbiAgICAgIHdpZHRoOiAxMDI0LFxyXG4gICAgICBoZWlnaHQ6IDEwMjQsXHJcbiAgICAgIGxvcmFfc2NhbGVzOiBbMV0sXHJcbiAgICAgIGxvcmFfd2VpZ2h0czogWydodHRwczovL2h1Z2dpbmdmYWNlLmNvL3JlbmRlcmFydGlzdC9UZWNobmljYWxseS1Db2xvci1aLUltYWdlLVR1cmJvL3Jlc29sdmUvbWFpbi9UZWNobmljYWxseV9Db2xvcl9aX0ltYWdlX1R1cmJvX3YxX3JlbmRlcmFydGlzdF8yMDAwLnNhZmV0ZW5zb3JzJ10sXHJcbiAgICAgIG91dHB1dF9mb3JtYXQ6ICdqcGcnLFxyXG4gICAgICBndWlkYW5jZV9zY2FsZTogMCxcclxuICAgICAgb3V0cHV0X3F1YWxpdHk6IDgwLFxyXG4gICAgICBudW1faW5mZXJlbmNlX3N0ZXBzOiA4LFxyXG4gICAgfSxcclxuICB9LFxyXG4gIHtcclxuICAgIGlkOiAnYWlzaGEtYWktb2ZmaWNpYWwvd2FpLW5zZnctaWxsdXN0cmlvdXMtdjExOmMxZDViMDI2ODdkZjYwODFjNzk1M2M3NGJjYzUyNzg1ODcwMmU4YzE1M2M5MzgyMDEyY2NjMzkwNjc1MmQzZWMnLFxyXG4gICAgbGFiZWw6ICd3YWktaWx4JyxcclxuICAgIGNvc3Q6ICckMSAvIDE1MSBpbWdzJyxcclxuICAgIHByb21wdDogJ2hpZ2ggcXVhbGl0eSwgbWFzdGVycGllY2UsIGhpcmV6LCBhYnN1cmRyZXMsIGFuaW1lIHN0eWxlLCBoaWdobHkgZGV0YWlsZWQsIHZpYnJhbnQgY29sb3JzLCBhZXN0aGV0aWMsJyxcclxuICAgIHByZXNldDoge1xyXG4gICAgICB2YWU6ICdkZWZhdWx0JyxcclxuICAgICAgc2VlZDogLTEsXHJcbiAgICAgIG1vZGVsOiAnV0FJLU5TRlctaWxsdXN0cmlvdXMtU0RYTC12MTEnLFxyXG4gICAgICBzdGVwczogMzAsXHJcbiAgICAgIHdpZHRoOiAxMDI0LFxyXG4gICAgICBoZWlnaHQ6IDEwMjQsXHJcbiAgICAgIGNmZ19zY2FsZTogNyxcclxuICAgICAgY2xpcF9za2lwOiAyLFxyXG4gICAgICBwYWdfc2NhbGU6IDMsXHJcbiAgICAgIHNjaGVkdWxlcjogJ0V1bGVyIGEnLFxyXG4gICAgICBiYXRjaF9zaXplOiAxLFxyXG4gICAgICBuZWdhdGl2ZV9wcm9tcHQ6ICduc2Z3LCBuYWtlZCcsXHJcbiAgICAgIGd1aWRhbmNlX3Jlc2NhbGU6IDAuNSxcclxuICAgICAgcHJlcGVuZF9wcmVwcm9tcHQ6IHRydWUsXHJcbiAgICB9LFxyXG4gIH0sXHJcbiAge1xyXG4gICAgaWQ6ICdhaXNoYS1haS1vZmZpY2lhbC9hbmlsbHVzdHJpb3VzLXY0OjgwNDQxZTJjMzJhNTVmMmZjZjliNzdmYTBhNzRjNmM4NmFkN2RlYWM1MWVlZDcyMmI5ZmFlZGIyNTMyNjVjYjQnLFxyXG4gICAgbGFiZWw6ICdhbmlsbHVzdHJpb3VzJyxcclxuICAgIGNvc3Q6ICckMSAvIDE4OCBpbWdzJyxcclxuICAgIHByb21wdDogJ2hpZ2ggcXVhbGl0eSwgbWFzdGVycGllY2UsIGhpcmV6LCBhYnN1cmRyZXMsIGFuaW1lIHN0eWxlLCBkZXRhaWxlZCBiYWNrZ3JvdW5kLCBhdG1vc3BoZXJpYywgYmVhdXRpZnVsbHkgc2hhZGVkLCcsXHJcbiAgICBwcmVzZXQ6IHtcclxuICAgICAgdmFlOiAnZGVmYXVsdCcsXHJcbiAgICAgIHNlZWQ6IC0xLFxyXG4gICAgICBtb2RlbDogJ0FuaWxsdXN0cmlvdXMtdjQnLFxyXG4gICAgICBzdGVwczogMzAsXHJcbiAgICAgIHdpZHRoOiAxMDI0LFxyXG4gICAgICBoZWlnaHQ6IDEwMjQsXHJcbiAgICAgIHJlZmluZXI6IGZhbHNlLFxyXG4gICAgICB1cHNjYWxlOiAnT3JpZ2luYWwnLFxyXG4gICAgICBjZmdfc2NhbGU6IDcsXHJcbiAgICAgIGNsaXBfc2tpcDogMixcclxuICAgICAgcGFnX3NjYWxlOiAwLFxyXG4gICAgICBzY2hlZHVsZXI6ICdFdWxlciBhIGJldGEnLFxyXG4gICAgICBhZGV0YWlsZXJfZmFjZTogZmFsc2UsXHJcbiAgICAgIGFkZXRhaWxlcl9oYW5kOiBmYWxzZSxcclxuICAgICAgcmVmaW5lcl9wcm9tcHQ6ICcnLFxyXG4gICAgICBuZWdhdGl2ZV9wcm9tcHQ6ICduc2Z3LCBuYWtlZCcsXHJcbiAgICAgIGFkZXRhaWxlcl9wZXJzb246IGZhbHNlLFxyXG4gICAgICBndWlkYW5jZV9yZXNjYWxlOiAxLFxyXG4gICAgICByZWZpbmVyX3N0cmVuZ3RoOiAwLjgsXHJcbiAgICAgIHByZXBlbmRfcHJlcHJvbXB0OiB0cnVlLFxyXG4gICAgICBwcm9tcHRfY29uanVuY3Rpb246IHRydWUsXHJcbiAgICAgIGFkZXRhaWxlcl9mYWNlX3Byb21wdDogJycsXHJcbiAgICAgIGFkZXRhaWxlcl9oYW5kX3Byb21wdDogJycsXHJcbiAgICAgIGFkZXRhaWxlcl9wZXJzb25fcHJvbXB0OiAnJyxcclxuICAgICAgbmVnYXRpdmVfcHJvbXB0X2Nvbmp1bmN0aW9uOiBmYWxzZSxcclxuICAgICAgYWRldGFpbGVyX2ZhY2VfbmVnYXRpdmVfcHJvbXB0OiAnJyxcclxuICAgICAgYWRldGFpbGVyX2hhbmRfbmVnYXRpdmVfcHJvbXB0OiAnJyxcclxuICAgICAgYWRldGFpbGVyX3BlcnNvbl9uZWdhdGl2ZV9wcm9tcHQ6ICcnLFxyXG4gICAgfSxcclxuICB9LFxyXG5dXHJcblxyXG5leHBvcnQgY29uc3QgUkVQTElDQVRFX0lNQUdFRURJVF9QUkVTRVRTID0gW1xyXG4gIHtcclxuICAgIGlkOiAncHJ1bmFhaS9wLWltYWdlLWVkaXQnLFxyXG4gICAgbGFiZWw6ICdQLUltYWdlLUVkaXQgKFRleHR1cmUgU3dhcHBlciknLFxyXG4gICAgY29zdDogJ1R1cmJvJyxcclxuICAgIHByb21wdDogJ1RoZSB3b21hblxcJ3MgZHJlc3MgaXMgY2hhbmdlZCB0byBibGFjaycsXHJcbiAgICBwcmVzZXQ6IHtcclxuICAgICAgdHVyYm86IHRydWUsXHJcbiAgICAgIGltYWdlczogW3sgdmFsdWU6ICd7e0lNQUdFfX0nIH1dLFxyXG4gICAgICBhc3BlY3RfcmF0aW86ICcxOjEnLFxyXG4gICAgfSxcclxuICB9LFxyXG5dXHJcbmV4cG9ydCBjb25zdCBBUlRJU1RSWV9QUkVTRVRfR1JPVVBTID0gW1xyXG4gIHtcclxuICAgIGlkOiAnZmFicmljcycsXHJcbiAgICBsYWJlbDogJ0ZhYnJpYyBMYWInLFxyXG4gICAgaWNvbjogJ2ktc29sYXI6cGFsZXR0ZS1ib2xkLWR1b3RvbmUnLFxyXG4gICAgcHJlc2V0czogW1xyXG4gICAgICB7IGlkOiAnZ29sZCcsIGxhYmVsOiAnR29sZCBMZWFmJywgaWNvbjogJ2ktc29sYXI6c3Rhci1ib2xkLWR1b3RvbmUnLCB0ZXh0OiAnRGl2aW5lIEdvbGRlbiB0cmFuc2Zvcm1hdGlvbi4gUHVyZSB3aGl0ZSB2ZWx2ZXQgZmFicmljIHdpdGggdGhpY2sgMjRrIGdvbGQgbGVhZiBlbWJyb2lkZXJ5IGFuZCBnbG93aW5nIHdoaXRlIGNlbGVzdGlhbCBwYXR0ZXJucy4nIH0sXHJcbiAgICAgIHsgaWQ6ICdnb3RoaWMnLCBsYWJlbDogJ01pZG5pZ2h0IEdvdGhpYycsIGljb246ICdpLXNvbGFyOmdob3N0LWJvbGQtZHVvdG9uZScsIHRleHQ6ICdNaWRuaWdodCBHb3RoaWMgc3R5bGUuIERlZXAgbWF0dGUgYmxhY2sgZmFicmljLCBjcmltc29uIGxhY2UgcnVmZmxlcywgZGFyayBsZWF0aGVyIHN0cmFwcywgc2lsdmVyIHNjcm9sbHdvcmsgZW1icm9pZGVyeS4nIH0sXHJcbiAgICAgIHsgaWQ6ICdyb3lhbCcsIGxhYmVsOiAnUm95YWwgUG9yY2VsYWluJywgaWNvbjogJ2ktc29sYXI6Y3Jvd24tbWluaW1hbGlzdGljLWJvbGQtZHVvdG9uZScsIHRleHQ6ICdSb3lhbCBQb3JjZWxhaW4gc3R5bGUuIFdoaXRlIHNpbGsgYmFzZSwgaGFuZC1wYWludGVkIGNvYmFsdCBibHVlIHBhdHRlcm5zLCBnb2xkZW4gc2lsayBzYXNoZXMsIGphZGUgb3JuYW1lbnRzLicgfSxcclxuICAgICAgeyBpZDogJ2RlbmltJywgbGFiZWw6ICdSYXcgSW5kaWdvIERlbmltJywgaWNvbjogJ2ktc29sYXI6dC1zaGlydC1ib2xkLWR1b3RvbmUnLCB0ZXh0OiAnSGVhdnl3ZWlnaHQgZGFyayBpbmRpZ28gZGVuaW0gd2l0aCB0aGljayBvcmFuZ2UgY29udHJhc3Qgc3RpdGNoaW5nIGFuZCByZWFsaXN0aWMgd2VhdGhlcmVkIGZhZGluZy4nIH0sXHJcbiAgICAgIHsgaWQ6ICdwbGFpZCcsIGxhYmVsOiAnQ2xhc3NpYyBUYXJ0YW4gUGxhaWQnLCBpY29uOiAnaS1zb2xhcjp3aWRnZXQtYm9sZC1kdW90b25lJywgdGV4dDogJ1RyYWRpdGlvbmFsIHJlZCBhbmQgZ3JlZW4gU2NvdHRpc2ggd29vbCBwbGFpZCB3aXRoIGEgdmlzaWJsZSB3b3ZlbiB0ZXh0dXJlIGFuZCBjb3p5IGZlZWwuJyB9LFxyXG4gICAgICB7IGlkOiAnc2F0aW4nLCBsYWJlbDogJ1Bvd2RlciBCbHVlIFNhdGluJywgaWNvbjogJ2ktc29sYXI6d2F0ZXItZHJvcHMtYm9sZC1kdW90b25lJywgdGV4dDogJ0hpZ2hseSByZWZsZWN0aXZlLCBwYWxlIGJhYnkgYmx1ZSBzaWxrIHdpdGggc21vb3RoIGZsb3dpbmcgXCJsaXF1aWRcIiBoaWdobGlnaHRzIGFuZCBoaWdoIGx1c3Rlci4nIH0sXHJcbiAgICAgIHsgaWQ6ICdoZXgnLCBsYWJlbDogJ1RhY3RpY2FsIEhleC1HcmlkJywgaWNvbjogJ2ktc29sYXI6c2hpZWxkLWJvbGQtZHVvdG9uZScsIHRleHQ6ICdNYXR0ZSBvbGl2ZSBkcmFiIGZhYnJpYyB3aXRoIGEgc3VidGxlIGhleGFnb25hbCBoZWF0LXByZXNzZWQgZ3JpZCBwYXR0ZXJuIGFuZCBkYXJrIGdyZXkgdXRpbGl0eSBzdHJhcHMuJyB9LFxyXG4gICAgICB7IGlkOiAnY2FtbycsIGxhYmVsOiAnQ3liZXIgUGluayBDYW1vJywgaWNvbjogJ2ktc29sYXI6c2thdGVib2FyZGluZy1ib2xkLWR1b3RvbmUnLCB0ZXh0OiAnVmlicmFudCBob3QgcGluayBhbmQgY2hhcmNvYWwgZ3JleSB1cmJhbiBjYW1vdWZsYWdlIHdpdGggYSBzbGlnaHQgdGVjaC1mYWJyaWMgc2hlZW4uJyB9LFxyXG4gICAgXSxcclxuICB9LFxyXG4gIHtcclxuICAgIGlkOiAnaGFpcicsXHJcbiAgICBsYWJlbDogJ0hhaXIgU2Fsb24nLFxyXG4gICAgaWNvbjogJ2ktc29sYXI6c2Npc3NvcnMtYm9sZC1kdW90b25lJyxcclxuICAgIHByZXNldHM6IFtcclxuICAgICAgeyBpZDogJ3NpbHZlcicsIGxhYmVsOiAnSXJpZGVzY2VudCBTaWx2ZXInLCBpY29uOiAnaS1zb2xhcjpzbm93Zmxha2UtYm9sZC1kdW90b25lJywgdGV4dDogJ1B1cmUgd2hpdGUgaGFpciB3aXRoIHN1YnRsZSBwcmlzbWF0aWMgXCJvaWwtc2xpY2tcIiBoaWdobGlnaHRzIHRoYXQgY2F0Y2ggdGhlIGxpZ2h0LicgfSxcclxuICAgICAgeyBpZDogJ29ueXgnLCBsYWJlbDogJ09ueXggR2xvc3MnLCBpY29uOiAnaS1zb2xhcjptb29uLWJvbGQtZHVvdG9uZScsIHRleHQ6ICdQaXRjaCBibGFjayBoYWlyIHdpdGggYSBoaWdoLW1pcnJvciBzaGluZSBhbmQgc2hhcnAsIGhpZ2gtY29udHJhc3QgaGlnaGxpZ2h0cy4nIH0sXHJcbiAgICAgIHsgaWQ6ICdzdW5zZXQnLCBsYWJlbDogJ1N1bnNldCBPbWJyZScsIGljb246ICdpLXNvbGFyOnN1bi0yLWJvbGQtZHVvdG9uZScsIHRleHQ6ICdWaWJyYW50IGdyYWRpZW50IGZyb20gZGVlcCBjb3BwZXIgcm9vdHMgdG8gZmllcnkgb3JhbmdlIGFuZCBnb2xkZW4gYmxvbmRlIHRpcHMuJyB9LFxyXG4gICAgICB7IGlkOiAnbWludCcsIGxhYmVsOiAnR2hvc3QgTWludCcsIGljb246ICdpLXNvbGFyOmxlYWYtYm9sZC1kdW90b25lJywgdGV4dDogJ1NvZnQsIG1hdHRlIHBhc3RlbCBtaW50IGdyZWVuIHdpdGggYSBcImNsb3VkLWxpa2VcIiBldGhlcmVhbCB0ZXh0dXJlLicgfSxcclxuICAgICAgeyBpZDogJ3BpbmsnLCBsYWJlbDogJ0J1YmJsZWd1bSBQb3AnLCBpY29uOiAnaS1zb2xhcjpoZWFydC1ib2xkLWR1b3RvbmUnLCB0ZXh0OiAnSGlnaC1nbG9zcywgdmlicmFudCBjYW5keSBwaW5rIHdpdGggYSBwbGFzdGljLWxpa2Ugc2hpbmUgYW5kIHdoaXRlIFwicmltXCIgaGlnaGxpZ2h0cy4nIH0sXHJcbiAgICAgIHsgaWQ6ICdyYWluYm93JywgbGFiZWw6ICdSZXRyb3dhdmUgUmFpbmJvdycsIGljb246ICdpLXNvbGFyOmZpbHRlcnMtYm9sZC1kdW90b25lJywgdGV4dDogJ011bHRpLWNvbG9yZWQgXCJyYXZlciBnaXJsXCIgaGFpcjsgZGFyayByb290cyB3aXRoIGdsb3dpbmcgbmVvbiBzdHJlYWtzIG9mIGN5YW4sIG1hZ2VudGEsIGFuZCBsaW1lIGdyZWVuLicgfSxcclxuICAgIF0sXHJcbiAgfSxcclxuICB7XHJcbiAgICBpZDogJ2V5ZXMnLFxyXG4gICAgbGFiZWw6ICdJcmlzIEZvcmdlJyxcclxuICAgIGljb246ICdpLXNvbGFyOmV5ZS1ib2xkLWR1b3RvbmUnLFxyXG4gICAgcHJlc2V0czogW1xyXG4gICAgICB7IGlkOiAnZHJhZ29uJywgbGFiZWw6ICdEcmFnb24gU2xpdCcsIGljb246ICdpLXNvbGFyOmZpcmUtYm9sZC1kdW90b25lJywgdGV4dDogJ0dsb3dpbmcgb3JhbmdlIGlyaXNlcyB3aXRoIHZlcnRpY2FsIGJsYWNrIHNsaXQgcHVwaWxzIGFuZCBhIHN1YnRsZSByZXB0aWxpYW4gdGV4dHVyZS4nIH0sXHJcbiAgICAgIHsgaWQ6ICdoZWFydCcsIGxhYmVsOiAnU3VjY3VidXMgSGVhcnQnLCBpY29uOiAnaS1zb2xhcjpoZWFydC1hbmdsZS1ib2xkLWR1b3RvbmUnLCB0ZXh0OiAnU29mdCBwaW5rIGlyaXNlcyB3aXRoIGdsb3dpbmcgd2hpdGUgaGVhcnQtc2hhcGVkIHB1cGlscyBhbmQgYSBcImxvdmUtc3RydWNrXCIgYXVyYS4nIH0sXHJcbiAgICAgIHsgaWQ6ICdzdGFyJywgbGFiZWw6ICdDZWxlc3RpYWwgU3RhcicsIGljb246ICdpLXNvbGFyOnN0YXItZmFsbC1ib2xkLWR1b3RvbmUnLCB0ZXh0OiAnRGVlcCB2aW9sZXQgZXllcyB3aXRoIHdoaXRlIHN0YXItc2hhcGVkIHB1cGlscyBhbmQgYSBzdWJ0bGUgcmluZyBvZiBzdGFyZHVzdC4nIH0sXHJcbiAgICAgIHsgaWQ6ICdnYWxheHknLCBsYWJlbDogJ05lYnVsYSBHYWxheHknLCBpY29uOiAnaS1zb2xhcjphdG9tLWJvbGQtZHVvdG9uZScsIHRleHQ6ICdEZWVwIHNwYWNlIGlyaXNlcyBjb250YWluaW5nIHRpbnkgc3BhcmtsaW5nIHN0YXJzIGFuZCBwdXJwbGUgbmVidWxhIGNsdXN0ZXJzLicgfSxcclxuICAgICAgeyBpZDogJ2N5YmVyLWV5ZScsIGxhYmVsOiAnQ3liZXIgU2NhbicsIGljb246ICdpLXNvbGFyOnNjYW5uZXItMi1ib2xkLWR1b3RvbmUnLCB0ZXh0OiAnR2xvd2luZyBjeWFuIEhVRC1zdHlsZSBleWVzIHdpdGggZGlnaXRhbCBzY2FubmluZyByaW5ncyBhbmQgZGF0YS1zdHJlYW0gcHVwaWxzLicgfSxcclxuICAgIF0sXHJcbiAgfSxcclxuICB7XHJcbiAgICBpZDogJ3NwZWNpYWwnLFxyXG4gICAgbGFiZWw6ICdTcGVjaWFsIE1vdGlmcycsXHJcbiAgICBpY29uOiAnaS1zb2xhcjptYWdpYy1zdGljay1ib2xkLWR1b3RvbmUnLFxyXG4gICAgcHJlc2V0czogW1xyXG4gICAgICB7IGlkOiAnbG90dXMnLCBsYWJlbDogJ0FyZ2VudCBMb3R1cycsIGljb246ICdpLXNvbGFyOmZsb3dlci1ib2xkLWR1b3RvbmUnLCB0ZXh0OiAnVGhlIEFyZ2VudCBMb3R1cyBtb3RpZi4gVHJhbnNsdWNlbnQgd2hpdGUgc2lsayBwZXRhbCBsYXllcnMgb3ZlciBoZWF2eSBzaWx2ZXIgYnJvY2FkZSwgd2l0aCBkZWxpY2F0ZSBzaWx2ZXIgZmlsaWdyZWUgbG90dXMgYWNjZW50cy4nIH0sXHJcbiAgICBdLFxyXG4gIH0sXHJcbl1cclxuIl19
