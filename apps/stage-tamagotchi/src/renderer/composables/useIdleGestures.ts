@@ -11,7 +11,7 @@ import { onScopeDispose, watch } from 'vue'
 // self-contained one-shot gestures suitable for ambient idle "fidgeting".
 const IDLE_GESTURE_NAMES = [
   '展示全身',
-  '打招呼',
+  // '打招呼', // ARCHIVED → _archived-features/打招呼/
   '比耶',
   '射击',
   '转圈',
