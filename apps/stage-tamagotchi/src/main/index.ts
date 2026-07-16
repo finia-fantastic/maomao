@@ -311,7 +311,8 @@ app.whenReady().then(async () => {
   })
 
   // Game learning service — standalone, no DI needed
-  setupGameLearningService()
+  // NOTICE: Temporarily disabled to isolate startup crash
+  // setupGameLearningService()
 
   injeca.start().catch(err => console.error(err))
 

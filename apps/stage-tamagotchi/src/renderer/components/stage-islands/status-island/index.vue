@@ -58,19 +58,5 @@ const tooltipLabel = computed(() => {
 </script>
 
 <template>
-  <div fixed right-3 top-3 z-20>
-    <ControlButtonTooltip side="left">
-      <ControlButton
-        :button-style="buttonStyle.join(' ')"
-        :aria-label="tooltipLabel"
-        :title="tooltipLabel"
-        @click="openSettings({ route: '/settings/connection' })"
-      >
-        <div :class="iconClasses" :style="flickerStyle" @animationiteration="onAnimationIteration" />
-      </ControlButton>
-      <template #tooltip>
-        {{ tooltipLabel }}
-      </template>
-    </ControlButtonTooltip>
-  </div>
+  <!-- WiFi connection button archived → _archived-features/WiFi连接按钮/ -->
 </template>
