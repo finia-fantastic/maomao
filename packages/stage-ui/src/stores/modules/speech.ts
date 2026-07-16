@@ -254,10 +254,13 @@ export const useSpeechStore = defineStore('speech', () => {
     ensureActiveSpeechModel()
   })
 
-  // Auto-fix: if user has old 'alloy' voice, correct to 'ja' for GPT-SoVITS bridge
+  // Auto-fix: correct unsupported voices to 'zh' for GPT-SoVITS bridge
   watch(activeSpeechProvider, (provider) => {
-    if (provider === 'openai-compatible-audio-speech' && activeSpeechVoiceId.value === 'alloy') {
-      activeSpeechVoiceId.value = 'ja'
+    if (provider === 'openai-compatible-audio-speech') {
+      const v = activeSpeechVoiceId.value
+      if (!v || v === 'alloy' || v === 'ja') {
+        activeSpeechVoiceId.value = 'zh'
+      }
     }
   })
 

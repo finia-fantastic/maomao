@@ -27,7 +27,7 @@ const defaultVoiceSettings = {
 // Get provider metadata
 const providerId = 'openai-compatible-audio-speech'
 const defaultModel = 'tts-1'
-const defaultVoice = 'ja'
+const defaultVoice = 'zh'
 
 // Initialize speed from provider config or default
 const speed = ref<number>(
