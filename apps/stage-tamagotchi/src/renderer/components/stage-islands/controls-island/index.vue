@@ -23,7 +23,7 @@ import {
   electron,
   electronAppQuit,
   electronOpenChat,
-  // electronOpenSettings, // ARCHIVED with settings button
+  electronOpenSettings,
   electronOpenVocabApp,
   electronStartDraggingWindow,
   electronWindowSetAlwaysOnTop,
@@ -35,7 +35,7 @@ const { t } = useI18n()
 const settingsStore = useSettings()
 const context = useElectronEventaContext()
 const { alwaysOnTop, controlsIslandIconSize } = storeToRefs(settingsStore)
-// const openSettings = useElectronEventaInvoke(electronOpenSettings) // ARCHIVED with settings button
+const openSettings = useElectronEventaInvoke(electronOpenSettings)
 const openChat = useElectronEventaInvoke(electronOpenChat)
 const isLinux = useElectronEventaInvoke(electron.app.isLinux)
 const closeWindow = useElectronEventaInvoke(electronAppQuit)
@@ -311,7 +311,14 @@ useIntervalFn(checkVocabRunning, 5000)
           />
 
           <div grid grid-cols-3 gap-2>
-            <!-- Settings button archived → _archived-features/设置按钮/ -->
+            <ControlButtonTooltip disable-hoverable-content>
+              <ControlButton :button-style="adjustStyleClasses.button" @click="openSettings({ route: '/settings' })">
+                <div i-solar:settings-minimalistic-outline :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
+              </ControlButton>
+              <template #tooltip>
+                {{ t('tamagotchi.stage.controls-island.open-settings') }}
+              </template>
+            </ControlButtonTooltip>
 
             <ControlButtonTooltip disable-hoverable-content>
               <ControlsIslandProfilePicker placement="up" :open="blockingOverlays.has('profile-picker')" @update:open="setOverlay('profile-picker', $event)">
