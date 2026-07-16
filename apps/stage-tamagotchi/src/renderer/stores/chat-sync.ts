@@ -698,22 +698,14 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
       throw new Error(`Failed to resolve chat provider "${providerId}"`)
     }
 
-    // If the user said "看看", capture screen and inject the observation
-    // as context (hidden from visible chat, but the LLM sees it).
+    // If the user said "看看", capture screen and prepend the observation to
+    // the user message. The LLM MUST see and act on it.
     if (lookTriggered) {
       const obs = await captureAndDescribeScreen()
       if (obs) {
-        // Inject as context message — NOT in the user message text.
-        const { useChatContextStore } = await import('@proj-airi/stage-ui/stores/chat/context-store')
-        const { ContextUpdateStrategy } = await import('@proj-airi/server-sdk')
-        const chatContext = useChatContextStore()
-        chatContext.ingestContextMessage({
-          id: `vision-look-${Date.now()}`,
-          contextId: `vision-look-${Date.now()}`,
-          strategy: ContextUpdateStrategy.ReplaceSelf,
-          text: `你刚刚截屏看了用户的桌面，看到：「${obs}」请直接告诉用户你看到了什么。`,
-          createdAt: Date.now(),
-        })
+        // Modify the message the LLM sees. The original text is already
+        // in the chat UI; this only changes what the LLM receives.
+        payload.text = `（你截屏看到：「${obs}」请直接用角色语气告诉用户你看到了什么）\n\n${payload.text}`
       }
     }
 
