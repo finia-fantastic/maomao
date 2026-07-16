@@ -4,6 +4,7 @@ import type { ActionResult, GameAction, KeyPressParams, KeySequenceParams, Mouse
 import { errorMessageFrom } from '@moeru/std'
 import { execSync } from 'node:child_process'
 import { uIOhook } from 'uiohook-napi'
+import { setAiInjecting } from '../game-learning'
 
 const LOG_PREFIX = '[GameControl]'
 
@@ -34,6 +35,8 @@ export class GameActionExecutor {
    */
   async execute(action: GameAction): Promise<ActionResult> {
     const start = Date.now()
+    // Mark that AI is injecting keys — the teaching recorder ignores these
+    setAiInjecting(true)
     try {
       switch (action.type) {
         case 'key_press':
@@ -77,6 +80,7 @@ export class GameActionExecutor {
     }
     finally {
       // Safety: release any keys that might still be held
+      setAiInjecting(false)
       this.releaseAll()
     }
   }

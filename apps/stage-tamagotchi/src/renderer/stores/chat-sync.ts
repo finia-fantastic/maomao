@@ -554,6 +554,19 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     }
   }
 
+  /** Teaching mode: "开始教学" / "结束教学". */
+  function maybeTriggerTeaching(text: string): string {
+    if (/开始教学|教学模式|teach.*mode/i.test(text) && !/结束|停止/i.test(text)) {
+      void (window as any).electron.ipcRenderer.invoke('game-teaching:start', { title: '洛克王国教程' })
+      return '教学模式已开启。你按键就是在教她。'
+    }
+    if (/结束教学|停止教学|end.*teach/i.test(text)) {
+      void (window as any).electron.ipcRenderer.invoke('game-teaching:stop')
+      return '教学模式已结束。'
+    }
+    return ''
+  }
+
   /** Toggle game-watch: "开始游戏监控" / "停止游戏监控". */
   function maybeTriggerGameWatch(text: string): string {
     const visionStore = useVisionStore()
@@ -707,6 +720,8 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     maybeSwitchVisionMode(payload.text)
     // Game watch toggle — "开始游戏监控" / "停止游戏监控".
     void maybeTriggerGameWatch(payload.text)
+    // Teaching mode — "开始教学" / "结束教学".
+    void maybeTriggerTeaching(payload.text)
     // Language toggle — "切换日语" / "切换中文".
     void maybeToggleLanguage(payload.text)
     // "读单词" — read recent English words from vocab DB via TTS.

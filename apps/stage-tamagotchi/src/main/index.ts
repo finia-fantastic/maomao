@@ -32,6 +32,7 @@ import { createI18n } from './libs/i18n'
 import { createWindowAuthManagerService } from './services/airi/auth'
 import { setupServerChannel } from './services/airi/channel-server'
 import { setupGameControlService } from './services/airi/game-control'
+import { setupGameLearningService } from './services/airi/game-learning'
 import { setupGodotStageManager } from './services/airi/godot-stage'
 import { setupBuiltInServer } from './services/airi/http-server'
 import { setupMcpStdioManager } from './services/airi/mcp-servers'
@@ -308,6 +309,9 @@ app.whenReady().then(async () => {
       gameControlService = setupGameControlService({ context })
     },
   })
+
+  // Game learning service — standalone, no DI needed
+  setupGameLearningService()
 
   injeca.start().catch(err => console.error(err))
 
