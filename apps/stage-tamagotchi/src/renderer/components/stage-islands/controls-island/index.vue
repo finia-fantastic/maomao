@@ -23,7 +23,7 @@ import {
   electron,
   electronAppQuit,
   electronOpenChat,
-  electronOpenSettings,
+  // electronOpenSettings, // ARCHIVED with settings button
   electronOpenVocabApp,
   electronStartDraggingWindow,
   electronWindowSetAlwaysOnTop,
@@ -35,7 +35,7 @@ const { t } = useI18n()
 const settingsStore = useSettings()
 const context = useElectronEventaContext()
 const { alwaysOnTop, controlsIslandIconSize } = storeToRefs(settingsStore)
-const openSettings = useElectronEventaInvoke(electronOpenSettings)
+// const openSettings = useElectronEventaInvoke(electronOpenSettings) // ARCHIVED with settings button
 const openChat = useElectronEventaInvoke(electronOpenChat)
 const isLinux = useElectronEventaInvoke(electron.app.isLinux)
 const closeWindow = useElectronEventaInvoke(electronAppQuit)
