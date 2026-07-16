@@ -78,17 +78,6 @@ function handleKeydown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <!-- Toggle button — always visible -->
-  <button
-    class="absolute right-2 top-2 z-50 rounded-full px-3 py-1.5 text-xs font-medium shadow-lg transition-all duration-200"
-    :class="visible
-      ? 'bg-primary-500 text-white hover:bg-primary-600'
-      : 'bg-white/70 text-primary-600 hover:bg-white dark:bg-neutral-800/70 dark:text-primary-400'"
-    @click="emit('toggle')"
-  >
-    {{ visible ? '退出聊天' : '💬 聊天' }}
-  </button>
-
   <Transition name="inline-chat">
     <div v-if="visible" class="absolute inset-0 z-40 flex flex-col items-center justify-between px-3 py-4 pointer-events-none">
       <!-- Reply box (top) -->

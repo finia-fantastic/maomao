@@ -6,8 +6,9 @@ import { useChatSessionStore } from '@proj-airi/stage-ui/stores/chat/session-sto
 
 import { useVisionOrchestratorStore } from '@proj-airi/stage-ui/stores/modules/vision/orchestrator'
 import { useSettings } from '@proj-airi/stage-ui/stores/settings'
-import { useTheme } from '@proj-airi/ui'
+
 import { refDebounced, useIntervalFn } from '@vueuse/core'
+import { inject } from 'vue'
 import { storeToRefs } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -28,7 +29,7 @@ import {
   electronWindowSetAlwaysOnTop,
 } from '../../../../shared/eventa'
 
-const { isDark, toggleDark } = useTheme()
+const toggleInlineChat = inject<(() => void) | undefined>('toggleInlineChat', undefined)
 const { t } = useI18n()
 
 const settingsStore = useSettings()
@@ -360,14 +361,11 @@ useIntervalFn(checkVocabRunning, 5000)
             </ControlButtonTooltip>
 
             <ControlButtonTooltip disable-hoverable-content>
-              <ControlButton :button-style="adjustStyleClasses.button" @click="toggleDark()">
-                <Transition name="fade" mode="out-in">
-                  <div v-if="isDark" i-solar:moon-outline :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
-                  <div v-else i-solar:sun-2-outline :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
-                </Transition>
+              <ControlButton :button-style="adjustStyleClasses.button" @click="toggleInlineChat?.()">
+                <div i-solar:chat-line-bold-duotone :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
               </ControlButton>
               <template #tooltip>
-                {{ isDark ? t('tamagotchi.stage.controls-island.switch-to-light-mode') : t('tamagotchi.stage.controls-island.switch-to-dark-mode') }}
+                聊天模式
               </template>
             </ControlButtonTooltip>
 

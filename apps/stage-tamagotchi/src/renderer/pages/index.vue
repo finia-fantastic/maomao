@@ -29,7 +29,7 @@ import { useOnboardingStore } from '@proj-airi/stage-ui/stores/onboarding'
 import { useSettings, useSettingsAudioDevice } from '@proj-airi/stage-ui/stores/settings'
 import { refDebounced, useBroadcastChannel } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onUnmounted, ref, shallowRef, toRef, watch } from 'vue'
+import { computed, onMounted, onUnmounted, provide, ref, shallowRef, toRef, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import ControlsIsland from '../components/stage-islands/controls-island/index.vue'
@@ -632,6 +632,8 @@ const isInlineChatMode = ref(false)
 function toggleInlineChat() {
   isInlineChatMode.value = !isInlineChatMode.value
 }
+
+provide('toggleInlineChat', toggleInlineChat)
 
 const cursorPosition = computed(() => ({
   x: relativeMouseX.value,
