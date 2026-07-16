@@ -483,12 +483,22 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     try {
       // Step 1: capture screen via desktopCapturer IPC
       const capResult = await (window as any).electron.ipcRenderer.invoke('screen-capture:capture')
-      const dataUrl = capResult?.dataUrl
-      if (!dataUrl) {
+      const rawDataUrl = capResult?.dataUrl
+      if (!rawDataUrl) {
         return `截图失败：IPC 返回空数据`
       }
 
-      // Step 2: VLM inference
+      // Step 2: mask the pet's own window so the VLM doesn't see itself
+      let dataUrl = rawDataUrl
+      try {
+        const bounds = await (window as any).electron.ipcRenderer.invoke('get-pet-window-bounds')
+        if (bounds && bounds.width > 0 && bounds.height > 0) {
+          dataUrl = await applyMaskToDataUrl(rawDataUrl, bounds)
+        }
+      }
+      catch { /* mask is nice-to-have */ }
+
+      // Step 3: VLM inference
       const visionOrchestrator = useVisionOrchestratorStore()
       const vlmResult = await visionOrchestrator.processCapture({
         imageDataUrl: dataUrl,
@@ -502,6 +512,32 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     catch (e: any) {
       return `截图分析异常：${e?.message || String(e)}`
     }
+  }
+
+  /** Apply a dark mask rectangle to an image data URL. */
+  function applyMaskToDataUrl(dataUrl: string, bounds: { x: number, y: number, width: number, height: number }): Promise<string> {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { resolve(dataUrl); return }
+        ctx.drawImage(img, 0, 0)
+        const mx = Math.max(0, Math.round(bounds.x))
+        const my = Math.max(0, Math.round(bounds.y))
+        const mw = Math.min(canvas.width - mx, Math.round(bounds.width))
+        const mh = Math.min(canvas.height - my, Math.round(bounds.height))
+        if (mw > 0 && mh > 0) {
+          ctx.fillStyle = '#1a1a2e'
+          ctx.fillRect(mx, my, mw, mh)
+        }
+        resolve(canvas.toDataURL('image/jpeg', 0.82))
+      }
+      img.onerror = () => resolve(dataUrl)
+      img.src = dataUrl
+    })
   }
 
   /** Switch vision mode via chat ("切换耗能模式" / "切换节能模式"). */

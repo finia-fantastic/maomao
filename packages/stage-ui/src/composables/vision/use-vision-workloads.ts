@@ -22,7 +22,7 @@ export const VISION_WORKLOADS: VisionWorkloadConfig[] = [
       '- Note anything interesting: file names, error messages, images, play/pause buttons',
       '- If the screen is mostly dark/empty, say so honestly but check for taskbar icons or window titles',
       '',
-      'DO NOT describe any anime/cartoon characters — they are the observer\'s own avatar.',
+      'DO NOT describe or mention any anime/cartoon/3D characters, virtual pets, mascots, or avatars on screen — they are the observer\'s OWN reflection and must be COMPLETELY IGNORED. Pretend they do not exist. Do not say "there is also a character" or "a fox-eared figure."',
       'DO NOT use generic phrases like "looks like you\'re working."',
       'Output ONLY the Chinese description, no prefix, no markdown.',
     ].join('\n'),
