@@ -164,11 +164,23 @@ async function handleSpeech(req, res) {
     return
   }
 
-  const input = typeof payload.input === 'string' ? payload.input.trim() : ''
+  let input = typeof payload.input === 'string' ? payload.input.trim() : ''
   if (!input) {
     sendJson(res, 400, { error: 'Missing "input" text.' })
     return
   }
+
+  // Strip emoji and other non-GBK characters that crash the Python SoVITS API.
+  // The bundled Python uses GBK codec; characters like ✨ (U+2728) cause:
+  //   'gbk' codec can't encode character '✨' in position 1
+  input = input.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B50}\u{2B55}\u{231A}\u{231B}\u{2328}\u{23CF}\u{23E9}-\u{23F3}\u{23F8}-\u{23FA}\u{25AA}\u{25AB}\u{25B6}\u{25C0}\u{25FB}-\u{25FE}\u{2600}-\u{2B55}\u{2934}\u{2935}\u{3030}\u{303D}\u{3297}\u{3299}\u{FE0F}\u{200D}]/gu, '')
+    .replace(/\u{1F600}-\u{1F64F}/gu, '')
+    .replace(/\u{1F300}-\u{1F5FF}/gu, '')
+    .replace(/\u{1F680}-\u{1F6FF}/gu, '')
+    .replace(/\u{1F900}-\u{1F9FF}/gu, '')
+    .replace(/\u{1FA00}-\u{1FA6F}/gu, '')
+    .replace(/\u{1FA70}-\u{1FAFF}/gu, '')
+    .trim()
 
   const ttsBody = buildTtsBody(input, Number(payload.speed), resolveTextLang(payload.voice))
 
