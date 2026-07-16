@@ -51,6 +51,8 @@ const SCREEN_WATCH_SOURCES_OPTIONS: SourcesOptions = {
 
 /** Workload used to get a natural-language commentary from the vision model. */
 const SCREEN_WATCH_WORKLOAD: VisionWorkloadId = 'screen:commentary'
+/** Workload used when game-watch mode is active. */
+const GAME_WATCH_WORKLOAD: VisionWorkloadId = 'screen:game-watch'
 
 /**
  * Compute a lightweight perceptual signature of a video frame.
@@ -382,10 +384,11 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
     isInferring.value = true
 
     try {
-      // Run VLM inference to get a natural-language description of the screen.
+      // Run VLM inference — use game-watch workload when game mode is active
+      const workloadId = visionStore.gameWatchActive ? GAME_WATCH_WORKLOAD : SCREEN_WATCH_WORKLOAD
       const result = await visionOrchestratorStore.processCapture({
         imageDataUrl: dataUrl,
-        workloadId: SCREEN_WATCH_WORKLOAD,
+        workloadId,
         sourceId: activeSourceId.value,
         capturedAt: now,
         publishContext: false,
