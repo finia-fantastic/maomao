@@ -8,7 +8,8 @@ taskkill /F /IM electron.exe >nul 2>&1
 timeout /t 2 /nobreak >nul
 
 echo Starting voice backend (GPT-SoVITS API + bridge) in a separate window...
-start "" "I:\GPT-SoVITS\启动语音后端.bat"
+start "GPT-SoVITS API" cmd /c "I:\GPT-SoVITS\_run_api.bat"
+start "GPT-SoVITS Bridge" cmd /c "I:\GPT-SoVITS\_run_bridge.bat"
 
 echo Starting AIRI desktop pet (port 5173, first compile takes 1-2 minutes)...
 pnpm dev:tamagotchi

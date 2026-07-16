@@ -198,11 +198,13 @@ async function handleVisionResult(text: string): Promise<void> {
   )
   console.info('[Reaction] spark notify done, reaction:', reactionText?.slice(0, 80))
 
-  // 2. Strip internal markup tags before writing to chat
+  // 2. Strip internal markup tags and verbose headers before writing to chat
   const stripMarkup = (t: string) => t
     .replace(/<\|ACT\s*\{[^}]+\}\s*\|>/g, '')
     .replace(/<\|DELAY\s*\d+\|>/g, '')
     .replace(/<\|[A-Z_]+(\s*\{[^}]*\})?\s*\|>/g, '')
+    // Remove headers that VLM/consciousness model sometimes prepend
+    .replace(/^(?:请看你的屏幕|屏幕内容：|您屏幕上的内容：|我看到：|我注意到：)\s*/i, '')
     .trim()
 
   const sessionId = chatSessionStore.activeSessionId
