@@ -33,6 +33,7 @@ import { computed, onMounted, onUnmounted, ref, shallowRef, toRef, watch } from 
 import { toast } from 'vue-sonner'
 
 import ControlsIsland from '../components/stage-islands/controls-island/index.vue'
+import InlineChatOverlay from '../components/InlineChatOverlay.vue'
 import ResourceStatusIsland from '../components/stage-islands/resource-status-island/index.vue'
 import StatusIsland from '../components/stage-islands/status-island/index.vue'
 
@@ -626,6 +627,12 @@ watch(stream, async (currentStream) => {
 
 // Assistant caption is broadcast from Stage.vue via the same channel
 
+const isInlineChatMode = ref(false)
+
+function toggleInlineChat() {
+  isInlineChatMode.value = !isInlineChatMode.value
+}
+
 const cursorPosition = computed(() => ({
   x: relativeMouseX.value,
   y: relativeMouseY.value,
@@ -666,6 +673,10 @@ const cursorPosition = computed(() => ({
           flex-1
           :cursor-position="cursorPosition"
           :paused="stagePaused"
+        />
+        <InlineChatOverlay
+          :visible="isInlineChatMode"
+          @toggle="toggleInlineChat"
         />
         <HoloCoupon />
         <ControlsIsland ref="controlsIslandRef" />
