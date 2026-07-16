@@ -90,6 +90,9 @@ function onKeyUp(e: UiohookKeyboardEvent) {
 }
 
 export function setupGameLearningService() {
+  // Ensure uiohook is running before registering listeners
+  try { uIOhook.start() } catch { /* already running */ }
+
   // Register keyboard listeners
   uIOhook.on('keydown', onKeyDown)
   uIOhook.on('keyup', onKeyUp)
