@@ -541,6 +541,31 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
   }
 
   /** Switch vision mode via chat ("切换耗能模式" / "切换节能模式"). */
+  /** Language toggle: "切换日语" / "切换中文". */
+  function maybeToggleLanguage(text: string): void {
+    const visionStore = useVisionStore()
+    if (/切换日语|日语模式|说日语|日本語/i.test(text) && !/切换中文|中文模式|说中文/i.test(text)) {
+      visionStore.toggleJapanese()
+    }
+    else if (/切换中文|中文模式|说中文/i.test(text) && !/切换日语|日语模式|说日语|日本語/i.test(text)) {
+      if (visionStore.japaneseMode) visionStore.toggleJapanese()
+    }
+  }
+
+  /** Toggle game-watch: "开始游戏监控" / "停止游戏监控". */
+  function maybeTriggerGameWatch(text: string): string {
+    const visionStore = useVisionStore()
+    if (/开始游戏|游戏监控|游戏模式|watch.*game/i.test(text) && !/停止|结束|关闭/i.test(text)) {
+      visionStore.setGameWatch(true)
+      return '游戏监控已开启'
+    }
+    if (/停止游戏|结束游戏|关闭游戏|stop.*game/i.test(text)) {
+      visionStore.setGameWatch(false)
+      return '游戏监控已停止'
+    }
+    return ''
+  }
+
   function maybeSwitchVisionMode(text: string): void {
     const visionStore = useVisionStore()
     if (/切换.*(?:耗能|active|高频|游戏)/i.test(text)) {
@@ -676,8 +701,12 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     if (lookTriggered) {
       // Fire-and-forget: start capture immediately, will await below
     }
-    // Vision mode switch — "切换耗能模式" / "切换节能模式".
+    // Vision mode switch.
     maybeSwitchVisionMode(payload.text)
+    // Game watch toggle — "开始游戏监控" / "停止游戏监控".
+    void maybeTriggerGameWatch(payload.text)
+    // Language toggle — "切换日语" / "切换中文".
+    void maybeToggleLanguage(payload.text)
     // "读单词" — read recent English words from vocab DB via TTS.
     void maybeTriggerReadWords(payload.text)
     // Hand prop switching — "拿相机" / "拿笔" / "拿数位板" / "放下".
@@ -723,7 +752,13 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
       }
     }
 
-    await chatOrchestrator.ingest(payload.text, {
+    // Language mode: if Japanese is ON, force Japanese output.
+    const visionStore = useVisionStore()
+    const finalText = visionStore.japaneseMode
+      ? `[IMPORTANT: ALL output MUST be in Japanese (日本語のみ). No Chinese.]\n\n${payload.text}`
+      : payload.text
+
+    await chatOrchestrator.ingest(finalText, {
       model: modelId,
       chatProvider,
       attachments: payload.attachments,

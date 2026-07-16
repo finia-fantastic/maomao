@@ -194,6 +194,20 @@ export const useVisionStore = defineStore('vision', () => {
     })
   }
 
+  /** Whether game-watch mode is active (uses screen:game-watch workload). */
+  const gameWatchActive = ref(false)
+
+  function setGameWatch(enabled: boolean) {
+    gameWatchActive.value = enabled
+  }
+
+  /** Language mode: true = Japanese (ON), false = Chinese (OFF, default). */
+  const japaneseMode = ref(false)
+
+  function toggleJapanese() {
+    japaneseMode.value = !japaneseMode.value
+  }
+
   return {
     activeProvider,
     activeModel,
@@ -221,5 +235,9 @@ export const useVisionStore = defineStore('vision', () => {
     setVisualObservation,
     clearVisualObservation,
     waitForLook,
+    gameWatchActive,
+    setGameWatch,
+    japaneseMode,
+    toggleJapanese,
   }
 })

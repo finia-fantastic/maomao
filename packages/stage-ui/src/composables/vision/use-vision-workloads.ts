@@ -1,4 +1,4 @@
-export type VisionWorkloadId = 'screen:interpret' | 'screen:understand' | 'screen:ocr' | 'screen:ui-automation' | 'screen:commentary' | 'screen:english-reader' | 'screen:chat-look'
+export type VisionWorkloadId = 'screen:interpret' | 'screen:understand' | 'screen:ocr' | 'screen:ui-automation' | 'screen:commentary' | 'screen:english-reader' | 'screen:chat-look' | 'screen:game-watch'
 
 export interface VisionWorkloadConfig {
   id: VisionWorkloadId
@@ -118,6 +118,26 @@ export const VISION_WORKLOADS: VisionWorkloadConfig[] = [
       '"I see an anime figure." Pretend it does not exist. Focus ONLY on the user\'s',
       'applications, content, and activity. The character is NOT the user and NOT part',
       'of the user\'s task — ignore it completely.',
+    ].join('\n'),
+  },
+  {
+    id: 'screen:game-watch',
+    label: 'Game screen watch',
+    description: 'Analyze game screen for AI-assisted gameplay.',
+    prompt: [
+      'You are watching a game being played. Analyze the game screen in Chinese, 2-3 sentences.',
+      '',
+      'FOCUS on game-relevant details:',
+      '- Game genre if recognizable (RPG, action, puzzle, turn-based, etc.)',
+      '- Current game state: battle? exploration? menu? dialog? cutscene?',
+      '- Key UI: HP/MP bars, minimap, quest markers, dialog text, inventory',
+      '- Enemies? NPCs? Interactive objects? Quest objectives?',
+      '- Any urgent info: low health, timer, warning text',
+      '- Be specific about NUMBERS and TEXT visible (HP values, quest names, dialog)',
+      '',
+      'Ignore desktop UI outside the game window.',
+      'Do NOT describe anime characters as real people — they are game sprites.',
+      'Output ONLY the Chinese description, no prefix, no markdown.',
     ].join('\n'),
   },
   {
