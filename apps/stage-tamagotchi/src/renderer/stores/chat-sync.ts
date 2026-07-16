@@ -662,16 +662,14 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
       throw new Error(`Failed to resolve chat provider "${providerId}"`)
     }
 
-    // If the user said "看看", capture screen, run VLM, and tell the LLM
-    // to describe what it saw. Replace the user's message entirely so the
-    // LLM focuses solely on describing the screen content.
+    // If the user said "看看", capture screen and prepend observation
+    // as a terse system note. The LLM acts on it; the user sees their
+    // original message in chat, not the system note.
     let ingestText = payload.text
     if (lookTriggered) {
       const obs = await captureAndDescribeScreen()
       if (obs) {
-        // Replace the user message — the LLM's job is now to describe
-        // what it saw, not to respond to "看看" as a chat message.
-        ingestText = `你刚刚看了用户的屏幕，这是你看到的内容：\n「${obs}」\n\n请用你角色的语气，用中文告诉用户你看到了什么。要具体、自然，就像你真的刚刚看了一眼屏幕一样。不要说你不知道——你上面已经看到了。`
+        ingestText = `[系统：截屏→${obs} 请像亲眼看到一样告诉用户] ${payload.text}`
       }
     }
 
