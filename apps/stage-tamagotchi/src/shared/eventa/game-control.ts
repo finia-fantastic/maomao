@@ -45,7 +45,7 @@ export interface GameActionPlan {
  * One step in an action plan, serialised for IPC.
  */
 export interface GameActionPayload {
-  type: 'key_press' | 'key_sequence' | 'wait' | 'mouse_click'
+  type: 'key_press' | 'key_sequence' | 'wait' | 'mouse_click' | 'mouse_move'
   params: Record<string, unknown>
 }
 

@@ -48,9 +48,9 @@ export interface GameAction {
   /** Unique action identifier for tracking. */
   id: string
   /** The type of action to perform. */
-  type: 'key_press' | 'key_sequence' | 'wait' | 'mouse_click'
+  type: 'key_press' | 'key_sequence' | 'wait' | 'mouse_click' | 'mouse_move'
   /** Action-specific parameters. */
-  params: KeyPressParams | KeySequenceParams | WaitParams | MouseClickParams
+  params: KeyPressParams | KeySequenceParams | WaitParams | MouseClickParams | MouseMoveParams
 }
 
 /** Press and release one key, optionally with modifiers. */
@@ -77,6 +77,14 @@ export interface WaitParams {
 export interface MouseClickParams {
   /** 1 = left, 2 = right, 3 = middle. */
   button: 1 | 2 | 3
+}
+
+/** Move the mouse cursor to absolute screen coordinates. */
+export interface MouseMoveParams {
+  /** Screen X coordinate. */
+  x: number
+  /** Screen Y coordinate. */
+  y: number
 }
 
 /**

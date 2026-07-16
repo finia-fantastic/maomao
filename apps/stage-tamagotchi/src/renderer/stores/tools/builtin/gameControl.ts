@@ -23,12 +23,13 @@ const KEY_MAP: Record<string, number> = {
 }
 
 const gameControlParams = z.object({
-  action: z.enum(['press_key', 'key_sequence', 'wait', 'mouse_click', 'start', 'stop']).describe(
+  action: z.enum(['press_key', 'key_sequence', 'wait', 'mouse_click', 'mouse_move', 'start', 'stop']).describe(
     'Action type:\n' +
     '- press_key: press and release a single key\n' +
     '- key_sequence: press multiple keys in order\n' +
     '- wait: pause between actions (milliseconds)\n' +
     '- mouse_click: click left/right/middle mouse\n' +
+    '- mouse_move: move mouse to absolute screen coordinates\n' +
     '- start: begin game control (target window title optional)\n' +
     '- stop: end game control',
   ),
@@ -37,6 +38,8 @@ const gameControlParams = z.object({
   duration: z.number().describe('For wait: milliseconds to wait. For press_key: hold duration (default 50ms).').optional(),
   button: z.number().min(1).max(3).describe('For mouse_click: 1=left, 2=right, 3=middle').optional(),
   target_window: z.string().describe('For start: game window title to focus (optional).').optional(),
+  x: z.number().describe('For mouse_move: target X screen coordinate').optional(),
+  y: z.number().describe('For mouse_move: target Y screen coordinate').optional(),
 })
 
 const GAME_CONTROL_STARTED_KEY = '__game_control_started'
@@ -52,6 +55,8 @@ async function executeGameControl(input: {
   duration?: number
   button?: number
   target_window?: string
+  x?: number
+  y?: number
 }): Promise<string> {
   try {
     const ipc = (window as any).electron.ipcRenderer
@@ -113,6 +118,11 @@ async function executeGameControl(input: {
       case 'mouse_click':
         actions.push({ type: 'mouse_click', params: { button: input.button ?? 1 } })
         break
+      case 'mouse_move': {
+        if (input.x == null || input.y == null) return '需要 x, y 坐标'
+        actions.push({ type: 'mouse_move', params: { x: input.x, y: input.y } })
+        break
+      }
     }
 
     const result = await ipc.invoke('game-control:execute', {
@@ -137,15 +147,16 @@ const tools: Promise<Tool>[] = [
       'and execute key sequences.',
       '',
       'USAGE:',
-      '- press_key: "w" to move forward, "space" to jump, "e" to interact',
-      '- key_sequence: "w,w,w,space" to run forward then jump',
-      '- mouse_click: button 1 to left-click',
-      '- wait: pause (e.g. 500ms between actions)',
-      '- start: begin game control (optional: set game window title)',
-      '- stop: end game control',
+      '- press_key: "w" to move, "space" to jump, "e" to interact',
+      '- key_sequence: "w,w,w,space" to run then jump',
+      '- mouse_click: button 1=left, 2=right, 3=middle',
+      '- mouse_move: mouse_move with x,y screen coordinates',
+      '- wait: pause in milliseconds',
+      '- start/stop: begin or end game control',
       '',
-      'Available keys: w a s d space enter esc e q f r 1-9 shift ctrl alt up down left right',
-      'Use this for: moving characters, interacting in games, navigating menus.',
+      'Keys: w a s d space enter esc e q f r 1-9 shift ctrl alt up down left right',
+      'Mouse: use x,y for absolute screen position (e.g. x:500,y:300 for center)',
+      'For games: combine look+move — see screen, decide action, press keys!',
       '',
       'IMPORTANT: After pressing a move key like w/a/s/d, the character keeps moving.',
       'Use short key presses (duration 80ms) for movement taps.',

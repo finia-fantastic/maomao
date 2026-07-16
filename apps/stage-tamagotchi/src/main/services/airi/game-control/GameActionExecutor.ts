@@ -1,7 +1,8 @@
 import type { ManualOverrideGuard } from './ManualOverrideGuard'
-import type { ActionResult, GameAction, KeyPressParams, KeySequenceParams, MouseClickParams, WaitParams } from './types'
+import type { ActionResult, GameAction, KeyPressParams, KeySequenceParams, MouseClickParams, MouseMoveParams, WaitParams } from './types'
 
 import { errorMessageFrom } from '@moeru/std'
+import { execSync } from 'node:child_process'
 import { uIOhook } from 'uiohook-napi'
 
 const LOG_PREFIX = '[GameControl]'
@@ -46,6 +47,9 @@ export class GameActionExecutor {
           break
         case 'mouse_click':
           await this.executeMouseClick(action.params as MouseClickParams)
+          break
+        case 'mouse_move':
+          await this.executeMouseMove(action.params as MouseMoveParams)
           break
         default:
           return {
@@ -114,6 +118,19 @@ export class GameActionExecutor {
 
   private async executeWait(params: WaitParams): Promise<void> {
     await this.sleep(params.durationMs)
+  }
+
+  private async executeMouseMove(params: MouseMoveParams): Promise<void> {
+    this.guard.isInjecting = true
+    try {
+      // Use PowerShell + .NET to move the cursor on Windows.
+      // uiohook-napi doesn't expose a mouse move sending API.
+      const psCmd = `Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(${params.x},${params.y})`
+      execSync(`powershell -NoProfile -Command "${psCmd}"`, { timeout: 3000 })
+    }
+    finally {
+      this.guard.isInjecting = false
+    }
   }
 
   private async executeMouseClick(params: MouseClickParams): Promise<void> {
