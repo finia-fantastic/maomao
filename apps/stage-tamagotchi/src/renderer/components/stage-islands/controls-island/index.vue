@@ -212,12 +212,12 @@ async function handleVisionResult(text: string): Promise<void> {
   if (sessionId && finalText) {
     chatSessionStore.appendSessionMessage(sessionId, {
       role: 'assistant' as const,
-      content: '',
+      content: finalText,
       slices: [{ type: 'text' as const, text: finalText }],
       tool_results: [],
       createdAt: Date.now(),
       id: `vision-${Date.now()}`,
-    })
+    } as any)
     console.info('[Reaction] written to chat:', finalText.slice(0, 80))
   }
 }

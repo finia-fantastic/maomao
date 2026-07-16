@@ -651,9 +651,95 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
     }, captureIntervalMs.value)
   })
 
+  // ── Game watch: fixed 5s capture scheduler ───────────────────────
+  // Independent of the auto-watch loop. Every 5 seconds a screenshot is
+  // taken and analyzed with the game-watch workload. Analysis runs in
+  // parallel — slow VLM responses never delay the next capture.
+
+  const GAME_CAPTURE_INTERVAL_MS = 5000
+  let gameWatchTimer: ReturnType<typeof setInterval> | null = null
+  let gameCaptureSeq = 0
+
+  /** Single game-mode capture: screenshot → VLM → spark:notify (TTS). */
+  async function gameWatchCapture() {
+    const seq = ++gameCaptureSeq
+    const capturedAt = Date.now()
+    const captureId = `game-${capturedAt}-${seq}`
+
+    try {
+      // Use desktopCapturer IPC — no MediaStream permission needed
+      const capResult = await (window as any).electron.ipcRenderer.invoke('screen-capture:capture')
+      const dataUrl = capResult?.dataUrl
+      if (!dataUrl) return
+
+      // Apply self-mask to hide the pet window
+      await refreshPetWindowBounds()
+      let maskedUrl = dataUrl
+      if (petWindowBounds.value) {
+        maskedUrl = await applyMaskToDataUrl(dataUrl, petWindowBounds.value)
+      }
+
+      // VLM inference with game-specific workload
+      const result = await visionOrchestratorStore.processCapture({
+        imageDataUrl: maskedUrl,
+        workloadId: 'screen:game-watch',
+        sourceId: captureId,
+        capturedAt,
+        publishContext: false,
+      })
+
+      const text = result.text
+      if (!text || text.length === 0) return
+
+      console.info(`[GameWatch] #${seq} result:`, text.slice(0, 100))
+
+      // Store for chat-sync (if the user said "看看" simultaneously)
+      visionStore.setVisualObservation(text)
+
+      // Fire TTS so the pet speaks about what it sees
+      await characterOrchestratorStore.handleSparkNotifyWithReaction(
+        buildScreenCommentNotify(text),
+        { fallbackText: text },
+      )
+
+      // Track for anti-repetition
+      recentComments.push(text)
+      if (recentComments.length > MAX_RECENT_COMMENTS)
+        recentComments.shift()
+    }
+    catch (e) {
+      console.warn(`[GameWatch] #${seq} failed:`, errorMessageFrom(e))
+    }
+  }
+
+  function startGameWatch() {
+    if (gameWatchTimer) return
+    // Fire immediately on first enable
+    void gameWatchCapture()
+    gameWatchTimer = setInterval(() => {
+      void gameWatchCapture()
+    }, GAME_CAPTURE_INTERVAL_MS)
+    console.info('[GameWatch] started, interval:', GAME_CAPTURE_INTERVAL_MS, 'ms')
+  }
+
+  function stopGameWatch() {
+    if (!gameWatchTimer) return
+    clearInterval(gameWatchTimer)
+    gameWatchTimer = null
+    gameCaptureSeq = 0
+    console.info('[GameWatch] stopped')
+  }
+
+  // Watch gameWatchActive from the vision store
+  watch(() => visionStore.gameWatchActive, (active) => {
+    if (active) startGameWatch()
+    else stopGameWatch()
+  }, { immediate: true })
+
   // Full teardown when the owning component unmounts.
   onScopeDispose(() => {
     stopLoop()
+    stopGameWatch()
     cleanup()
     if (videoRef.value) {
       videoRef.value.pause()
