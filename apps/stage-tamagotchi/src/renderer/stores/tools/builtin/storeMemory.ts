@@ -38,6 +38,7 @@ async function executeStoreMemory(input: {
   content: string
   type?: string
   importance?: number
+  projectId?: string
 }): Promise<string> {
   if (!input.subject?.trim() || !input.content?.trim()) {
     return '❌ 记忆存储失败：主题和内容不能为空。'
@@ -49,6 +50,7 @@ async function executeStoreMemory(input: {
       content: input.content.trim(),
       type: input.type ?? 'episode',
       importance: input.importance ?? 0.7,
+      projectId: input.projectId,
     })
 
     if (!result?.ok) {

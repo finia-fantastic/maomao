@@ -154,6 +154,7 @@ export async function setupMainWindowElectronInvokes(params: {
     content: string
     type?: string
     importance?: number
+    projectId?: string
   }) => {
     try {
       const { getMemoryDatabase } = await import('../../../services/memory/MemoryDatabase')
@@ -169,6 +170,7 @@ export async function setupMainWindowElectronInvokes(params: {
 
       const record = storeMemory(db, {
         userId: 'default-user',
+        projectId: payload.projectId ?? null,
         type,
         memoryKey,
         subject: payload.subject.slice(0, 80),

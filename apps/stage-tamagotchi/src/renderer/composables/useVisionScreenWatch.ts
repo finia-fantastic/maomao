@@ -702,6 +702,18 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
         { fallbackText: text },
       )
 
+      // Store to memory under 洛克王国 project for game learning
+      try {
+        await (window as any).electron.ipcRenderer.invoke('memory:store-tool', {
+          subject: `游戏画面 #${seq}`,
+          content: text,
+          type: 'episode',
+          importance: 0.5,
+          projectId: 'luoke',
+        })
+      }
+      catch { /* memory store is best-effort */ }
+
       // Track for anti-repetition
       recentComments.push(text)
       if (recentComments.length > MAX_RECENT_COMMENTS)
