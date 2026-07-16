@@ -468,13 +468,16 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
    * In eco mode this is the primary way to get the pet to look at the screen.
    * In active mode it's a bonus — lets the user force a comment right now.
    */
-  function maybeTriggerLook(text: string): void {
-    const visionStore = useVisionStore()
-    if (!visionStore.screenWatchEnabled)
-      return
+  /** Returns true if the message triggered a manual screen look. */
+  function maybeTriggerLook(text: string): boolean {
+    // Manual "look" trigger works regardless of screen-watch toggle.
+    // The auto-watch loop uses screenWatchEnabled; the user explicitly
+    // asking is an independent one-shot request.
     if (!/看看|看屏幕|看一眼|屏幕.*看|看.*屏幕|look|watch/i.test(text))
-      return
+      return false
+    const visionStore = useVisionStore()
     visionStore.manualLookRequest += 1
+    return true
   }
 
   /** Switch vision mode via chat ("切换耗能模式" / "切换节能模式"). */
@@ -605,7 +608,9 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     // Fire a dance directly on intent, independent of whether the LLM calls the tool.
     maybeTriggerDance(payload.text)
     // Manual screen-look trigger — "看看" fires a forced capture+comment.
-    maybeTriggerLook(payload.text)
+    // If the user asked to look, wait for the VLM result before calling the LLM
+    // so the consciousness model can reference what it saw on screen.
+    const lookTriggered = maybeTriggerLook(payload.text)
     // Vision mode switch — "切换耗能模式" / "切换节能模式".
     maybeSwitchVisionMode(payload.text)
     // "读单词" — read recent English words from vocab DB via TTS.
@@ -628,25 +633,51 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
       throw new Error(`Failed to resolve chat provider "${providerId}"`)
     }
 
-    // Inject the last visual observation (if any) into the chat context so the
-    // consciousness model can reference what the pet last saw on screen.
+    // If the user triggered a manual look, wait for the VLM result to arrive
+    // before the LLM call so the consciousness model can see it.
     const visionStore = useVisionStore()
-    const chatContext = useChatContextStore()
-    if (visionStore.lastVisualObservation) {
+    if (lookTriggered) {
+      await visionStore.waitForLook(8000)
+    }
+
+    // If the user asked to look at screen and we have an observation, append it
+    // directly to the user message so the LLM is forced to respond about what it saw.
+    // Context injection alone is too passive — the LLM may ignore it.
+    let ingestText = payload.text
+    if (lookTriggered && visionStore.lastVisualObservation) {
+      const obs = visionStore.lastVisualObservation
+      ingestText = `${payload.text}\n\n[你刚刚看了我的屏幕，你看到了：${obs}]\n请根据你看到的内容用中文回复我，告诉我你看到了什么。`
+
+      // Also inject as context for other providers/models that use it.
+      const chatContext = useChatContextStore()
       const contextId = `vision:observation:${Date.now()}`
       chatContext.ingestContextMessage({
         id: contextId,
         contextId,
         strategy: ContextUpdateStrategy.ReplaceSelf,
-        text: visionStore.lastVisualObservation,
+        text: obs,
         createdAt: Date.now(),
       })
-      // NOTICE: Clear after injection so stale observations are not reused
-      // across unrelated conversations.
+
       visionStore.clearVisualObservation()
     }
+    else if (visionStore.lastVisualObservation) {
+      // Passive observation (auto screen-watch): inject as context only.
+      const chatContext = useChatContextStore()
+      if (visionStore.lastVisualObservation) {
+        const contextId = `vision:observation:${Date.now()}`
+        chatContext.ingestContextMessage({
+          id: contextId,
+          contextId,
+          strategy: ContextUpdateStrategy.ReplaceSelf,
+          text: visionStore.lastVisualObservation,
+          createdAt: Date.now(),
+        })
+        visionStore.clearVisualObservation()
+      }
+    }
 
-    await chatOrchestrator.ingest(payload.text, {
+    await chatOrchestrator.ingest(ingestText, {
       model: modelId,
       chatProvider,
       attachments: payload.attachments,

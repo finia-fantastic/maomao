@@ -72,6 +72,14 @@ export async function setupMainWindowElectronInvokes(params: {
     return { dataUrl }
   })
 
+  // Get main pet window screen bounds for self-masking in vision screenshots.
+  // Returns the window's position and size in physical screen pixels.
+  // Used by the renderer to paint a black mask over the pet's own window
+  // so the vision model doesn't see and comment on itself.
+  ipcMain.handle('get-pet-window-bounds', () => {
+    return params.window.getBounds()
+  })
+
   // Check if vocab app is running via local socket ping.
   ipcMain.handle('vocab:is-running', async () => {
     try {

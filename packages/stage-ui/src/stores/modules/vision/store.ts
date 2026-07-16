@@ -157,12 +157,41 @@ export const useVisionStore = defineStore('vision', () => {
     visionMode.reset()
   }
 
+  /** Pending resolver for when chat-sync is waiting on a manual look result. */
+  let lookResolve: ((text: string) => void) | null = null
+
   function setVisualObservation(formatted: string) {
     lastVisualObservation.value = formatted
+    // If chat-sync is waiting for this result, resolve the promise.
+    if (lookResolve) {
+      lookResolve(formatted)
+      lookResolve = null
+    }
   }
 
   function clearVisualObservation() {
     lastVisualObservation.value = ''
+  }
+
+  /**
+   * Wait up to `timeoutMs` for a manual look result to arrive.
+   * Used by chat-sync when the user says "看看" / "看屏幕" so the
+   * LLM can reference what the pet saw on screen.
+   */
+  async function waitForLook(timeoutMs = 8000): Promise<string> {
+    if (lastVisualObservation.value)
+      return lastVisualObservation.value
+
+    return new Promise<string>((resolve) => {
+      const timer = setTimeout(() => {
+        lookResolve = null
+        resolve('')
+      }, timeoutMs)
+      lookResolve = (text: string) => {
+        clearTimeout(timer)
+        resolve(text)
+      }
+    })
   }
 
   return {
@@ -191,5 +220,6 @@ export const useVisionStore = defineStore('vision', () => {
     resetState,
     setVisualObservation,
     clearVisualObservation,
+    waitForLook,
   }
 })

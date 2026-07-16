@@ -177,12 +177,23 @@ function createFullStageRuntime() {
 
   watch([activeProvider, artistryGlobals, activeModel, defaultPromptPrefix, providerOptions], () => {
     if (activeProvider.value) {
+      // NOTICE: providerOptions may contain non-serializable values (functions,
+      // class instances, etc.) that break structuredClone / IPC. Sanitize with
+      // JSON round-trip to keep only plain data before sending via eventa.
+      let safeOptions: Record<string, unknown> = {}
+      try {
+        safeOptions = JSON.parse(JSON.stringify(providerOptions.value))
+      }
+      catch {
+        safeOptions = {}
+      }
+
       void syncArtistryConfig({
         provider: activeProvider.value as string,
         globals: JSON.parse(JSON.stringify(artistryGlobals.value)),
         model: activeModel.value,
         promptPrefix: defaultPromptPrefix.value,
-        options: providerOptions.value,
+        options: safeOptions,
       })
     }
   }, { deep: true, immediate: true })

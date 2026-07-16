@@ -152,7 +152,14 @@ export function useVisionScreenCapture(sourcesOptions: MaybeRefOrGetter<SourcesO
     revokeSourceObjectUrls(sources.value)
   }
 
-  function captureFrame(video: HTMLVideoElement, quality = 0.82, maxWidth = 1280, maxHeight = 720) {
+  function captureFrame(
+    video: HTMLVideoElement,
+    quality = 0.82,
+    maxWidth = 1280,
+    maxHeight = 720,
+    /** Regions to mask in screen coordinates (physical pixels). */
+    maskRegions?: Array<{ x: number, y: number, width: number, height: number }>,
+  ) {
     if (!video || video.readyState < 2)
       return null
 
@@ -171,6 +178,26 @@ export function useVisionScreenCapture(sourcesOptions: MaybeRefOrGetter<SourcesO
       throw new Error('Failed to create canvas context')
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+    // Mask regions: paint filled rectangles to hide the pet's own window
+    // from the vision model so it doesn't see and comment on itself.
+    if (maskRegions && maskRegions.length > 0) {
+      // Scale mask coordinates from screen pixels to canvas pixels
+      const maskScaleX = canvas.width / sourceWidth
+      const maskScaleY = canvas.height / sourceHeight
+
+      ctx.fillStyle = '#1a1a2e' // dark neutral color, blends into most UIs
+      for (const region of maskRegions) {
+        // Clamp to canvas bounds — don't draw outside
+        const mx = Math.max(0, Math.round(region.x * maskScaleX))
+        const my = Math.max(0, Math.round(region.y * maskScaleY))
+        const mw = Math.min(canvas.width - mx, Math.round(region.width * maskScaleX))
+        const mh = Math.min(canvas.height - my, Math.round(region.height * maskScaleY))
+        if (mw > 0 && mh > 0)
+          ctx.fillRect(mx, my, mw, mh)
+      }
+    }
+
     return canvas.toDataURL('image/jpeg', quality)
   }
 

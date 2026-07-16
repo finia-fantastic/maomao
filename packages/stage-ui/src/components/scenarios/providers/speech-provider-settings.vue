@@ -136,6 +136,10 @@ function handleResetVoiceSettings() {
           :on-reset="handleResetVoiceSettings"
         >
           <ProviderApiKeyInput v-model="apiKey" :provider-name="providerMetadata?.localizedName" :placeholder="props.placeholder || 'API Key'" />
+          <ProviderBaseUrlInput
+            v-model="baseUrl"
+            :placeholder="providerMetadata?.defaultOptions?.().baseUrl as string || ''" required
+          />
           <!-- Slot for provider-specific basic settings -->
           <slot name="basic-settings" />
         </ProviderBasicSettings>
@@ -153,11 +157,6 @@ function handleResetVoiceSettings() {
 
         <!-- Advanced settings section -->
         <ProviderAdvancedSettings :title="t('settings.pages.providers.common.section.advanced.title')">
-          <ProviderBaseUrlInput
-            v-model="baseUrl"
-            :placeholder="providerMetadata?.defaultOptions?.().baseUrl as string || ''" required
-          />
-          <!-- Slot for provider-specific advanced settings -->
           <slot name="advanced-settings" />
         </ProviderAdvancedSettings>
       </ProviderSettingsContainer>

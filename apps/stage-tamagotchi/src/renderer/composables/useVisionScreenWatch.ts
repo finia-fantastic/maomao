@@ -159,6 +159,18 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
   /** Whether the VLM is currently processing a capture. Prevents overlapping runs. */
   const isInferring = ref(false)
 
+  /** Cached pet window screen bounds for self-masking in vision captures. */
+  const petWindowBounds = ref<{ x: number, y: number, width: number, height: number } | null>(null)
+  /** Timestamp of the last bounds refresh. */
+  let boundsLastFetchedAt = 0
+  /** Minimum interval between bounds IPC calls (ms). */
+  const BOUNDS_REFRESH_MS = 5000
+
+  /** Ring buffer of the last few vision comments to prevent repetition. */
+  const recentComments: string[] = []
+  /** Max number of recent comments to track. */
+  const MAX_RECENT_COMMENTS = 5
+
   /** Backoff state for stream re-acquisition after failure. */
   const nextRetryAt = ref(0)
 
@@ -240,6 +252,14 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
    * character orchestrator can turn it into an in-character spoken comment.
    */
   function buildScreenCommentNotify(text: string): WebSocketEventOf<'spark:notify'> {
+    // Build anti-repetition note: tell the consciousness model what was recently
+    // said so it can vary the reaction and avoid repeating the same observation.
+    let antiRepeatNote = 'The AI pet noticed this on your screen and wants to comment on it in character.'
+    if (recentComments.length > 0) {
+      const recentList = recentComments.map((c, i) => `${i + 1}. "${c}"`).join('\n')
+      antiRepeatNote += `\n\nANTI-REPETITION: You recently said these things. Do NOT repeat them or say anything similar. Say something NEW and DIFFERENT:\n${recentList}`
+    }
+
     return {
       type: 'spark:notify',
       source: 'vision:screen-watch',
@@ -249,13 +269,36 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
         kind: 'ping' as const,
         urgency: 'immediate' as const,
         headline: text,
-        note: 'The AI pet noticed this on your screen and wants to comment on it in character.',
+        note: antiRepeatNote,
         destinations: ['character'],
         metadata: {
           module: 'vision',
           workload: SCREEN_WATCH_WORKLOAD,
         },
       },
+    }
+  }
+
+  /**
+   * Refresh cached pet window screen bounds via IPC.
+   *
+   * Debounced to at most one call every {@link BOUNDS_REFRESH_MS}ms.
+   * The bounds are used to paint a self-mask on vision captures so the
+   * model doesn't see and comment on its own avatar.
+   */
+  async function refreshPetWindowBounds() {
+    const now = Date.now()
+    if (now - boundsLastFetchedAt < BOUNDS_REFRESH_MS)
+      return // still fresh enough
+    boundsLastFetchedAt = now
+    try {
+      const bounds = await (window as any).electron.ipcRenderer.invoke('get-pet-window-bounds')
+      if (bounds && bounds.width > 0 && bounds.height > 0) {
+        petWindowBounds.value = bounds
+      }
+    }
+    catch {
+      // Silently ignore — mask is a nice-to-have, not a hard requirement
     }
   }
 
@@ -316,12 +359,20 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
     const now = Date.now()
     const elapsedSinceLastSpoke = now - lastSpokeAt.value
     if (!force && elapsedSinceLastSpoke < screenCommentIntervalMs.value) {
-      console.info('[Vision] throttled, next comment in ' + (screenCommentIntervalMs.value - elapsedSinceLastSpoke) + 'ms')
+      console.info(`[Vision] throttled, next comment in ${screenCommentIntervalMs.value - elapsedSinceLastSpoke}ms`)
       return
     }
 
     // ---- capture frame for VLM -----------------------------------------
-    const dataUrl = captureFrame(video, 0.82, 1280, 720)
+    // Refresh pet window bounds before each capture so the mask stays
+    // accurate even when the user drags/resizes the pet window.
+    await refreshPetWindowBounds()
+
+    const maskRegions = petWindowBounds.value
+      ? [petWindowBounds.value]
+      : undefined
+
+    const dataUrl = captureFrame(video, 0.82, 1280, 720, maskRegions)
     if (!dataUrl) {
       console.warn('[Vision] frame capture failed')
       return
@@ -341,11 +392,16 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
       })
 
       const text = result.text
-      console.info('[Vision] VLM response received: ' + (text ? text.slice(0, 100) + '...' : 'EMPTY'))
+      console.info(`[Vision] VLM response received: ${text ? `${text.slice(0, 100)}...` : 'EMPTY'}`)
       if (!text || text.length === 0) {
         console.warn('[Vision] VLM returned empty text — no reaction')
         return
       }
+
+      // Store the VLM result so the chat LLM can reference it when the user
+      // triggered this look via "看看" / "看屏幕" — the chat-sync flow reads
+      // lastVisualObservation before calling the LLM.
+      visionStore.setVisualObservation(text)
 
       // Update dedup baseline BEFORE speaking so concurrent ticks don't slip through.
       lastSpokeSignature.value = signature
@@ -358,6 +414,12 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
         buildScreenCommentNotify(text),
         { fallbackText: text },
       )
+
+      // Track this comment in the ring buffer so the next vision cycle
+      // can tell the consciousness model what not to repeat.
+      recentComments.push(text)
+      if (recentComments.length > MAX_RECENT_COMMENTS)
+        recentComments.shift()
     }
     catch (error) {
       console.warn('[VisionScreenWatch] Inference or reaction failed:', errorMessageFrom(error) ?? 'Unknown error')
@@ -373,16 +435,98 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
    * Force a single capture+comment cycle immediately, bypassing the dedup and
    * throttle gates. Called when the user says "看看" / "look" in chat.
    *
-   * If screen-watch is disabled, this is a no-op — the user must enable vision
-   * in settings first.
+   * Uses desktopCapturer IPC (no system permission dialog) instead of the
+   * MediaStream pipeline, so manual looks work even when screen-watch is off.
    */
   async function triggerManualLook() {
-    console.info('[Vision] manual look triggered, screenWatchEnabled=' + screenWatchEnabled.value)
-    if (!screenWatchEnabled.value) {
-      console.warn('[Vision] screen watch not enabled — enable it in Settings > Vision')
+    if (isInferring.value)
       return
+
+    isInferring.value = true
+
+    try {
+      // Use desktopCapturer via IPC — no permission dialog needed
+      const result = await (window as any).electron.ipcRenderer.invoke('screen-capture:capture')
+      const rawDataUrl = result?.dataUrl
+      if (!rawDataUrl) {
+        console.warn('[Vision] manual look: screen-capture:capture returned no data')
+        return
+      }
+
+      await refreshPetWindowBounds()
+
+      // Apply self-mask: paint over the pet's own window so the VLM
+      // doesn't see itself and comment "there's a cute character on screen."
+      let maskedDataUrl = rawDataUrl
+      if (petWindowBounds.value) {
+        maskedDataUrl = await applyMaskToDataUrl(rawDataUrl, petWindowBounds.value)
+      }
+
+      // Run VLM inference directly
+      const now = Date.now()
+      const vlmResult = await visionOrchestratorStore.processCapture({
+        imageDataUrl: maskedDataUrl,
+        workloadId: SCREEN_WATCH_WORKLOAD,
+        sourceId: 'manual-look',
+        capturedAt: now,
+        publishContext: false,
+      })
+
+      const text = vlmResult.text
+      if (!text || text.length === 0) {
+        console.warn('[Vision] manual look: VLM returned empty')
+        return
+      }
+
+      console.info(`[Vision] manual look result: ${text.slice(0, 100)}...`)
+
+      // Store for chat-sync to pick up (chat LLM uses this for its response)
+      visionStore.setVisualObservation(text)
+
+      // Track for anti-repetition
+      recentComments.push(text)
+      if (recentComments.length > MAX_RECENT_COMMENTS)
+        recentComments.shift()
     }
-    await tick(true)
+    catch (error) {
+      console.warn('[Vision] manual look failed:', errorMessageFrom(error) ?? 'Unknown error')
+    }
+    finally {
+      isInferring.value = false
+    }
+  }
+
+  /**
+   * Apply a mask rectangle to a data URL image, returning a new data URL.
+   * Loads the image, draws a dark rectangle over the mask region, and exports.
+   */
+  async function applyMaskToDataUrl(dataUrl: string, bounds: { x: number, y: number, width: number, height: number }): Promise<string> {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          resolve(dataUrl)
+          return
+        }
+        ctx.drawImage(img, 0, 0)
+        // Clamp mask bounds to image size
+        const mx = Math.max(0, Math.round(bounds.x))
+        const my = Math.max(0, Math.round(bounds.y))
+        const mw = Math.min(canvas.width - mx, Math.round(bounds.width))
+        const mh = Math.min(canvas.height - my, Math.round(bounds.height))
+        if (mw > 0 && mh > 0) {
+          ctx.fillStyle = '#1a1a2e'
+          ctx.fillRect(mx, my, mw, mh)
+        }
+        resolve(canvas.toDataURL('image/jpeg', 0.82))
+      }
+      img.onerror = () => resolve(dataUrl)
+      img.src = dataUrl
+    })
   }
 
   // Watch the store's manualLookRequest counter — each increment triggers one
@@ -408,7 +552,10 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
     if (!video)
       return
 
-    const dataUrl = captureFrame(video, 0.82, 1280, 720)
+    await refreshPetWindowBounds()
+    const maskRegions = petWindowBounds.value ? [petWindowBounds.value] : undefined
+
+    const dataUrl = captureFrame(video, 0.82, 1280, 720, maskRegions)
     if (!dataUrl)
       return
 
