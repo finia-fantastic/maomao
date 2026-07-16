@@ -398,18 +398,13 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
         return
       }
 
-      // Store the VLM result so the chat LLM can reference it when the user
-      // triggered this look via "看看" / "看屏幕" — the chat-sync flow reads
-      // lastVisualObservation before calling the LLM.
-      visionStore.setVisualObservation(text)
-
       // Update dedup baseline BEFORE speaking so concurrent ticks don't slip through.
       lastSpokeSignature.value = signature
       lastSpokeAt.value = now
 
-      // Fire spark:notify — the character orchestrator will:
-      // 1. Build an in-character reaction using the consciousness model.
-      // 2. Stream it through speech runtime (TTS + lip-sync).
+      // Fire spark:notify for the pet to speak via TTS only.
+      // Do NOT store in setVisualObservation — that would leak auto-watch
+      // observations into chat context and show them as visible messages.
       await characterOrchestratorStore.handleSparkNotifyWithReaction(
         buildScreenCommentNotify(text),
         { fallbackText: text },

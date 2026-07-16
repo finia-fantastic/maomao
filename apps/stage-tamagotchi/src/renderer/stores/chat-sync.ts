@@ -662,18 +662,26 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
       throw new Error(`Failed to resolve chat provider "${providerId}"`)
     }
 
-    // If the user said "看看", capture screen and prepend observation
-    // as a terse system note. The LLM acts on it; the user sees their
-    // original message in chat, not the system note.
-    let ingestText = payload.text
+    // If the user said "看看", capture screen and inject the observation
+    // as context (hidden from visible chat, but the LLM sees it).
     if (lookTriggered) {
       const obs = await captureAndDescribeScreen()
       if (obs) {
-        ingestText = `[系统：截屏→${obs} 请像亲眼看到一样告诉用户] ${payload.text}`
+        // Inject as context message — NOT in the user message text.
+        const { useChatContextStore } = await import('@proj-airi/stage-ui/stores/chat/context-store')
+        const { ContextUpdateStrategy } = await import('@proj-airi/server-sdk')
+        const chatContext = useChatContextStore()
+        chatContext.ingestContextMessage({
+          id: `vision-look-${Date.now()}`,
+          contextId: `vision-look-${Date.now()}`,
+          strategy: ContextUpdateStrategy.ReplaceSelf,
+          text: `你刚刚截屏看了用户的桌面，看到：「${obs}」请直接告诉用户你看到了什么。`,
+          createdAt: Date.now(),
+        })
       }
     }
 
-    await chatOrchestrator.ingest(ingestText, {
+    await chatOrchestrator.ingest(payload.text, {
       model: modelId,
       chatProvider,
       attachments: payload.attachments,
