@@ -311,14 +311,7 @@ useIntervalFn(checkVocabRunning, 5000)
           />
 
           <div grid grid-cols-3 gap-2>
-            <ControlButtonTooltip disable-hoverable-content>
-              <ControlButton :button-style="adjustStyleClasses.button" @click="openSettings({ route: '/settings' })">
-                <div i-solar:settings-minimalistic-outline :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
-              </ControlButton>
-              <template #tooltip>
-                {{ t('tamagotchi.stage.controls-island.open-settings') }}
-              </template>
-            </ControlButtonTooltip>
+            <!-- Settings button archived → _archived-features/设置按钮/ -->
 
             <ControlButtonTooltip disable-hoverable-content>
               <ControlsIslandProfilePicker placement="up" :open="blockingOverlays.has('profile-picker')" @update:open="setOverlay('profile-picker', $event)">
@@ -365,7 +358,7 @@ useIntervalFn(checkVocabRunning, 5000)
                 <div i-solar:chat-line-bold-duotone :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
               </ControlButton>
               <template #tooltip>
-                聊天模式
+                切换模式
               </template>
             </ControlButtonTooltip>
 
