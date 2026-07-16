@@ -101,29 +101,30 @@ function handleKeydown(e: KeyboardEvent) {
 
 <template>
   <Transition name="inline-chat">
-    <div v-if="visible" class="absolute inset-0 z-40 flex flex-col items-center pointer-events-none" style="padding-top: 6px; padding-bottom: 10px;">
-      <!-- Reply box (top, above character head) -->
-      <Transition name="reply-fade">
-        <div
-          v-if="replyVisible && replyText"
-          class="reply-box"
-        >
-          {{ replyText }}
-        </div>
-      </Transition>
+    <div v-if="visible" class="chat-overlay">
+      <!-- Reply area: anchored at very top, expands downward only as needed -->
+      <div class="reply-area">
+        <Transition name="reply-fade">
+          <div
+            v-if="replyVisible && replyText"
+            class="reply-box"
+          >
+            {{ replyText }}
+          </div>
+        </Transition>
 
-      <!-- Placeholder when no reply yet -->
-      <div
-        v-if="!replyVisible || !replyText"
-        class="reply-box placeholder"
-      >
-        你好呀，可以直接和我说话～
+        <div
+          v-if="!replyVisible || !replyText"
+          class="reply-box placeholder"
+        >
+          你好呀，可以直接和我说话～
+        </div>
       </div>
 
-      <!-- Spacer: character sits in the middle -->
+      <!-- Spacer pushes input to bottom -->
       <div class="flex-1 pointer-events-none" />
 
-      <!-- Input box (bottom) -->
+      <!-- Input row (bottom) -->
       <div class="input-row">
         <input
           v-model="inputText"
@@ -146,43 +147,72 @@ function handleKeydown(e: KeyboardEvent) {
 </template>
 
 <style scoped>
-/* ── Reply box: content-driven sizing, no scrollbars ── */
+/* ── Overlay: flex column, reply at very top, input at bottom ── */
+.chat-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  padding: 2px 8px 10px;
+}
+
+/* ── Reply area: pinned to top edge, centered ── */
+.reply-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+/* ── Reply box: lightweight bubble, auto-sized ── */
 .reply-box {
   pointer-events: auto;
   width: fit-content;
-  min-width: 80px;
-  max-width: min(320px, calc(100vw - 24px));
+  min-width: 60px;
+  max-width: min(300px, calc(100vw - 20px));
   height: auto;
-  min-height: 36px;
-  padding: 8px 14px;
+  padding: 6px 12px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
   overflow: visible;
-  border-radius: 14px;
+  border-radius: 12px;
   box-sizing: border-box;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12.5px;
+  line-height: 1.45;
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(12px);
-  background: rgba(59, 130, 246, 0.12);
-  color: #1e3a5f;
+  /* Light glass-morphism */
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  color: #374151;
+  transition: opacity 0.25s, transform 0.25s;
 }
 
 .dark .reply-box {
-  background: rgba(59, 130, 246, 0.18);
-  color: #bfdbfe;
+  background: rgba(30, 30, 45, 0.78);
+  border-color: rgba(100, 116, 139, 0.16);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  color: #d1d5db;
 }
 
 .reply-box.placeholder {
-  background: rgba(255, 255, 255, 0.5);
-  color: #9ca3af;
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  box-shadow: none;
+  color: #a8a29e;
+  font-size: 12px;
 }
 
 .dark .reply-box.placeholder {
-  background: rgba(30, 30, 30, 0.5);
-  color: #6b7280;
+  background: rgba(40, 40, 55, 0.35);
+  color: #78716c;
 }
 
 /* ── Input row ── */
@@ -200,54 +230,42 @@ function handleKeydown(e: KeyboardEvent) {
   min-width: 0;
   border-radius: 10px;
   border: 1px solid rgba(209, 213, 219, 0.6);
-  background: rgba(255, 255, 255, 0.75);
-  padding: 8px 12px;
-  font-size: 13px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 7px 11px;
+  font-size: 12.5px;
   outline: none;
   backdrop-filter: blur(8px);
   color: #111;
   transition: border-color 0.2s;
 }
 
-.chat-input::placeholder {
-  color: #9ca3af;
-}
+.chat-input::placeholder { color: #a8a29e; }
 
-.chat-input:focus {
-  border-color: #3b82f6;
-}
+.chat-input:focus { border-color: #6366f1; }
 
 .dark .chat-input {
-  background: rgba(20, 20, 30, 0.8);
-  border-color: rgba(75, 85, 99, 0.6);
+  background: rgba(20, 20, 30, 0.78);
+  border-color: rgba(75, 85, 99, 0.5);
   color: #e5e7eb;
 }
 
-.dark .chat-input::placeholder {
-  color: #6b7280;
-}
+.dark .chat-input::placeholder { color: #78716c; }
 
 .send-btn {
   flex-shrink: 0;
   border: none;
   border-radius: 10px;
-  background: #3b82f6;
+  background: #6366f1;
   color: white;
-  padding: 8px 14px;
-  font-size: 13px;
+  padding: 7px 13px;
+  font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s, opacity 0.2s;
 }
 
-.send-btn:hover {
-  background: #2563eb;
-}
-
-.send-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
+.send-btn:hover { background: #4f46e5; }
+.send-btn:disabled { opacity: 0.35; cursor: default; }
 
 /* ── Transitions ── */
 .inline-chat-enter-active,
@@ -255,22 +273,20 @@ function handleKeydown(e: KeyboardEvent) {
   transition: opacity 0.2s ease;
 }
 .inline-chat-enter-from,
-.inline-chat-leave-to {
-  opacity: 0;
-}
+.inline-chat-leave-to { opacity: 0; }
 
 .reply-fade-enter-active {
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 .reply-fade-leave-active {
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition: opacity 0.35s ease, transform 0.35s ease;
 }
 .reply-fade-enter-from {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(4px);
 }
 .reply-fade-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(-6px);
 }
 </style>
