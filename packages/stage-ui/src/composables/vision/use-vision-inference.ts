@@ -83,8 +83,12 @@ export function useVisionInference() {
     }, VISION_INFERENCE_TIMEOUT_MS)
 
     try {
+      // NOTICE: Pass empty tools array — vision inference is a simple
+      // text+image→text call; built-in tools (MCP, widgets, etc.) are
+      // irrelevant and can break providers that don't support tool use.
       await llmStore.stream(activeModel.value, visionProvider, messages, {
         abortSignal: abortController.signal,
+        tools: [],
         onStreamEvent: (event) => {
           if (event.type === 'text-delta') {
             buffer += event.text

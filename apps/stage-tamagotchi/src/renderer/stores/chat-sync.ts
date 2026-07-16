@@ -5,13 +5,13 @@ import type { ChatSessionMeta } from '@proj-airi/stage-ui/types/chat-session'
 import type { ChatProvider } from '@xsai-ext/providers/utils'
 
 import { errorMessageFrom } from '@moeru/std'
-import { ContextUpdateStrategy } from '@proj-airi/server-sdk'
+
 import { errorMessageFromValue } from '@proj-airi/stage-shared'
 import { useModelStore } from '@proj-airi/stage-ui-three'
 import { vrmGestureAnimations } from '@proj-airi/stage-ui-three/assets/vrm'
 import { extractMessageText } from '@proj-airi/stage-ui/libs/chat-sync/wire-message'
 import { useChatOrchestratorStore } from '@proj-airi/stage-ui/stores/chat'
-import { useChatContextStore } from '@proj-airi/stage-ui/stores/chat/context-store'
+
 import { useChatMaintenanceStore } from '@proj-airi/stage-ui/stores/chat/maintenance'
 import { useChatSessionStore } from '@proj-airi/stage-ui/stores/chat/session-store'
 import { useChatStreamStore } from '@proj-airi/stage-ui/stores/chat/stream-store'
@@ -19,6 +19,7 @@ import { resolveLlmTools } from '@proj-airi/stage-ui/stores/llm-tool-resolver'
 import { useMemoryStore } from '@proj-airi/stage-ui/stores/memory'
 import { useConsciousnessStore } from '@proj-airi/stage-ui/stores/modules/consciousness'
 import { useWorkingMemoryStore } from '@proj-airi/stage-ui/stores/modules/memory'
+import { useVisionOrchestratorStore } from '@proj-airi/stage-ui/stores/modules/vision/orchestrator'
 import { useVisionStore } from '@proj-airi/stage-ui/stores/modules/vision/store'
 import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
 import { executeToolCallRerun } from '@proj-airi/stage-ui/stores/tool-call-rerun'
@@ -469,15 +470,38 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
    * In active mode it's a bonus — lets the user force a comment right now.
    */
   /** Returns true if the message triggered a manual screen look. */
-  function maybeTriggerLook(text: string): boolean {
-    // Manual "look" trigger works regardless of screen-watch toggle.
-    // The auto-watch loop uses screenWatchEnabled; the user explicitly
-    // asking is an independent one-shot request.
-    if (!/看看|看屏幕|看一眼|屏幕.*看|看.*屏幕|look|watch/i.test(text))
-      return false
-    const visionStore = useVisionStore()
-    visionStore.manualLookRequest += 1
-    return true
+  function matchesLook(text: string): boolean {
+    return /看看|看屏幕|看一眼|看桌面|桌面.*看|看.*桌面|屏幕.*看|看.*屏幕|look|watch|瞅瞅|瞧瞧/i.test(text)
+  }
+
+  /**
+   * Direct screen capture + VLM inference for manual "look" requests.
+   * Uses desktopCapturer IPC — no system permission dialog needed.
+   * Returns the VLM description text, or empty string on failure.
+   */
+  async function captureAndDescribeScreen(): Promise<string> {
+    try {
+      // Step 1: capture screen via desktopCapturer IPC
+      const capResult = await (window as any).electron.ipcRenderer.invoke('screen-capture:capture')
+      const dataUrl = capResult?.dataUrl
+      if (!dataUrl) {
+        return `截图失败：IPC 返回空数据`
+      }
+
+      // Step 2: VLM inference
+      const visionOrchestrator = useVisionOrchestratorStore()
+      const vlmResult = await visionOrchestrator.processCapture({
+        imageDataUrl: dataUrl,
+        workloadId: 'screen:chat-look' as any,
+        sourceId: 'chat-look',
+        capturedAt: Date.now(),
+        publishContext: false,
+      })
+      return vlmResult.text || '视觉模型返回空文本'
+    }
+    catch (e: any) {
+      return `截图分析异常：${e?.message || String(e)}`
+    }
   }
 
   /** Switch vision mode via chat ("切换耗能模式" / "切换节能模式"). */
@@ -610,7 +634,12 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     // Manual screen-look trigger — "看看" fires a forced capture+comment.
     // If the user asked to look, wait for the VLM result before calling the LLM
     // so the consciousness model can reference what it saw on screen.
-    const lookTriggered = maybeTriggerLook(payload.text)
+    // Manual screen look: if user says "看看", capture screen and run VLM
+    // directly in the ingest pipeline (no watchers, no races).
+    const lookTriggered = matchesLook(payload.text)
+    if (lookTriggered) {
+      // Fire-and-forget: start capture immediately, will await below
+    }
     // Vision mode switch — "切换耗能模式" / "切换节能模式".
     maybeSwitchVisionMode(payload.text)
     // "读单词" — read recent English words from vocab DB via TTS.
@@ -633,47 +662,16 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
       throw new Error(`Failed to resolve chat provider "${providerId}"`)
     }
 
-    // If the user triggered a manual look, wait for the VLM result to arrive
-    // before the LLM call so the consciousness model can see it.
-    const visionStore = useVisionStore()
-    if (lookTriggered) {
-      await visionStore.waitForLook(8000)
-    }
-
-    // If the user asked to look at screen and we have an observation, append it
-    // directly to the user message so the LLM is forced to respond about what it saw.
-    // Context injection alone is too passive — the LLM may ignore it.
+    // If the user said "看看", capture screen, run VLM, and tell the LLM
+    // to describe what it saw. Replace the user's message entirely so the
+    // LLM focuses solely on describing the screen content.
     let ingestText = payload.text
-    if (lookTriggered && visionStore.lastVisualObservation) {
-      const obs = visionStore.lastVisualObservation
-      ingestText = `${payload.text}\n\n[你刚刚看了我的屏幕，你看到了：${obs}]\n请根据你看到的内容用中文回复我，告诉我你看到了什么。`
-
-      // Also inject as context for other providers/models that use it.
-      const chatContext = useChatContextStore()
-      const contextId = `vision:observation:${Date.now()}`
-      chatContext.ingestContextMessage({
-        id: contextId,
-        contextId,
-        strategy: ContextUpdateStrategy.ReplaceSelf,
-        text: obs,
-        createdAt: Date.now(),
-      })
-
-      visionStore.clearVisualObservation()
-    }
-    else if (visionStore.lastVisualObservation) {
-      // Passive observation (auto screen-watch): inject as context only.
-      const chatContext = useChatContextStore()
-      if (visionStore.lastVisualObservation) {
-        const contextId = `vision:observation:${Date.now()}`
-        chatContext.ingestContextMessage({
-          id: contextId,
-          contextId,
-          strategy: ContextUpdateStrategy.ReplaceSelf,
-          text: visionStore.lastVisualObservation,
-          createdAt: Date.now(),
-        })
-        visionStore.clearVisualObservation()
+    if (lookTriggered) {
+      const obs = await captureAndDescribeScreen()
+      if (obs) {
+        // Replace the user message — the LLM's job is now to describe
+        // what it saw, not to respond to "看看" as a chat message.
+        ingestText = `你刚刚看了用户的屏幕，这是你看到的内容：\n「${obs}」\n\n请用你角色的语气，用中文告诉用户你看到了什么。要具体、自然，就像你真的刚刚看了一眼屏幕一样。不要说你不知道——你上面已经看到了。`
       }
     }
 

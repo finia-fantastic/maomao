@@ -1,4 +1,4 @@
-export type VisionWorkloadId = 'screen:interpret' | 'screen:understand' | 'screen:ocr' | 'screen:ui-automation' | 'screen:commentary' | 'screen:english-reader'
+export type VisionWorkloadId = 'screen:interpret' | 'screen:understand' | 'screen:ocr' | 'screen:ui-automation' | 'screen:commentary' | 'screen:english-reader' | 'screen:chat-look'
 
 export interface VisionWorkloadConfig {
   id: VisionWorkloadId
@@ -8,6 +8,25 @@ export interface VisionWorkloadConfig {
 }
 
 export const VISION_WORKLOADS: VisionWorkloadConfig[] = [
+  {
+    id: 'screen:chat-look',
+    label: 'Chat screen look',
+    description: 'Screen description specifically for responding to "look at my screen" in chat.',
+    prompt: [
+      'You are an AI observing a screenshot of the user\'s desktop.',
+      'Describe what you see in Chinese, 2-3 sentences, CONVERSATIONAL tone.',
+      '',
+      'CRITICAL — be specific enough that someone can respond to it:',
+      '- Name the app or program visible (IDE, browser, terminal, game, etc.)',
+      '- Describe the actual content: code language, document topic, UI elements, colors',
+      '- Note anything interesting: file names, error messages, images, play/pause buttons',
+      '- If the screen is mostly dark/empty, say so honestly but check for taskbar icons or window titles',
+      '',
+      'DO NOT describe any anime/cartoon characters — they are the observer\'s own avatar.',
+      'DO NOT use generic phrases like "looks like you\'re working."',
+      'Output ONLY the Chinese description, no prefix, no markdown.',
+    ].join('\n'),
+  },
   {
     id: 'screen:interpret',
     label: 'Screen interpret',

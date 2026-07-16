@@ -439,48 +439,53 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
    * MediaStream pipeline, so manual looks work even when screen-watch is off.
    */
   async function triggerManualLook() {
-    if (isInferring.value)
+    if (isInferring.value) {
+      console.info('[Vision] manual look skipped: already inferring')
       return
+    }
 
     isInferring.value = true
 
     try {
-      // Use desktopCapturer via IPC — no permission dialog needed
+      // Step 1: capture screen via desktopCapturer IPC
+      console.info('[Vision] manual look: capturing screen...')
       const result = await (window as any).electron.ipcRenderer.invoke('screen-capture:capture')
       const rawDataUrl = result?.dataUrl
       if (!rawDataUrl) {
-        console.warn('[Vision] manual look: screen-capture:capture returned no data')
+        console.warn('[Vision] manual look FAIL: screen-capture returned no data')
+        visionStore.setVisualObservation('（截屏失败，无法获取屏幕画面）')
         return
       }
+      console.info(`[Vision] manual look: captured ${rawDataUrl.length} chars`)
 
+      // Step 2: mask pet window
       await refreshPetWindowBounds()
-
-      // Apply self-mask: paint over the pet's own window so the VLM
-      // doesn't see itself and comment "there's a cute character on screen."
       let maskedDataUrl = rawDataUrl
       if (petWindowBounds.value) {
+        console.info('[Vision] manual look: applying self-mask...')
         maskedDataUrl = await applyMaskToDataUrl(rawDataUrl, petWindowBounds.value)
       }
 
-      // Run VLM inference directly
+      // Step 3: VLM inference
+      console.info('[Vision] manual look: sending to VLM...')
       const now = Date.now()
       const vlmResult = await visionOrchestratorStore.processCapture({
         imageDataUrl: maskedDataUrl,
-        workloadId: SCREEN_WATCH_WORKLOAD,
+        workloadId: 'screen:chat-look',
         sourceId: 'manual-look',
         capturedAt: now,
         publishContext: false,
       })
 
       const text = vlmResult.text
+      console.info(`[Vision] manual look VLM result: "${text ? text.slice(0, 120) : 'EMPTY'}"`)
       if (!text || text.length === 0) {
-        console.warn('[Vision] manual look: VLM returned empty')
+        console.warn('[Vision] manual look FAIL: VLM returned empty')
+        visionStore.setVisualObservation('（视觉模型未返回描述，可能是API配置问题）')
         return
       }
 
-      console.info(`[Vision] manual look result: ${text.slice(0, 100)}...`)
-
-      // Store for chat-sync to pick up (chat LLM uses this for its response)
+      // Store for chat-sync to pick up
       visionStore.setVisualObservation(text)
 
       // Track for anti-repetition
@@ -489,7 +494,9 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
         recentComments.shift()
     }
     catch (error) {
-      console.warn('[Vision] manual look failed:', errorMessageFrom(error) ?? 'Unknown error')
+      const msg = errorMessageFrom(error) ?? 'Unknown error'
+      console.warn('[Vision] manual look FAIL:', msg)
+      visionStore.setVisualObservation(`（截屏分析失败：${msg}）`)
     }
     finally {
       isInferring.value = false
