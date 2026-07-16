@@ -54,11 +54,12 @@ const CONFIG = {
   refLang: process.env.REF_LANG ?? 'ja',
   /**
    * Default language of the text to synthesize, used when the request doesn't select one.
-   * The voice model is Japanese, so `ja` gives the most natural output today. This is only
-   * the fallback: a request may override it per-call via its `voice` field (see LANG_CODES),
-   * which is how the user switches to Chinese later without touching this file.
+   * Defaults to 'zh' (Chinese) — the user prefers Chinese as the primary output language.
+   * The voice model (小野寺小咲) is Japanese, so Japanese ref audio is used for cloning,
+   * but the synthesized text language defaults to Chinese. A request may override per-call
+   * via its `voice` field (zh/ja/auto).
    */
-  textLang: process.env.TEXT_LANG ?? 'ja',
+  textLang: process.env.TEXT_LANG ?? 'zh',
 
   /**
    * Sentence-splitting strategy passed through to GPT-SoVITS. `cut5` splits on
@@ -182,7 +183,19 @@ async function handleSpeech(req, res) {
     .replace(/\u{1FA70}-\u{1FAFF}/gu, '')
     .trim()
 
-  const ttsBody = buildTtsBody(input, Number(payload.speed), resolveTextLang(payload.voice))
+  const textLang = resolveTextLang(payload.voice)
+
+  // Safety: if text contains Chinese but synthesis language is ja, auto-fix to zh
+  const hasChinese = /[一-鿿]/.test(input)
+  const finalLang = (textLang === 'ja' && hasChinese) ? 'zh' : textLang
+
+  if (textLang === 'ja' && hasChinese) {
+    console.log(`[bridge] Chinese text detected but synthesis language is ja — auto-fallback to zh`)
+  }
+
+  console.log(`[TTS] text language: ${finalLang} | reference language: ${CONFIG.refLang} | text length: ${input.length}`)
+
+  const ttsBody = buildTtsBody(input, Number(payload.speed), finalLang)
 
   let upstream
   try {
