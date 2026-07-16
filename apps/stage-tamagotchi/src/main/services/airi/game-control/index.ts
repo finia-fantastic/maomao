@@ -4,6 +4,7 @@ import type { GameActionPlan } from '../../../../shared/eventa/game-control'
 import type { GameAction } from './types'
 
 import { defineInvokeHandler } from '@moeru/eventa'
+import { ipcMain } from 'electron'
 
 import {
   gameControlExecuteAction,
@@ -153,6 +154,41 @@ export function setupGameControlService(options: GameControlServiceOptions): Gam
       error: allOk ? undefined : results.find(r => !r.success)?.error,
       results,
     }
+  })
+
+  // ── Simple IPC handlers for the LLM tool ────────────────────────
+  // The eventa handlers above use the eventa context; these simple
+  // ipcMain.handle calls let the renderer tool call directly without
+  // needing the eventa adapter.
+
+  ipcMain.handle('game-control:start', async (_e, p: { mode?: string, targetWindowTitle?: string }) => {
+    overrideGuard.start()
+    stateMachine.start((p?.mode as 'single_step' | 'assisted') || 'single_step', p?.targetWindowTitle ?? '')
+    return { ok: true }
+  })
+
+  ipcMain.handle('game-control:stop', async () => {
+    actionExecutor.releaseAll()
+    overrideGuard.releaseAll()
+    overrideGuard.stop()
+    stateMachine.stop()
+    return { ok: true }
+  })
+
+  ipcMain.handle('game-control:execute', async (_e, plan: GameActionPlan) => {
+    if (stateMachine.isBlocked || !stateMachine.isActive) {
+      stateMachine.start('single_step', '')
+    }
+    const actions = planToActions(plan)
+    stateMachine.beginAction(plan.description)
+    const results: Array<{ success: boolean, actionId: string, error?: string }> = []
+    for (const action of actions) {
+      const result = await actionExecutor.execute(action)
+      results.push({ success: result.success, actionId: result.actionId, error: result.error })
+      if (!result.success) break
+    }
+    stateMachine.completeAction()
+    return { ok: results.every(r => r.success), error: results.find(r => !r.success)?.error, results }
   })
 
   // ── Public API ──────────────────────────────────────────────────
