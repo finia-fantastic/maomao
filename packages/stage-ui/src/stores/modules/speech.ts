@@ -254,6 +254,13 @@ export const useSpeechStore = defineStore('speech', () => {
     ensureActiveSpeechModel()
   })
 
+  // Auto-fix: if user has old 'alloy' voice, correct to 'ja' for GPT-SoVITS bridge
+  watch(activeSpeechProvider, (provider) => {
+    if (provider === 'openai-compatible-audio-speech' && activeSpeechVoiceId.value === 'alloy') {
+      activeSpeechVoiceId.value = 'ja'
+    }
+  })
+
   watch([activeSpeechVoiceId, availableVoices], ([voiceId, voices]) => {
     if (voiceId) {
       // For OpenAI Compatible, create a custom voice object (no voices available from API)
