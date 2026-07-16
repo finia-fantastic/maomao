@@ -698,14 +698,28 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
       throw new Error(`Failed to resolve chat provider "${providerId}"`)
     }
 
-    // If the user said "看看", capture screen and prepend the observation to
-    // the user message. The LLM MUST see and act on it.
+    // If the user said "看看", capture screen and directly insert the
+    // VLM observation as an assistant message in chat. The user sees the
+    // observation immediately; the LLM can then naturally respond to it.
     if (lookTriggered) {
       const obs = await captureAndDescribeScreen()
       if (obs) {
-        // Modify the message the LLM sees. The original text is already
-        // in the chat UI; this only changes what the LLM receives.
-        payload.text = `（你截屏看到：「${obs}」请直接用角色语气告诉用户你看到了什么）\n\n${payload.text}`
+        const sessionId = payload.sessionId || activeSessionId.value
+        const msgs = chatSession.getSessionMessages(sessionId)
+        // Insert the observation as an assistant message BEFORE the
+        // pending user message. The LLM sees this as conversation context
+        // and the chat UI renders it as a normal message.
+        chatSession.setSessionMessages(sessionId, [
+          ...msgs,
+          {
+            role: 'assistant' as const,
+            content: obs,
+            id: `vision-look-${Date.now()}`,
+            createdAt: Date.now(),
+            slices: [{ type: 'text' as const, text: obs }],
+            tool_results: [],
+          },
+        ])
       }
     }
 
