@@ -8,7 +8,6 @@ import { useVisionOrchestratorStore } from '@proj-airi/stage-ui/stores/modules/v
 import { useSettings } from '@proj-airi/stage-ui/stores/settings'
 
 import { refDebounced, useIntervalFn } from '@vueuse/core'
-import { inject } from 'vue'
 import { storeToRefs } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -29,7 +28,6 @@ import {
   electronWindowSetAlwaysOnTop,
 } from '../../../../shared/eventa'
 
-const toggleInlineChat = inject<(() => void) | undefined>('toggleInlineChat', undefined)
 const { t } = useI18n()
 
 const settingsStore = useSettings()
@@ -357,15 +355,6 @@ useIntervalFn(checkVocabRunning, 5000)
               </ControlButton>
               <template #tooltip>
                 背单词
-              </template>
-            </ControlButtonTooltip>
-
-            <ControlButtonTooltip disable-hoverable-content>
-              <ControlButton :button-style="adjustStyleClasses.button" @click="toggleInlineChat?.()">
-                <div i-solar:chat-line-bold-duotone :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
-              </ControlButton>
-              <template #tooltip>
-                切换模式
               </template>
             </ControlButtonTooltip>
 
