@@ -100,24 +100,8 @@ function handleKeydown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <!-- Toggle: shown when mode is OFF -->
-  <button
-    v-if="!visible"
-    class="toggle-btn"
-    @click="emit('toggle')"
-  >
-    💬
-  </button>
-
   <Transition name="inline-chat">
     <div v-if="visible" class="chat-overlay">
-      <!-- Toggle: shown when mode is ON -->
-      <button
-        class="toggle-btn active"
-        @click="emit('toggle')"
-      >
-        ✕
-      </button>
       <!-- Reply area: anchored at very top, expands downward only as needed -->
       <div class="reply-area">
         <Transition name="reply-fade">
@@ -163,45 +147,6 @@ function handleKeydown(e: KeyboardEvent) {
 </template>
 
 <style scoped>
-/* ── Toggle button at top center ── */
-.toggle-btn {
-  position: absolute;
-  top: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
-  border: none;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  cursor: pointer;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(6px);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  transition: all 0.2s;
-  color: #6366f1;
-}
-.toggle-btn.active {
-  background: #6366f1;
-  color: white;
-}
-.toggle-btn:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.dark .toggle-btn {
-  background: rgba(40, 40, 55, 0.7);
-  color: #818cf8;
-}
-.dark .toggle-btn.active {
-  background: #6366f1;
-  color: white;
-}
-
 /* ── Overlay: flex column, reply at very top, input at bottom ── */
 .chat-overlay {
   position: absolute;
