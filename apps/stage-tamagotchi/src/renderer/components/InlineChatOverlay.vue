@@ -100,17 +100,24 @@ function handleKeydown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <!-- Toggle button always visible at top -->
+  <!-- Toggle: shown when mode is OFF -->
   <button
+    v-if="!visible"
     class="toggle-btn"
-    :class="visible ? 'active' : ''"
     @click="emit('toggle')"
   >
-    {{ visible ? '✕' : '💬' }}
+    💬
   </button>
 
   <Transition name="inline-chat">
     <div v-if="visible" class="chat-overlay">
+      <!-- Toggle: shown when mode is ON -->
+      <button
+        class="toggle-btn active"
+        @click="emit('toggle')"
+      >
+        ✕
+      </button>
       <!-- Reply area: anchored at very top, expands downward only as needed -->
       <div class="reply-area">
         <Transition name="reply-fade">
