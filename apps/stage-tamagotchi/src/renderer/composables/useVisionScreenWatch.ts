@@ -384,8 +384,10 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
     isInferring.value = true
 
     try {
-      // Run VLM inference — use game-watch workload when game mode is active
-      const workloadId = visionStore.gameWatchActive ? GAME_WATCH_WORKLOAD : SCREEN_WATCH_WORKLOAD
+      // Run VLM inference — pick workload based on active mode
+      let workloadId = SCREEN_WATCH_WORKLOAD
+      if (visionStore.artMode) workloadId = 'screen:art-studio' as any
+      else if (visionStore.gameWatchActive) workloadId = GAME_WATCH_WORKLOAD
       const result = await visionOrchestratorStore.processCapture({
         imageDataUrl: dataUrl,
         workloadId,
@@ -682,7 +684,7 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
       // VLM inference with game-specific workload
       const result = await visionOrchestratorStore.processCapture({
         imageDataUrl: maskedUrl,
-        workloadId: 'screen:game-watch',
+        workloadId: visionStore.artMode ? 'screen:art-studio' : 'screen:game-watch',
         sourceId: captureId,
         capturedAt,
         publishContext: false,
@@ -742,9 +744,9 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
     console.info('[GameWatch] stopped')
   }
 
-  // Watch gameWatchActive from the vision store
-  watch(() => visionStore.gameWatchActive, (active) => {
-    if (active) startGameWatch()
+  // Watch gameWatchActive or artMode from the vision store
+  watch([() => visionStore.gameWatchActive, () => visionStore.artMode], ([gameActive, artActive]) => {
+    if (gameActive || artActive) startGameWatch()
     else stopGameWatch()
   }, { immediate: true })
 

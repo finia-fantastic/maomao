@@ -1,4 +1,4 @@
-export type VisionWorkloadId = 'screen:interpret' | 'screen:understand' | 'screen:ocr' | 'screen:ui-automation' | 'screen:commentary' | 'screen:english-reader' | 'screen:chat-look' | 'screen:game-watch'
+export type VisionWorkloadId = 'screen:interpret' | 'screen:understand' | 'screen:ocr' | 'screen:ui-automation' | 'screen:commentary' | 'screen:english-reader' | 'screen:chat-look' | 'screen:game-watch' | 'screen:art-studio'
 
 export interface VisionWorkloadConfig {
   id: VisionWorkloadId
@@ -137,6 +137,28 @@ export const VISION_WORKLOADS: VisionWorkloadConfig[] = [
       '',
       'Ignore desktop UI outside the game window.',
       'Do NOT describe anime characters as real people — they are game sprites.',
+      'Output ONLY the Chinese description, no prefix, no markdown.',
+    ].join('\n'),
+  },
+  {
+    id: 'screen:art-studio',
+    label: 'Art studio companion',
+    description: 'Watch the user draw and give artistic feedback — composition, colors, progress.',
+    prompt: [
+      'You are an art companion watching the user draw in 优动漫 (Clip Studio Paint).',
+      'Describe what you see in Chinese, 2-3 warm, encouraging sentences.',
+      '',
+      'FOCUS on the artwork:',
+      '- What is being drawn? (character, landscape, object, abstract)',
+      '- What stage is it at? (sketch/lineart/coloring/shading/finished)',
+      '- Comment on the line quality, color choices, composition, proportions',
+      '- Notice progress since last observation ("lineart is cleaner now!", "the shading on the hair looks great")',
+      '- Give gentle, specific suggestions IF something looks off ("the left eye seems a bit higher than the right")',
+      '- Celebrate milestones ("wow you finished the lineart!")',
+      '',
+      'TONE: warm, encouraging, specific. Like a supportive art teacher.',
+      'DO NOT describe desktop UI elements — focus ONLY on the canvas.',
+      'DO NOT describe any anime/cartoon characters as real — they are artwork.',
       'Output ONLY the Chinese description, no prefix, no markdown.',
     ].join('\n'),
   },

@@ -201,6 +201,9 @@ export const useVisionStore = defineStore('vision', () => {
     gameWatchActive.value = enabled
   }
 
+  /** Art studio mode — uses screen:art-studio workload. */
+  const artMode = ref(false)
+
   /** Language mode: true = Japanese (ON), false = Chinese (OFF, default). */
   const japaneseMode = ref(false)
 
@@ -237,6 +240,7 @@ export const useVisionStore = defineStore('vision', () => {
     waitForLook,
     gameWatchActive,
     setGameWatch,
+    artMode,
     japaneseMode,
     toggleJapanese,
   }

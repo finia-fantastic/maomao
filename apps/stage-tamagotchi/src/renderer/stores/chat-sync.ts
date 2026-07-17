@@ -567,6 +567,17 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     return ''
   }
 
+  /** Toggle art-studio mode: "一起画画" / "画画模式" / "停止画画". */
+  function maybeTriggerArtMode(text: string): string {
+    const visionStore = useVisionStore()
+    if (/一起画画|画画模式|画室模式|art.*mode|看.*画画/i.test(text) && !/停止|结束|关闭/i.test(text)) {
+      visionStore.setGameWatch(true)
+      visionStore.artMode = true
+      return '画画模式已开启。我会看着你的画布，给你反馈～'
+    }
+    return ''
+  }
+
   /** Toggle game-watch: "开始游戏监控" / "停止游戏监控". */
   function maybeTriggerGameWatch(text: string): string {
     const visionStore = useVisionStore()
@@ -720,6 +731,8 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     maybeSwitchVisionMode(payload.text)
     // Game watch toggle — "开始游戏监控" / "停止游戏监控".
     void maybeTriggerGameWatch(payload.text)
+    // Art studio mode — "一起画画".
+    void maybeTriggerArtMode(payload.text)
     // Teaching mode — "开始教学" / "结束教学".
     void maybeTriggerTeaching(payload.text)
     // Language toggle — "切换日语" / "切换中文".
