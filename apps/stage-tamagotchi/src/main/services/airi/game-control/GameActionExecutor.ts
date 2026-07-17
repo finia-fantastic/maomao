@@ -87,9 +87,49 @@ export class GameActionExecutor {
 
   // ── Individual action handlers ─────────────────────────────────
 
+  /**
+   * Inject a key via PowerShell SendKeys — uses .NET SendKeys which
+   * routes through a different API path than SendInput/uiohook.
+   * This can bypass some game anti-cheat that blocks SendInput.
+   */
+  private async injectViaSendKeys(key: string, durationMs: number): Promise<void> {
+    const keyMap: Record<string, string> = {
+      w: 'w', a: 'a', s: 's', d: 'd',
+      space: ' ', enter: '{ENTER}', esc: '{ESC}',
+      e: 'e', q: 'q', f: 'f', r: 'r',
+      '1': '1', '2': '2', '3': '3', '4': '4', '5': '5',
+      m: 'm',
+    }
+    const sendKey = keyMap[key.toLowerCase()] ?? key
+    const holdMs = Math.max(durationMs, 30)
+
+    // Press: send key down
+    const psDown = `Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{${sendKey}}')`
+    execSync(`powershell -NoProfile -Command "${psDown}"`, { timeout: 5000 })
+
+    if (holdMs > 50) {
+      await this.sleep(holdMs - 50)
+    }
+  }
+
   private async executeKeyPress(params: KeyPressParams): Promise<void> {
     const duration = params.durationMs ?? 50
+    const keyName = this.keycodeToName(params.key)
 
+    // Try PowerShell SendKeys first (bypasses some anti-cheat)
+    try {
+      this.guard.isInjecting = true
+      await this.injectViaSendKeys(keyName, duration)
+      return
+    }
+    catch {
+      // Fall back to uiohook if PowerShell fails
+    }
+    finally {
+      this.guard.isInjecting = false
+    }
+
+    // Fallback: original uiohook method
     // Hold modifiers
     if (params.modifiers && params.modifiers.length > 0) {
       for (const mod of params.modifiers) {
@@ -221,5 +261,16 @@ export class GameActionExecutor {
 
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  private keycodeToName(code: number): string {
+    const map: Record<number, string> = {
+      17: 'w', 30: 'a', 31: 's', 32: 'd',
+      57: 'space', 28: 'enter', 1: 'esc',
+      18: 'e', 16: 'q', 33: 'f', 19: 'r',
+      2: '1', 3: '2', 4: '3', 5: '4', 6: '5',
+      50: 'm',
+    }
+    return map[code] ?? `key_${code}`
   }
 }
