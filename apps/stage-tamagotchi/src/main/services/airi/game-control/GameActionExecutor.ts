@@ -88,27 +88,35 @@ export class GameActionExecutor {
   // ── Individual action handlers ─────────────────────────────────
 
   /**
-   * Inject a key via PowerShell SendKeys — uses .NET SendKeys which
-   * routes through a different API path than SendInput/uiohook.
-   * This can bypass some game anti-cheat that blocks SendInput.
+   * Inject a key via Win32 keybd_event API using PowerShell P/Invoke.
+   * keybd_event is a lower-level API than SendInput and may bypass
+   * some game anti-cheat systems.
    */
   private async injectViaSendKeys(key: string, durationMs: number): Promise<void> {
-    // Map key names to SendKeys format
-    // Regular keys: just the character. Special keys: {NAME}
-    const specialKeys: Record<string, string> = {
-      space: ' ', enter: '{ENTER}', esc: '{ESC}',
-      up: '{UP}', down: '{DOWN}', left: '{LEFT}', right: '{RIGHT}',
-      tab: '{TAB}',
+    // Virtual key codes for common game keys
+    const vkMap: Record<string, number> = {
+      w: 0x57, a: 0x41, s: 0x53, d: 0x44,
+      space: 0x20, enter: 0x0D, esc: 0x1B,
+      e: 0x45, q: 0x51, f: 0x46, r: 0x52,
+      '1': 0x31, '2': 0x32, '3': 0x33, '4': 0x34, '5': 0x35,
+      shift: 0x10, ctrl: 0x11, alt: 0x12, tab: 0x09,
+      up: 0x26, down: 0x28, left: 0x25, right: 0x27,
+      m: 0x4D,
     }
-    const sendKey = specialKeys[key.toLowerCase()] ?? key.toLowerCase()
+    const vk = vkMap[key.toLowerCase()]
+    if (vk == null) throw new Error(`Unknown key: ${key}`)
+
     const holdMs = Math.max(durationMs, 30)
 
-    const psDown = `Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('${sendKey}')`
-    execSync(`powershell -NoProfile -Command "${psDown}"`, { timeout: 5000 })
-
-    if (holdMs > 50) {
-      await this.sleep(holdMs - 50)
-    }
+    // keybd_event signature: (bVk, bScan, dwFlags, dwExtraInfo)
+    // KEYEVENTF_KEYDOWN = 0x0000, KEYEVENTF_KEYUP = 0x0002
+    const ps = `
+Add-Type -Name Win32 -Namespace Native -MemberDefinition '[DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);'
+[Native.Win32]::keybd_event(${vk}, 0, 0, [UIntPtr]::Zero)
+Start-Sleep -Milliseconds ${holdMs}
+[Native.Win32]::keybd_event(${vk}, 0, 2, [UIntPtr]::Zero)
+`
+    execSync(`powershell -NoProfile -Command "${ps}"`, { timeout: 5000 })
   }
 
   private async executeKeyPress(params: KeyPressParams): Promise<void> {
