@@ -82,8 +82,22 @@ async function executeDrawImage(input: { prompt: string, size?: string }): Promi
   }
 
   console.info('[DrawImage] success, url:', imageUrl.slice(0, 60))
+
+  // Save to desktop too for easy drag-and-drop into art apps
+  let desktopPath = ''
+  try {
+    const saved = await (window as any).electron.ipcRenderer.invoke('image:save-to-desktop', {
+      base64: result.b64_json,
+      name: `AI画作-${Date.now()}.png`,
+    })
+    if (saved?.filePath) desktopPath = saved.filePath
+  }
+  catch { /* nice-to-have */ }
+
   const companionMsg = pickCompanionMessage()
-  return `${companionMsg}\n\n<img src="${imageUrl}" alt="AI生成图片" style="max-width:100%;border-radius:12px" />`
+  let rsp = `${companionMsg}\n\n<img src="${imageUrl}" alt="AI生成图片" style="max-width:100%;border-radius:12px" />`
+  if (desktopPath) rsp += `\n\n已保存到桌面AI画作文件夹，可直接拖进优动漫`
+  return rsp
 }
 
 const tools = [

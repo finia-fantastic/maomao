@@ -104,6 +104,21 @@ export async function setupMainWindowElectronInvokes(params: {
     }
   })
 
+  // Save AI-generated image to desktop folder for easy import into art apps.
+  ipcMain.handle('image:save-to-desktop', async (_event, payload: { base64: string, name: string }) => {
+    try {
+      const { writeFileSync, mkdirSync } = await import('node:fs')
+      const { join } = await import('node:path')
+      const { homedir } = await import('node:os')
+      const dir = join(homedir(), 'Desktop', 'AI画作')
+      mkdirSync(dir, { recursive: true })
+      const filePath = join(dir, payload.name)
+      writeFileSync(filePath, Buffer.from(payload.base64, 'base64'))
+      return { filePath }
+    }
+    catch { return { filePath: null } }
+  })
+
   // Save AI-generated image to temp directory, return airi-image:// URL.
   // NOTICE: We use a custom Electron protocol (airi-image://) instead of file://
   // because DOMPurify strips file:// src attributes and Chromium blocks file://
