@@ -79,8 +79,8 @@ export async function setupMainWindow(params: {
 
   const window = new BrowserWindow({
     title: 'AIRI',
-    width: mainWindowConfig?.width ?? 450.0,
-    height: mainWindowConfig?.height ?? 600.0,
+    width: mainWindowConfig?.width ?? 480.0,
+    height: mainWindowConfig?.height ?? 700.0,
     x: mainWindowConfig?.x,
     y: mainWindowConfig?.y,
     show: false,
