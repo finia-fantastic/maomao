@@ -119,6 +119,21 @@ export async function setupMainWindowElectronInvokes(params: {
     catch { return { filePath: null } }
   })
 
+  // Save SVG to temp, return airi-image:// URL.
+  ipcMain.handle('image:save-svg', async (_event, payload: { svg: string, name: string }) => {
+    try {
+      const { writeFileSync, mkdirSync } = await import('node:fs')
+      const { join } = await import('node:path')
+      const { tmpdir } = await import('node:os')
+      const dir = join(tmpdir(), 'airi-images')
+      mkdirSync(dir, { recursive: true })
+      const filePath = join(dir, payload.name)
+      writeFileSync(filePath, payload.svg, 'utf-8')
+      return { fileUrl: `airi-image://${encodeURIComponent(payload.name)}` }
+    }
+    catch { return { fileUrl: null } }
+  })
+
   // Save AI-generated image to temp directory, return airi-image:// URL.
   // NOTICE: We use a custom Electron protocol (airi-image://) instead of file://
   // because DOMPurify strips file:// src attributes and Chromium blocks file://

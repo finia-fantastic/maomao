@@ -27,6 +27,7 @@ import { defineStore, storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
 
 import { drawImageTools } from './tools/builtin/drawImage'
+import { drawSvgTools } from './tools/builtin/drawSvg'
 import { fetchUrlTools } from './tools/builtin/fetchUrl'
 import { gameControlTools } from './tools/builtin/gameControl'
 import { storeMemoryTools } from './tools/builtin/storeMemory'
@@ -311,11 +312,11 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
   function resolveTools(toolset?: ToolsetId) {
     const toolsetRegistry: Record<string, () => Promise<any[]>> = {
       widgets: async () => {
-        const [w, we, vo, wp, va, dr, fu, sm, gc] = await Promise.all([widgetsTools(), weatherTools(), vocabularyTools(), webpageTools(), vrmAnimationTools(), drawImageTools(), fetchUrlTools(), storeMemoryTools(), gameControlTools()])
-        return [...w, ...we, ...vo, ...wp, ...va, ...dr, ...fu, ...sm, ...gc]
+        const [w, we, vo, wp, va, dr, fu, sm, gc, svg] = await Promise.all([widgetsTools(), weatherTools(), vocabularyTools(), webpageTools(), vrmAnimationTools(), drawImageTools(), fetchUrlTools(), storeMemoryTools(), gameControlTools(), drawSvgTools()])
+        return [...w, ...we, ...vo, ...wp, ...va, ...dr, ...fu, ...sm, ...gc, ...svg]
       },
       artistry: async () => {
-        const [ai, wi, we, vo, wp, va, dr, fu, sm, gc] = await Promise.all([
+        const [ai, wi, we, vo, wp, va, dr, fu, sm, gc, svg] = await Promise.all([
           imageJournalTools(),
           widgetsTools(),
           weatherTools(),
@@ -326,8 +327,9 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
           fetchUrlTools(),
           storeMemoryTools(),
           gameControlTools(),
+          drawSvgTools(),
         ])
-        return [...ai, ...wi, ...we, ...vo, ...wp, ...va, ...dr, ...fu, ...sm, ...gc]
+        return [...ai, ...wi, ...we, ...vo, ...wp, ...va, ...dr, ...fu, ...sm, ...gc, ...svg]
       },
     }
 
