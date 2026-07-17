@@ -656,7 +656,7 @@ export function useVisionScreenWatch(videoRef: Ref<HTMLVideoElement | null>) {
   // taken and analyzed with the game-watch workload. Analysis runs in
   // parallel — slow VLM responses never delay the next capture.
 
-  const GAME_CAPTURE_INTERVAL_MS = 5000
+  const GAME_CAPTURE_INTERVAL_MS = 1500
   let gameWatchTimer: ReturnType<typeof setInterval> | null = null
   let gameCaptureSeq = 0
 
