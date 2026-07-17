@@ -663,7 +663,8 @@ const cursorPosition = computed(() => ({
           'top-0 left-0 w-full h-full',
           'overflow-hidden',
           'rounded-2xl',
-          'transition-opacity duration-250 ease-in-out',
+          'transition-all duration-300 ease-in-out',
+          isInlineChatMode ? 'pt-[75px]' : '',
         ]"
       >
         <StatusIsland v-if="IS_DEV" ref="statusIslandRef" />

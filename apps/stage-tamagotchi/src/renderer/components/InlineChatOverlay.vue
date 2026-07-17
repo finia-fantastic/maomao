@@ -156,22 +156,22 @@ function handleKeydown(e: KeyboardEvent) {
   flex-direction: column;
   align-items: center;
   pointer-events: none;
-  padding: 0 8px 10px;
+  padding: 0 8px 6px;
+  /* Push content area down so input stays visible, but reply floats above */
+  justify-content: flex-start;
 }
 
 /* ── Reply area: absolutely positioned at top, above character head ── */
 .reply-area {
   position: absolute;
   left: 50%;
-  top: 2px;
+  top: 0;
   transform: translateX(-50%);
   z-index: 25;
   display: flex;
   flex-direction: column;
   align-items: center;
   pointer-events: none;
-  /* Ensure the reply box bottom stays above the character head area */
-  max-height: 18vh;
 }
 
 /* ── Reply box: lightweight bubble, auto-sized ── */
@@ -181,6 +181,7 @@ function handleKeydown(e: KeyboardEvent) {
   min-width: 60px;
   max-width: min(300px, calc(100vw - 20px));
   height: auto;
+  margin-top: 0;
   padding: 6px 12px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
