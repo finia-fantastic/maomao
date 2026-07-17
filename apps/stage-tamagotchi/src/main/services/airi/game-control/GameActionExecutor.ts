@@ -93,18 +93,17 @@ export class GameActionExecutor {
    * This can bypass some game anti-cheat that blocks SendInput.
    */
   private async injectViaSendKeys(key: string, durationMs: number): Promise<void> {
-    const keyMap: Record<string, string> = {
-      w: 'w', a: 'a', s: 's', d: 'd',
+    // Map key names to SendKeys format
+    // Regular keys: just the character. Special keys: {NAME}
+    const specialKeys: Record<string, string> = {
       space: ' ', enter: '{ENTER}', esc: '{ESC}',
-      e: 'e', q: 'q', f: 'f', r: 'r',
-      '1': '1', '2': '2', '3': '3', '4': '4', '5': '5',
-      m: 'm',
+      up: '{UP}', down: '{DOWN}', left: '{LEFT}', right: '{RIGHT}',
+      tab: '{TAB}',
     }
-    const sendKey = keyMap[key.toLowerCase()] ?? key
+    const sendKey = specialKeys[key.toLowerCase()] ?? key.toLowerCase()
     const holdMs = Math.max(durationMs, 30)
 
-    // Press: send key down
-    const psDown = `Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('{${sendKey}}')`
+    const psDown = `Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('${sendKey}')`
     execSync(`powershell -NoProfile -Command "${psDown}"`, { timeout: 5000 })
 
     if (holdMs > 50) {
