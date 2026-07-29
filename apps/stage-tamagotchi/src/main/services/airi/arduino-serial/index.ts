@@ -1,5 +1,7 @@
 import type { SerialPort } from 'serialport'
 
+import { env } from 'node:process'
+
 import { errorMessageFrom } from '@moeru/std'
 
 const LOG_PREFIX = '[ArduinoSerial]'
@@ -36,7 +38,7 @@ export class ArduinoSerialService {
   private portPath: string
 
   constructor(portPath?: string) {
-    this.portPath = portPath ?? process.env.AIRI_ARDUINO_PORT ?? DEFAULT_PORT
+    this.portPath = portPath ?? env.AIRI_ARDUINO_PORT ?? DEFAULT_PORT
   }
 
   /**
@@ -126,7 +128,7 @@ export class ArduinoSerialService {
     if (!this.isConnected || !this.port) {
       throw new Error('Arduino not connected')
     }
-    const cmd = JSON.stringify({ type: 'key', key, action }) + '\n'
+    const cmd = `${JSON.stringify({ type: 'key', key, action })}\n`
     this.port.write(cmd)
     console.info(`${LOG_PREFIX} key: ${key} ${action}`)
   }
@@ -141,7 +143,7 @@ export class ArduinoSerialService {
     if (!this.isConnected || !this.port) {
       throw new Error('Arduino not connected')
     }
-    const cmd = JSON.stringify({ type: 'mouse', action: 'move', x, y }) + '\n'
+    const cmd = `${JSON.stringify({ type: 'mouse', action: 'move', x, y })}\n`
     this.port.write(cmd)
     console.info(`${LOG_PREFIX} mouse move: (${x}, ${y})`)
   }
@@ -155,7 +157,7 @@ export class ArduinoSerialService {
     if (!this.isConnected || !this.port) {
       throw new Error('Arduino not connected')
     }
-    const cmd = JSON.stringify({ type: 'mouse', action: 'click', btn: button }) + '\n'
+    const cmd = `${JSON.stringify({ type: 'mouse', action: 'click', btn: button })}\n`
     this.port.write(cmd)
     console.info(`${LOG_PREFIX} mouse click: ${button}`)
   }

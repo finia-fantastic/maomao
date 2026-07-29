@@ -13,9 +13,9 @@ import messages from '@proj-airi/i18n/locales'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { Format, LogLevel, setGlobalFormat, setGlobalHookPostLog, setGlobalLogLevel, useLogg } from '@guiiai/logg'
 import { createContext } from '@moeru/eventa/adapters/electron/main'
+import { errorMessageFrom } from '@moeru/std'
 import { initScreenCaptureForMain } from '@proj-airi/electron-screen-capture/main'
 import { app, ipcMain, net, protocol, session } from 'electron'
-import { errorMessageFrom } from '@moeru/std'
 import { noop } from 'es-toolkit'
 import { createLoggLogger, injeca, lifecycle } from 'injeca'
 import { isLinux } from 'std-env'
@@ -30,6 +30,7 @@ import { createGlobalAppConfig } from './configs/global'
 import { emitAppBeforeQuit, emitAppReady, emitAppWindowAllClosed } from './libs/bootkit/lifecycle'
 import { setElectronMainDirname } from './libs/electron/location'
 import { createI18n } from './libs/i18n'
+import { getArduinoSerialService } from './services/airi/arduino-serial'
 import { createWindowAuthManagerService } from './services/airi/auth'
 import { setupServerChannel } from './services/airi/channel-server'
 import { setupGameControlService } from './services/airi/game-control'
@@ -38,7 +39,6 @@ import { setupGodotStageManager } from './services/airi/godot-stage'
 import { setupBuiltInServer } from './services/airi/http-server'
 import { setupMcpStdioManager } from './services/airi/mcp-servers'
 import { setupExtensionHost } from './services/airi/plugins'
-import { getArduinoSerialService } from './services/airi/arduino-serial'
 import { setupArtistryBridge } from './services/airi/widgets/artistry-bridge'
 import { setupAutoUpdater } from './services/electron/auto-updater'
 import { setupGlobalShortcutService } from './services/electron/global-shortcut'
@@ -52,11 +52,11 @@ import { setupChatWindowReusableFunc } from './windows/chat'
 import { isDesktopOverlayEnabled, setupDesktopOverlayWindow } from './windows/desktop-overlay'
 import { setupDevtoolsWindow } from './windows/devtools'
 import { setupMainWindow } from './windows/main'
-import { createSubtitleWindow, setupSubtitleIPC } from './windows/subtitle'
 import { setupNoticeWindowManager } from './windows/notice'
 import { setupOnboardingWindowManager } from './windows/onboarding'
 import { setupSettingsWindowReusableFunc } from './windows/settings'
 import { setupSpotlightWindowManager } from './windows/spotlight'
+import { createSubtitleWindow, setupSubtitleIPC } from './windows/subtitle'
 import { setupWidgetsWindowManager } from './windows/widgets'
 
 // TODO: once we refactored eventa to support window-namespaced contexts,
@@ -331,12 +331,12 @@ app.whenReady().then(async () => {
   })
 
   ipcMain.handle('arduino:status', async () => {
-    return { connected: arduinoService.isConnected }
+    return { connected: arduinoService!.isConnected }
   })
 
   ipcMain.handle('arduino:key', async (_e, { key, action }: { key: string, action: 'tap' | 'press' | 'release' }) => {
     try {
-      arduinoService.sendKey(key, action)
+      arduinoService!.sendKey(key, action)
       return { ok: true }
     }
     catch (err) {
@@ -346,7 +346,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('arduino:mouse-move', async (_e, { x, y }: { x: number, y: number }) => {
     try {
-      arduinoService.sendMouseMove(x, y)
+      arduinoService!.sendMouseMove(x, y)
       return { ok: true }
     }
     catch (err) {
@@ -356,7 +356,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('arduino:mouse-click', async (_e, { button }: { button: 'left' | 'right' | 'middle' }) => {
     try {
-      arduinoService.sendMouseClick(button)
+      arduinoService!.sendMouseClick(button)
       return { ok: true }
     }
     catch (err) {
@@ -366,11 +366,11 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('arduino:connect', async () => {
     try {
-      if (arduinoService.isConnected) {
+      if (arduinoService!.isConnected) {
         return { ok: true, connected: true, message: 'Already connected' }
       }
-      await arduinoService.open()
-      return { ok: true, connected: arduinoService.isConnected }
+      await arduinoService!.open()
+      return { ok: true, connected: arduinoService!.isConnected }
     }
     catch (err) {
       return { ok: false, connected: false, error: errorMessageFrom(err) ?? 'unknown' }
@@ -449,7 +449,11 @@ async function handleAppExit() {
         gameControlService.stop()
       }
     }),
-    logIfError('close arduino serial connection', () => arduinoService.close()),
+    logIfError('close arduino serial connection', () => {
+      if (arduinoService) {
+        return arduinoService.close()
+      }
+    }),
   ])
 
   // Close the memory database after all services stopped

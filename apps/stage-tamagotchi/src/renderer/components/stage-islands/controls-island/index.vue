@@ -6,6 +6,7 @@ import { useChatSessionStore } from '@proj-airi/stage-ui/stores/chat/session-sto
 
 import { useVisionOrchestratorStore } from '@proj-airi/stage-ui/stores/modules/vision/orchestrator'
 import { useSettings } from '@proj-airi/stage-ui/stores/settings'
+import { useChatSyncStore } from '../../../stores/chat-sync'
 
 import { refDebounced, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
@@ -99,7 +100,6 @@ function toggleAlwaysOnTop() {
 }
 
 // Grouped classes for icon / border / padding and combined style class
-import { useChatSyncStore } from '../../../stores/chat-sync'
 const chatSyncStore = useChatSyncStore()
 const { subtitleMode } = storeToRefs(chatSyncStore)
 
