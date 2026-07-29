@@ -18,6 +18,16 @@ const BOTTOM_MARGIN = 70
 let win: BrowserWindow | null = null
 
 function getWorkArea(): Rectangle {
+  // Find the display that the main AIRI window is on
+  const mainWin = BrowserWindow.getAllWindows().find(
+    w => !w.isDestroyed() && w.getTitle() === 'AIRI' && w !== win,
+  )
+  if (mainWin) {
+    const bounds = mainWin.getBounds()
+    const center = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
+    return screen.getDisplayNearestPoint(center).workArea
+  }
+  // Fallback: use the cursor position
   return screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea
 }
 
