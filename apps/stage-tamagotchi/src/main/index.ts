@@ -15,6 +15,7 @@ import { Format, LogLevel, setGlobalFormat, setGlobalHookPostLog, setGlobalLogLe
 import { createContext } from '@moeru/eventa/adapters/electron/main'
 import { initScreenCaptureForMain } from '@proj-airi/electron-screen-capture/main'
 import { app, ipcMain, net, protocol, session } from 'electron'
+import { errorMessageFrom } from '@moeru/std'
 import { noop } from 'es-toolkit'
 import { createLoggLogger, injeca, lifecycle } from 'injeca'
 import { isLinux } from 'std-env'
@@ -37,6 +38,7 @@ import { setupGodotStageManager } from './services/airi/godot-stage'
 import { setupBuiltInServer } from './services/airi/http-server'
 import { setupMcpStdioManager } from './services/airi/mcp-servers'
 import { setupExtensionHost } from './services/airi/plugins'
+import { getArduinoSerialService } from './services/airi/arduino-serial'
 import { setupArtistryBridge } from './services/airi/widgets/artistry-bridge'
 import { setupAutoUpdater } from './services/electron/auto-updater'
 import { setupGlobalShortcutService } from './services/electron/global-shortcut'
@@ -127,6 +129,12 @@ let skipFileLogging = false
  * accessible here for cleanup in handleAppExit.
  */
 let gameControlService: ReturnType<typeof setupGameControlService> | undefined
+
+/**
+ * Arduino Leonardo R3 serial bridge service.
+ * Initialised inside app.whenReady; accessible here for cleanup in handleAppExit.
+ */
+let arduinoService: ReturnType<typeof getArduinoSerialService> | undefined
 
 app.whenReady().then(async () => {
   if (!shouldStartMainProcess) {
@@ -311,6 +319,64 @@ app.whenReady().then(async () => {
     },
   })
 
+  // ── Arduino Serial Service ──────────────────────────────────────
+  // Hardware-level keyboard/mouse injection via Arduino Leonardo R3.
+  // Tries to connect at startup; falls back gracefully if not present.
+
+  arduinoService = getArduinoSerialService()
+
+  // Try to connect eagerly; failures are non-fatal (Arduino may not be plugged in)
+  arduinoService!.open().catch((err) => {
+    console.info(`[ArduinoSerial] not connected (this is OK): ${errorMessageFrom(err) ?? 'unknown'}`)
+  })
+
+  ipcMain.handle('arduino:status', async () => {
+    return { connected: arduinoService.isConnected }
+  })
+
+  ipcMain.handle('arduino:key', async (_e, { key, action }: { key: string, action: 'tap' | 'press' | 'release' }) => {
+    try {
+      arduinoService.sendKey(key, action)
+      return { ok: true }
+    }
+    catch (err) {
+      return { ok: false, error: errorMessageFrom(err) ?? 'unknown' }
+    }
+  })
+
+  ipcMain.handle('arduino:mouse-move', async (_e, { x, y }: { x: number, y: number }) => {
+    try {
+      arduinoService.sendMouseMove(x, y)
+      return { ok: true }
+    }
+    catch (err) {
+      return { ok: false, error: errorMessageFrom(err) ?? 'unknown' }
+    }
+  })
+
+  ipcMain.handle('arduino:mouse-click', async (_e, { button }: { button: 'left' | 'right' | 'middle' }) => {
+    try {
+      arduinoService.sendMouseClick(button)
+      return { ok: true }
+    }
+    catch (err) {
+      return { ok: false, error: errorMessageFrom(err) ?? 'unknown' }
+    }
+  })
+
+  ipcMain.handle('arduino:connect', async () => {
+    try {
+      if (arduinoService.isConnected) {
+        return { ok: true, connected: true, message: 'Already connected' }
+      }
+      await arduinoService.open()
+      return { ok: true, connected: arduinoService.isConnected }
+    }
+    catch (err) {
+      return { ok: false, connected: false, error: errorMessageFrom(err) ?? 'unknown' }
+    }
+  })
+
   // Game learning service — standalone, no DI needed
   // NOTICE: Temporarily disabled to isolate startup crash
   // setupGameLearningService()
@@ -383,6 +449,7 @@ async function handleAppExit() {
         gameControlService.stop()
       }
     }),
+    logIfError('close arduino serial connection', () => arduinoService.close()),
   ])
 
   // Close the memory database after all services stopped

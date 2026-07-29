@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url'
 
 import { BrowserWindow, globalShortcut, ipcMain, screen } from 'electron'
 
-import { baseUrl, getElectronMainDirname, load } from '../../libs/electron/location'
+import { baseUrl, getElectronMainDirname, load, withHashRoute } from '../../libs/electron/location'
 
 const SUBTITLE_WINDOW_HEIGHT = 160
 const SUBTITLE_BOTTOM_MARGIN = 70 // above taskbar
@@ -59,7 +59,7 @@ export async function createSubtitleWindow(): Promise<BrowserWindow> {
   win.setIgnoreMouseEvents(true, { forward: true })
   win.setVisibleOnAllWorkspaces(true)
 
-  await load(win, `${baseUrl(resolve(getElectronMainDirname(), '..', 'renderer'))}#/subtitle`)
+  await load(win, withHashRoute(baseUrl(resolve(getElectronMainDirname(), '..', 'renderer')), '/subtitle'))
 
   win.on('closed', () => { win = null })
 
