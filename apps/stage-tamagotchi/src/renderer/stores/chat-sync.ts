@@ -32,6 +32,7 @@ import { fetchUrlTools } from './tools/builtin/fetchUrl'
 import { gameControlTools } from './tools/builtin/gameControl'
 import { rocoBattleTools } from './tools/builtin/rocoBattle'
 import { storeMemoryTools } from './tools/builtin/storeMemory'
+import { webSearchTools } from './tools/builtin/webSearch'
 import { imageJournalTools } from './tools/builtin/image-journal'
 import { vocabularyTools } from './tools/builtin/vocabulary'
 import { vrmAnimationTools } from './tools/builtin/vrmAnimation'
@@ -313,11 +314,11 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
   function resolveTools(toolset?: ToolsetId) {
     const toolsetRegistry: Record<string, () => Promise<any[]>> = {
       widgets: async () => {
-        const [w, we, vo, wp, va, dr, fu, sm, gc, svg, rc] = await Promise.all([widgetsTools(), weatherTools(), vocabularyTools(), webpageTools(), vrmAnimationTools(), drawImageTools(), fetchUrlTools(), storeMemoryTools(), gameControlTools(), drawSvgTools(), rocoBattleTools()])
-        return [...w, ...we, ...vo, ...wp, ...va, ...dr, ...fu, ...sm, ...gc, ...svg, ...rc]
+        const [w, we, vo, wp, va, dr, fu, sm, gc, svg, rc, ws] = await Promise.all([widgetsTools(), weatherTools(), vocabularyTools(), webpageTools(), vrmAnimationTools(), drawImageTools(), fetchUrlTools(), storeMemoryTools(), gameControlTools(), drawSvgTools(), rocoBattleTools(), webSearchTools()])
+        return [...w, ...we, ...vo, ...wp, ...va, ...dr, ...fu, ...sm, ...gc, ...svg, ...rc, ...ws]
       },
       artistry: async () => {
-        const [ai, wi, we, vo, wp, va, dr, fu, sm, gc, svg] = await Promise.all([
+        const [ai, wi, we, vo, wp, va, dr, fu, sm, gc, svg, ws] = await Promise.all([
           imageJournalTools(),
           widgetsTools(),
           weatherTools(),
@@ -329,8 +330,9 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
           storeMemoryTools(),
           gameControlTools(),
           drawSvgTools(),
+          webSearchTools(),
         ])
-        return [...ai, ...wi, ...we, ...vo, ...wp, ...va, ...dr, ...fu, ...sm, ...gc, ...svg]
+        return [...ai, ...wi, ...we, ...vo, ...wp, ...va, ...dr, ...fu, ...sm, ...gc, ...svg, ...ws]
       },
     }
 
@@ -813,6 +815,29 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
         ])
       }
     }
+
+    // Retrieve relevant memories so the LLM can reference past learning
+    try {
+      const { buildMemoryPrompt } = await import('@proj-airi/stage-ui/services/memory/MemoryPromptBuilder')
+      const memories = await (window as any).electron?.ipcRenderer?.invoke('memory:retrieve', {
+        userId: 'default-user',
+        query: payload.text,
+        maxResults: 5,
+      })
+      if (memories?.length) {
+        const prompt = buildMemoryPrompt(memories)
+        const { useChatContextStore } = await import('@proj-airi/stage-ui/stores/chat/context-store')
+        const { ContextUpdateStrategy } = await import('@proj-airi/server-sdk')
+        useChatContextStore().ingestContextMessage({
+          id: `mem-${Date.now()}`,
+          contextId: `mem-${Date.now()}`,
+          strategy: ContextUpdateStrategy.ReplaceSelf,
+          text: prompt,
+          createdAt: Date.now(),
+        })
+      }
+    }
+    catch { /* memory retrieval is best-effort */ }
 
     // Language mode: if Japanese is ON, force Japanese output.
     const visionStore = useVisionStore()
