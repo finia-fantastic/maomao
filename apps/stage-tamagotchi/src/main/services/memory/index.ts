@@ -19,6 +19,8 @@ import {
   memoryUpdateSettings,
 } from '../../../shared/eventa/memory'
 import {
+  cleanupOldMemories,
+  cleanupOldTrainingExamples,
   deleteMemory,
   exportMemories,
   forgetMemories,
@@ -156,5 +158,12 @@ export function createMemoryService(context: MainContext): void {
 
   ipcMain.handle('training:retrieve', async (_e, p: { query: string, limit?: number }) => {
     return retrieveSimilarExamples(db, p.query, p.limit ?? 3)
+  })
+
+  ipcMain.handle('training:cleanup', async (_e, p?: { olderThanDays?: number }) => {
+    const days = p?.olderThanDays ?? 30
+    const deleted = cleanupOldTrainingExamples(db, days)
+    const expired = cleanupOldMemories(db, Math.max(days, 60))
+    return { deletedTraining: deleted, expiredMemories: expired }
   })
 }

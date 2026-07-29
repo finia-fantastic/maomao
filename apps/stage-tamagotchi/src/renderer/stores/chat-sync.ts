@@ -616,6 +616,23 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     }
   }
 
+  /** Night learning: "夜间学习" — autonomous web research + cleanup. */
+  function maybeTriggerNightLearning(text: string): string {
+    if (/夜间学习|晚上学习|自动学习|night.*learn/i.test(text)) {
+      return [
+        '现在是自主学习时间。请执行以下任务：',
+        '',
+        '1. 用 web_search 搜索今天的热门话题、新梗、重要新闻（搜3-5个不同关键词）',
+        '2. 对感兴趣的搜索结果用 fetch_url 阅读详情',
+        '3. 用 store_memory 保存你今天学到的新知识',
+        '4. 用 training:cleanup 清理超过30天的旧训练数据',
+        '',
+        '完成后总结你今天学到了什么。',
+      ].join('\n')
+    }
+    return ''
+  }
+
   /** Teaching mode: "开始教学" / "结束教学". */
   function maybeTriggerTeaching(text: string): string {
     if (/开始教学|教学模式|teach.*mode/i.test(text) && !/结束|停止/i.test(text)) {
@@ -797,6 +814,10 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     void maybeTriggerArtMode(payload.text)
     // Teaching mode — "开始教学" / "结束教学".
     void maybeTriggerTeaching(payload.text)
+    // Night learning — "夜间学习" — autonomous web research + cleanup.
+    payload.text = payload.text.replace(/夜间学习|晚上学习|自动学习/, (match) => {
+      return maybeTriggerNightLearning(match) || match
+    })
     // Language toggle — "切换日语" / "切换中文".
     void maybeToggleLanguage(payload.text)
     // "读单词" — read recent English words from vocab DB via TTS.

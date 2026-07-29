@@ -698,6 +698,26 @@ export function storeTrainingExample(
   }
 }
 
+/** Delete training examples older than the given days. Returns count deleted. */
+export function cleanupOldTrainingExamples(db: DatabaseSync, olderThanDays: number = 30): number {
+  const result = db.prepare(`
+    DELETE FROM training_examples
+    WHERE created_at < datetime('now', '-' || ? || ' days')
+  `).run(olderThanDays)
+  return Number(result.changes)
+}
+
+/** Delete old memories (expired or superseded). */
+export function cleanupOldMemories(db: DatabaseSync, olderThanDays: number = 60): number {
+  const result = db.prepare(`
+    UPDATE memories SET status = 'expired'
+    WHERE status = 'active'
+    AND created_at < datetime('now', '-' || ? || ' days')
+    AND type = 'temporary'
+  `).run(olderThanDays)
+  return Number(result.changes)
+}
+
 export function retrieveSimilarExamples(
   db: DatabaseSync,
   query: string,
