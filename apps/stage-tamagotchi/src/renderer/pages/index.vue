@@ -627,10 +627,10 @@ watch(stream, async (currentStream) => {
 
 // Assistant caption is broadcast from Stage.vue via the same channel
 
-const isInlineChatMode = ref(false)
+const { subtitleMode: isInlineChatMode } = storeToRefs(chatSyncStore)
 
 function toggleInlineChat() {
-  isInlineChatMode.value = !isInlineChatMode.value
+  chatSyncStore.toggleSubtitleMode()
 }
 
 provide('toggleInlineChat', toggleInlineChat)
