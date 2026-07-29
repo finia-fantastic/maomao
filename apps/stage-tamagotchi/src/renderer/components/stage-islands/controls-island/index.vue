@@ -324,7 +324,7 @@ useIntervalFn(checkVocabRunning, 5000)
 
             <ControlButtonTooltip disable-hoverable-content>
               <ControlButton :button-style="adjustStyleClasses.button" @click="chatSyncStore.toggleSubtitleMode()">
-                <div :class="subtitleMode ? 'i-solar:subtitles-bold-duotone' : 'i-solar:chat-line-bold-duotone'" :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
+                <div :class="[subtitleMode ? 'i-solar:subtitles-bold-duotone' : 'i-solar:chat-line-bold-duotone', adjustStyleClasses.icon]" text="neutral-800 dark:neutral-300" />
               </ControlButton>
               <template #tooltip>
                 {{ subtitleMode ? '字幕模式 ON' : '切换字幕模式' }}
