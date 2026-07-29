@@ -1,7 +1,7 @@
 import type { createContext } from '@moeru/eventa/adapters/electron/main'
 
 import { defineInvokeHandler } from '@moeru/eventa'
-import { app } from 'electron'
+import { app, ipcMain } from 'electron'
 
 import {
   memoryDelete,
@@ -29,8 +29,10 @@ import {
   getStats,
   listActiveMemories,
   retrieveMemories,
+  retrieveSimilarExamples,
   searchMemories,
   storeMemory,
+  storeTrainingExample,
   updateMemory,
   updateSettings,
 } from './MemoryDatabase'
@@ -130,5 +132,29 @@ export function createMemoryService(context: MainContext): void {
 
   defineInvokeHandler(context, memoryGetStats, async () => {
     return getStats(db)
+  })
+
+  // Training example IPC handlers (personality learning)
+  defineInvokeHandler(context, memoryStore, async (payload: any) => {
+    if (payload._type === 'training') {
+      return storeTrainingExample(db, {
+        userMessage: payload.userMessage,
+        assistantMessage: payload.assistantMessage,
+        topic: payload.topic,
+        source: payload.source,
+      })
+    }
+    // Fall through to regular memory store
+    const settings = getSettings(db)
+    if (!settings.enableLongTermMemory) throw new Error('Long-term memory is disabled')
+    return storeMemory(db, payload)
+  })
+
+  ipcMain.handle('training:store', async (_e, p: any) => {
+    return storeTrainingExample(db, { userMessage: p.userMessage, assistantMessage: p.assistantMessage, topic: p.topic, source: p.source })
+  })
+
+  ipcMain.handle('training:retrieve', async (_e, p: { query: string, limit?: number }) => {
+    return retrieveSimilarExamples(db, p.query, p.limit ?? 3)
   })
 }

@@ -565,15 +565,43 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     })
   }
 
-  // Route AI responses to subtitle overlay when subtitle mode is on
+  // Watch for new assistant responses → route to subtitle + auto-collect training
+  let _lastCollectedIdx = 0
   watch(() => chatSession.getSessionMessages(activeSessionId.value), (msgs) => {
-    if (!subtitleMode.value || !msgs?.length) return
-    const last = [...msgs].reverse().find((m: any) => m.role === 'assistant')
-    if (!last) return
-    const text = typeof last.content === 'string' ? last.content
-      : (last as any).slices?.filter((s: any) => s.type === 'text').map((s: any) => s.text).join('') || ''
-    if (text) {
+    if (!msgs?.length) return
+
+    // Find the last assistant message and the user message before it
+    const reversed = [...msgs].reverse()
+    const lastAsst = reversed.find((m: any) => m.role === 'assistant')
+    if (!lastAsst) return
+
+    const asstIdx = msgs.indexOf(lastAsst)
+    const text = typeof lastAsst.content === 'string' ? lastAsst.content
+      : (lastAsst as any).slices?.filter((s: any) => s.type === 'text').map((s: any) => s.text).join('') || ''
+
+    if (!text) return
+
+    // Route to subtitle
+    if (subtitleMode.value) {
       void (window as any).electron?.ipcRenderer?.invoke('subtitle:show', text)
+    }
+
+    // Auto-collect training example (once per turn)
+    if (asstIdx > _lastCollectedIdx && asstIdx > 0) {
+      _lastCollectedIdx = asstIdx
+      const prevUser = msgs.slice(0, asstIdx).reverse().find((m: any) => m.role === 'user')
+      if (prevUser) {
+        const userText = typeof prevUser.content === 'string' ? prevUser.content
+          : (prevUser as any).slices?.filter((s: any) => s.type === 'text').map((s: any) => s.text).join('') || ''
+        if (userText && text.length > 5) {
+          void (window as any).electron?.ipcRenderer?.invoke('training:store', {
+            userMessage: userText,
+            assistantMessage: text,
+            topic: userText.slice(0, 40),
+            source: 'chat',
+          })
+        }
+      }
     }
   }, { deep: true })
 
@@ -816,28 +844,43 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
       }
     }
 
-    // Retrieve relevant memories so the LLM can reference past learning
+    // ── Memory retrieval + Few-shot training injection ──
+    // 1. Retrieve relevant past memories (factual knowledge)
+    // 2. Retrieve similar training examples (personality/style)
     try {
-      const { buildMemoryPrompt } = await import('@proj-airi/stage-ui/services/memory/MemoryPromptBuilder')
-      const memories = await (window as any).electron?.ipcRenderer?.invoke('memory:retrieve', {
-        userId: 'default-user',
-        query: payload.text,
-        maxResults: 5,
-      })
-      if (memories?.length) {
-        const prompt = buildMemoryPrompt(memories)
+      const ipc = (window as any).electron?.ipcRenderer
+      if (ipc) {
+        const { buildMemoryPrompt } = await import('@proj-airi/stage-ui/services/memory/MemoryPromptBuilder')
         const { useChatContextStore } = await import('@proj-airi/stage-ui/stores/chat/context-store')
         const { ContextUpdateStrategy } = await import('@proj-airi/server-sdk')
-        useChatContextStore().ingestContextMessage({
-          id: `mem-${Date.now()}`,
-          contextId: `mem-${Date.now()}`,
-          strategy: ContextUpdateStrategy.ReplaceSelf,
-          text: prompt,
-          createdAt: Date.now(),
-        })
+        const ctx = useChatContextStore()
+
+        // Retrieve factual memories
+        const memories = await ipc.invoke('memory:retrieve', { userId: 'default-user', query: payload.text, maxResults: 3 })
+        if (memories?.length) {
+          ctx.ingestContextMessage({
+            id: `mem-${Date.now()}`, contextId: `mem-${Date.now()}`,
+            strategy: ContextUpdateStrategy.ReplaceSelf,
+            text: buildMemoryPrompt(memories), createdAt: Date.now(),
+          })
+        }
+
+        // Retrieve similar training examples (personality style)
+        const examples = await ipc.invoke('training:retrieve', { query: payload.text, limit: 3 })
+        if (examples?.length) {
+          const fewShot = [
+            '以下是你过去回答类似问题的示例，请模仿这种风格：',
+            ...examples.map((e: any) => `问：${e.userMessage}\n你的回答：${e.assistantMessage}`),
+          ].join('\n\n')
+          ctx.ingestContextMessage({
+            id: `fewshot-${Date.now()}`, contextId: `fewshot-${Date.now()}`,
+            strategy: ContextUpdateStrategy.ReplaceSelf,
+            text: fewShot, createdAt: Date.now(),
+          })
+        }
       }
     }
-    catch { /* memory retrieval is best-effort */ }
+    catch { /* best-effort */ }
 
     // Language mode: if Japanese is ON, force Japanese output.
     const visionStore = useVisionStore()

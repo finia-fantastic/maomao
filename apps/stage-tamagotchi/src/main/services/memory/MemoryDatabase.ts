@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 
 /** Current schema version. Increment when schema changes and add migration. */
-const SCHEMA_VERSION = 1
+const SCHEMA_VERSION = 2
 
 /** Default memory settings. */
 const DEFAULT_SETTINGS: MemorySettings = {
@@ -188,6 +188,47 @@ function applyMigrations(db: DatabaseSync): void {
     `)
 
     db.prepare('INSERT INTO _schema_version (version) VALUES (?)').run(1)
+  }
+
+  // Migration: v2 — training examples table for personality learning
+  if (currentVersion < 2) {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS training_examples (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_message TEXT NOT NULL,
+        assistant_message TEXT NOT NULL,
+        topic TEXT,
+        style_tags TEXT,
+        quality INTEGER DEFAULT 1,
+        source TEXT DEFAULT 'chat',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        used_count INTEGER DEFAULT 0
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_training_quality ON training_examples(quality);
+      CREATE INDEX IF NOT EXISTS idx_training_created ON training_examples(created_at);
+
+      -- FTS for semantic search of training examples
+      CREATE VIRTUAL TABLE IF NOT EXISTS training_fts USING fts5(
+        user_message,
+        assistant_message,
+        topic,
+        content='training_examples',
+        content_rowid='id'
+      );
+
+      CREATE TRIGGER IF NOT EXISTS training_ai AFTER INSERT ON training_examples BEGIN
+        INSERT INTO training_fts(rowid, user_message, assistant_message, topic)
+        VALUES (new.id, new.user_message, new.assistant_message, new.topic);
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS training_ad AFTER DELETE ON training_examples BEGIN
+        INSERT INTO training_fts(training_fts, rowid, user_message, assistant_message, topic)
+        VALUES ('delete', old.id, old.user_message, old.assistant_message, old.topic);
+      END;
+    `)
+
+    db.prepare('INSERT INTO _schema_version (version) VALUES (?)').run(2)
   }
 }
 
@@ -618,4 +659,82 @@ function accessFrequencyScore(db: DatabaseSync, memoryId: number): number {
  */
 export function logMemoryAccess(db: DatabaseSync, memoryId: number, source?: string): void {
   db.prepare('INSERT INTO memory_access_log (memory_id, source) VALUES (?, ?)').run(memoryId, source ?? null)
+}
+
+// ── Training Examples (for personality learning) ──────────────────────
+
+interface TrainingExample {
+  id: number
+  userMessage: string
+  assistantMessage: string
+  topic: string | null
+  styleTags: string | null
+  quality: number
+  source: string
+  createdAt: string
+  usedCount: number
+}
+
+export function storeTrainingExample(
+  db: DatabaseSync,
+  payload: { userMessage: string, assistantMessage: string, topic?: string, source?: string },
+): TrainingExample {
+  const result = db.prepare(`
+    INSERT INTO training_examples (user_message, assistant_message, topic, source)
+    VALUES (?, ?, ?, ?)
+  `).run(payload.userMessage, payload.assistantMessage, payload.topic ?? null, payload.source ?? 'chat')
+
+  const row = db.prepare('SELECT * FROM training_examples WHERE id = ?').get(Number(result.lastInsertRowid)) as Record<string, unknown>
+  return {
+    id: row.id as number,
+    userMessage: row.user_message as string,
+    assistantMessage: row.assistant_message as string,
+    topic: (row.topic as string) ?? null,
+    styleTags: (row.style_tags as string) ?? null,
+    quality: row.quality as number,
+    source: row.source as string,
+    createdAt: row.created_at as string,
+    usedCount: row.used_count as number,
+  }
+}
+
+export function retrieveSimilarExamples(
+  db: DatabaseSync,
+  query: string,
+  limit: number = 3,
+): TrainingExample[] {
+  // Use FTS5 to find semantically similar training examples
+  const cleaned = query.replace(/[^\p{L}\p{N}\s]/gu, ' ').trim()
+  if (!cleaned) {
+    const rows = db.prepare(`
+      SELECT * FROM training_examples WHERE quality >= 1
+      ORDER BY created_at DESC LIMIT ?
+    `).all(limit) as Record<string, unknown>[]
+    return rows.map(r => ({
+      id: r.id as number, userMessage: r.user_message as string,
+      assistantMessage: r.assistant_message as string, topic: (r.topic as string) ?? null,
+      styleTags: (r.style_tags as string) ?? null, quality: r.quality as number,
+      source: r.source as string, createdAt: r.created_at as string,
+      usedCount: r.used_count as number,
+    }))
+  }
+
+  const ftsQuery = cleaned.split(/\s+/).filter(w => w.length > 0).map(w => `"${w}"`).join(' OR ')
+  if (!ftsQuery) return []
+
+  const sql = `
+    SELECT * FROM training_examples
+    WHERE id IN (SELECT training_fts.rowid FROM training_fts WHERE training_fts MATCH ?)
+    AND quality >= 1
+    ORDER BY created_at DESC
+    LIMIT ?
+  `
+  const rows = db.prepare(sql).all(ftsQuery, limit) as Record<string, unknown>[]
+  return rows.map(r => ({
+    id: r.id as number, userMessage: r.user_message as string,
+    assistantMessage: r.assistant_message as string, topic: (r.topic as string) ?? null,
+    styleTags: (r.style_tags as string) ?? null, quality: r.quality as number,
+    source: r.source as string, createdAt: r.created_at as string,
+    usedCount: r.used_count as number,
+  }))
 }
