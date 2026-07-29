@@ -30,6 +30,7 @@ import { drawImageTools } from './tools/builtin/drawImage'
 import { drawSvgTools } from './tools/builtin/drawSvg'
 import { fetchUrlTools } from './tools/builtin/fetchUrl'
 import { gameControlTools } from './tools/builtin/gameControl'
+import { rocoBattleTools } from './tools/builtin/rocoBattle'
 import { storeMemoryTools } from './tools/builtin/storeMemory'
 import { imageJournalTools } from './tools/builtin/image-journal'
 import { vocabularyTools } from './tools/builtin/vocabulary'
@@ -312,8 +313,8 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
   function resolveTools(toolset?: ToolsetId) {
     const toolsetRegistry: Record<string, () => Promise<any[]>> = {
       widgets: async () => {
-        const [w, we, vo, wp, va, dr, fu, sm, gc, svg] = await Promise.all([widgetsTools(), weatherTools(), vocabularyTools(), webpageTools(), vrmAnimationTools(), drawImageTools(), fetchUrlTools(), storeMemoryTools(), gameControlTools(), drawSvgTools()])
-        return [...w, ...we, ...vo, ...wp, ...va, ...dr, ...fu, ...sm, ...gc, ...svg]
+        const [w, we, vo, wp, va, dr, fu, sm, gc, svg, rc] = await Promise.all([widgetsTools(), weatherTools(), vocabularyTools(), webpageTools(), vrmAnimationTools(), drawImageTools(), fetchUrlTools(), storeMemoryTools(), gameControlTools(), drawSvgTools(), rocoBattleTools()])
+        return [...w, ...we, ...vo, ...wp, ...va, ...dr, ...fu, ...sm, ...gc, ...svg, ...rc]
       },
       artistry: async () => {
         const [ai, wi, we, vo, wp, va, dr, fu, sm, gc, svg] = await Promise.all([
