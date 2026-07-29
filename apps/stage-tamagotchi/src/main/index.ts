@@ -50,6 +50,7 @@ import { setupChatWindowReusableFunc } from './windows/chat'
 import { isDesktopOverlayEnabled, setupDesktopOverlayWindow } from './windows/desktop-overlay'
 import { setupDevtoolsWindow } from './windows/devtools'
 import { setupMainWindow } from './windows/main'
+import { createSubtitleWindow, setupSubtitleIPC } from './windows/subtitle'
 import { setupNoticeWindowManager } from './windows/notice'
 import { setupOnboardingWindowManager } from './windows/onboarding'
 import { setupSettingsWindowReusableFunc } from './windows/settings'
@@ -313,6 +314,10 @@ app.whenReady().then(async () => {
   // Game learning service — standalone, no DI needed
   // NOTICE: Temporarily disabled to isolate startup crash
   // setupGameLearningService()
+
+  // Subtitle overlay window for desktop subtitle mode
+  setupSubtitleIPC()
+  void createSubtitleWindow()
 
   injeca.start().catch(err => console.error(err))
 

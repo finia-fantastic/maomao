@@ -9,7 +9,7 @@ import { useSettings } from '@proj-airi/stage-ui/stores/settings'
 
 import { refDebounced, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, inject, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ControlButtonTooltip from './control-button-tooltip.vue'
@@ -99,7 +99,9 @@ function toggleAlwaysOnTop() {
 }
 
 // Grouped classes for icon / border / padding and combined style class
-const toggleInlineChat = inject<(() => void) | undefined>('toggleInlineChat', undefined)
+import { useChatSyncStore } from '../../../stores/chat-sync'
+const chatSyncStore = useChatSyncStore()
+const { subtitleMode } = storeToRefs(chatSyncStore)
 
 const adjustStyleClasses = computed(() => {
   let isLarge: boolean
@@ -321,11 +323,11 @@ useIntervalFn(checkVocabRunning, 5000)
             </ControlButtonTooltip>
 
             <ControlButtonTooltip disable-hoverable-content>
-              <ControlButton :button-style="adjustStyleClasses.button" @click="toggleInlineChat?.()">
-                <div i-solar:chat-line-bold-duotone :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
+              <ControlButton :button-style="adjustStyleClasses.button" @click="chatSyncStore.toggleSubtitleMode()">
+                <div :class="subtitleMode ? 'i-solar:subtitles-bold-duotone' : 'i-solar:chat-line-bold-duotone'" :class="adjustStyleClasses.icon" text="neutral-800 dark:neutral-300" />
               </ControlButton>
               <template #tooltip>
-                切换模式
+                {{ subtitleMode ? '字幕模式 ON' : '切换字幕模式' }}
               </template>
             </ControlButtonTooltip>
 

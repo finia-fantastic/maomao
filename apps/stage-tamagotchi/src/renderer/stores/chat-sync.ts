@@ -546,6 +546,35 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
   }
 
   /** Switch vision mode via chat ("切换耗能模式" / "切换节能模式"). */
+  /** Subtitle mode flag — when true, AI replies go to subtitle overlay. */
+  const subtitleMode = ref(false)
+
+  function toggleSubtitleMode() {
+    subtitleMode.value = !subtitleMode.value
+  }
+
+  // Listen for messages from subtitle window input
+  const subtitleIpc = (window as any).electron?.ipcRenderer
+  if (subtitleIpc) {
+    subtitleIpc.on('subtitle:incoming-message', async (_e: any, text: string) => {
+      if (text?.trim()) {
+        await requestIngest({ text: text.trim() })
+      }
+    })
+  }
+
+  // Route AI responses to subtitle overlay when subtitle mode is on
+  watch(() => chatSession.getSessionMessages(activeSessionId.value), (msgs) => {
+    if (!subtitleMode.value || !msgs?.length) return
+    const last = [...msgs].reverse().find((m: any) => m.role === 'assistant')
+    if (!last) return
+    const text = typeof last.content === 'string' ? last.content
+      : (last as any).slices?.filter((s: any) => s.type === 'text').map((s: any) => s.text).join('') || ''
+    if (text) {
+      void (window as any).electron?.ipcRenderer?.invoke('subtitle:show', text)
+    }
+  }, { deep: true })
+
   /** Language toggle: "切换日语" / "切换中文". */
   function maybeToggleLanguage(text: string): void {
     const visionStore = useVisionStore()
@@ -1178,5 +1207,7 @@ export const useChatSyncStore = defineStore('stage-tamagotchi:chat-sync', () => 
     requestToolCallRerun,
     requestCleanup,
     requestDeleteMessage,
+    subtitleMode,
+    toggleSubtitleMode,
   }
 })
