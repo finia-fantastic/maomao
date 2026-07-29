@@ -235,5 +235,5 @@ onUnmounted(() => {
 
 <route lang="yaml">
 meta:
-  layout: blank
+  layout: default
 </route>
