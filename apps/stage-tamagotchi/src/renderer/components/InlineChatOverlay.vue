@@ -102,29 +102,10 @@ function handleKeydown(e: KeyboardEvent) {
 <template>
   <Transition name="inline-chat">
     <div v-if="visible" class="chat-overlay">
-      <!-- Reply area: anchored at very top, expands downward only as needed -->
-      <div class="reply-area">
-        <Transition name="reply-fade">
-          <div
-            v-if="replyVisible && replyText"
-            class="reply-box"
-          >
-            {{ replyText }}
-          </div>
-        </Transition>
-
-        <div
-          v-if="!replyVisible || !replyText"
-          class="reply-box placeholder"
-        >
-          你好呀，可以直接和我说话～
-        </div>
-      </div>
-
-      <!-- Spacer pushes input to bottom -->
+      <!-- Spacer: character in middle -->
       <div class="flex-1 pointer-events-none" />
 
-      <!-- Input row (bottom) -->
+      <!-- Input row (bottom only — replies go to subtitle overlay) -->
       <div class="input-row">
         <input
           v-model="inputText"
@@ -159,66 +140,6 @@ function handleKeydown(e: KeyboardEvent) {
   padding: 0 8px 6px;
   /* Push content area down so input stays visible, but reply floats above */
   justify-content: flex-start;
-}
-
-/* ── Reply area: absolutely positioned at top, above character head ── */
-.reply-area {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  transform: translateX(-50%);
-  z-index: 25;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: none;
-}
-
-/* ── Reply box: lightweight bubble, auto-sized ── */
-.reply-box {
-  pointer-events: auto;
-  width: fit-content;
-  min-width: 60px;
-  max-width: min(300px, calc(100vw - 20px));
-  height: auto;
-  margin-top: 0;
-  padding: 6px 12px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  overflow: visible;
-  border-radius: 12px;
-  box-sizing: border-box;
-  font-size: 12.5px;
-  line-height: 1.45;
-  text-align: center;
-  /* Light glass-morphism */
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  color: #374151;
-  transition: opacity 0.25s, transform 0.25s;
-}
-
-.dark .reply-box {
-  background: rgba(30, 30, 45, 0.78);
-  border-color: rgba(100, 116, 139, 0.16);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  color: #d1d5db;
-}
-
-.reply-box.placeholder {
-  background: rgba(255, 255, 255, 0.35);
-  border: 1px solid rgba(148, 163, 184, 0.08);
-  box-shadow: none;
-  color: #a8a29e;
-  font-size: 12px;
-}
-
-.dark .reply-box.placeholder {
-  background: rgba(40, 40, 55, 0.35);
-  color: #78716c;
 }
 
 /* ── Input row ── */
